@@ -1,0 +1,14 @@
+#TeXlipse project settings
+#Fri Mar 21 10:59:42 CET 2014
+markTmpDer=true
+builderNum=2
+outputDir=
+makeIndSty=
+bibrefDir=
+outputFormat=pdf
+tempDir=tmp
+mainTexFile=scratch.tex
+outputFile=scratch.pdf
+langSpell=en
+markDer=true
+srcDir=

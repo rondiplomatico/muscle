@@ -1,0 +1,282 @@
+%%This is a very basic article template.
+%%There is just one section and two subsections.
+\documentclass[a4paper,12pt]{article}
+\usepackage[english]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+
+% Graphics
+\usepackage{graphicx}
+\graphicspath{{img/}}
+\DeclareGraphicsExtensions{.eps,.png,.pdf,.jpg}
+
+% Windows-only
+\usepackage[utf8]{inputenc}
+\usepackage{epstopdf}
+%pdf latex -synctex=1 --shell-escape -interaction=nonstopmode --src-specials
+
+\usepackage[ttscale=.875]{libertine}
+
+% Display
+\usepackage[font={small,it}]{caption}
+%\usepackage{multirow}
+%\usepackage{fancyvrb}
+%\usepackage{listings}
+
+% Illustrations
+%\usepackage{tikz}
+%usetikzlibrary{arrows,automata}
+
+% Algorithms
+%\usepackage{algorithm}
+%\usepackage{algpseudocode}
+
+% For bibliography
+\usepackage{url}
+
+% \usepackage{setspace}
+\usepackage{geometry}
+\geometry{%
+	top=25mm, bottom=30mm,
+	left=25mm, right=30mm, twoside
+}
+
+\setlength{\parskip}{8pt}
+\setlength{\parindent}{0cm}
+
+\input{Commands}
+\newcommand{\Or}{\Omega_0}
+\newcommand{\intor}{\intl{\Or}{}}
+\newcommand{\intorb}{\intl{\partial\Or}{}}
+\newcommand{\vT}{\makebf{T}}
+\newcommand{\vt}{\makebf{t}}
+\newcommand{\vsig}{\makebf{\sigma}}
+\newcommand{\vSi}{\vS^{iso}}
+\newcommand{\vSa}{\vS^{aniso}}
+\newcommand{\vSf}{\vS^{act}}
+\newcommand{\vPi}{\vP^{iso}}
+\newcommand{\vPa}{\vP^{aniso}}
+\newcommand{\vPf}{\vP^{act}}
+\newcommand{\Sfun}{\makebf{\Upsilon}}
+\newcommand{\force}{\vG}
+\DeclareMathOperator{\divergence}{\nabla\cdot}
+\DeclareMathOperator{\tr}{tr}
+\renewcommand{\div}[1]{\divergence\left(#1\right)}
+\newcommand{\m}[1]{\ensuremath{\left(\begin{matrix}#1\end{matrix}\right)}}
+%\newcommand{\sm}[1]{\ensuremath{\left(\begin{smallmatrix}#1\end{smallmatrix}\right)}}
+
+\begin{document}
+
+As perspective, we will work on the \e{reference configuration} regarding all quantities and relate to the \e{current configuration} only where necessary.
+The quantities referred to in the reference configuration are upper-case letters and we denote quantities in the reference configuration by lower-case letters.
+Bold face is used to indicate vectorial quantities.
+
+We model the movement/deformation of a continuous muscle over time, whose shape corresponds to the reference domain $\Or\subset\R^3$.
+The movement of each particle $X\in\R^3$ in the body is described by a \e{motion} $\chi(X,t)\in\R^3$, which gives the position of each $X\in\R^3$ at time
+$t\in[0,T]$ with $\Or = \chi(\Or,0)$.
+
+We define the quantities
+\begin{align}
+	\text{velocity field} && \vV(X,t) &:= \d{\chi}{t}(X,T),\\
+	\text{acceleration field} && \vA(X,t) &:= \d{\vV}{t}(X,t) = \dd{\chi}{t}(X,t),\\
+	\text{deformation gradient} && \vF(X,t) &:= \d{\chi}{X}(X,t) = \m{\nabla \chi_1 & \nabla \chi_2 & \nabla \chi_3}^T \in \R^{3\times 3},\\
+	\text{left cauchy strain tensor} && \vC(X,t) &:= \vF(X,t)\vF(X,t)^T\\
+	\text{volume ratio} && J(X,t) &:= \det(\vF(X,t)).
+\end{align}
+
+\section{Derivation of governing equations}
+Assuming a mass $\rho_0(X)$ at each point we define the total momentum
+\[
+ 	\vL(t) := \intor \rho_0(X)\vV(X,t) dX,
+\] 
+for which we postulate the balance equation
+\begin{align}
+	\force(t) \stackrel{!}{=} \d{\vL}{t}(t) = \vL'(t) = \intor \rho_0(X)\d{\vV}{t}(X,t) dX = \intor \rho_0(X)\vA(X,t) dX,\label{def:bal_eq}
+\end{align}
+given \e{resultant forces} $\force(t)$.
+
+\subsection{Structure of force}
+We assume the forces $\force(t)$ to be composed of two different sources: Forces on the boundary and body forces.
+The body forces $\vB(X,t)$ measures the force per unit reference volume on $X$ at time $t$.
+These forces are self-weight or gravity, for example.
+Further, we assume to have \e{traction vectors} $\vT(X,t,N)$ (first Piola-Kirchhoff traction vector) that indicates the force working per unit surface area with normal $N$ 
+at the point $X\in\partial\Or$ at time $t$.
+Then the resultant forces are given as
+\begin{align}
+	\force(t) := \intorb \vT(X,t,N)dN + \intor \vB(X,t)dX \label{def:force}
+\end{align}
+
+According to \e{Cauchy's stress theorem}, we can express tractions as tensor product
+\begin{align}
+	\vT(X,t,N) &= \vP(X,t)N,\label{def:T}
+\end{align}
+where $\vP$ denotes the \e{first Piola-Kirchhoff stress tensor}.
+With this we have, following Gauss integral theorem,
+\begin{align}
+	\intorb \vT(X,t,N)dN &= \intorb \vP(X,t)NdN = \intor \divergence\vP(X,t)dX.\label{eq:div_form_traction}
+\end{align}
+Using representation \eqref{eq:div_form_traction} in the force composition 
+\eqref{def:force} yields the following form of the balance equation \eqref{def:bal_eq}:
+\begin{align}
+	\intor \rho_0(X)\d{\vV}{t}(X,t) dX &= \intor \divergence\vP(X,t) + \vB(X,t) dX
+\end{align}
+As this balance must also be satisfied for each subvolume $\Omega_t\subset\Or$, we actually obtain a pointwise or local form as
+\begin{align}
+	\rho_0(X)\d{\vV}{t}(X,t) &= \divergence\vP(X,t) + \vB(X,t) \qquad \fo X\in\Or
+\end{align}
+
+\subsection{Stress tensor definition}
+We will actually assume
+\begin{align}
+	\vP(X,t) &:= \vF(X,t)\vS(X,t),
+\end{align}
+where $\vS(X,t)$ stands for the \e{second Piola-Kirchhoff stress tensor}.
+Now, most generally one makes the assumption that any stress tensor depends on the location and the current deformation, i.e.
+\[
+	\vS(X,t) = \tilde{\Sfun}(\vF(X,t),X),\quad \hat{\Sfun}:\R^{3\times 3} \to \R^{3\times 3}.
+\]
+We assume \e{homogeneous} material, which means that a direct spatial dependence is not given and we thus omit the argument.
+Further, due to the principle of material frame-indifference \cite[p.198]{Holzapfel2000}, $\vS$
+may actually only depend on the rotation-invariant part of $\vF$.
+For any fixed $X,t$ we can decompose $\vF = \vR\vU$ (\cite[p.85]{Holzapfel2000}) with a
+\e{rotation} part $\vR$ with $\vR^T\vR = \vI$ and \e{stretch} part $\vU = \vU^T$.
+Thus $\vS$ may only depend on $\vU$; since
+\[
+	\vC = \vF^T\vF = (\vR\vU)^T\vR\vU = \vU^T\vR^T\vR\vU = \vU\vU = \vU^2, 
+\]
+we will assume that
+\[
+	\vS(X,t) = \Sfun(\vC(X,t))
+\]
+for suitable tensor function $\Sfun$.
+We also introduce the concept of a \e{fibre direction} $\va_0(X) \in\R^3$, where we will omit the argument $X$ in the following.
+Then, for \e{hyperelastic and transversely isotropic} material we have the definition
+\[
+	\vS(X,t) = \Sfun(\vC(X,t)) := 2\d{\Psi}{\vC}(\vC(X,t),\va_0(X)),
+\]
+where $\Psi$ is called \e{strain-energy} function, see \cite[p.207]{Holzapfel2000}.
+
+\subsubsection{Invariants}
+We further have for any tensor $\vA$ with eigenvalues $\lambda_1,\lambda_2,\lambda_3$ the \e{invariants}
+\begin{align}
+	I_1(\vA) &:= \tr\vA = \lambda_1 + \lambda_2 + \lambda_3\label{def:I1}\\
+	I_2(\vA) &:= \frac{1}{2}\left((\tr \vA)^2 - \tr\vA^2\right) = \lambda_1\lambda_2 + \lambda_1\lambda_3 + \lambda_2\lambda_3\\
+	I_3(\vA) &:= \det\vA = \lambda_1\lambda_2\lambda_3\label{def:I3}\\
+	I_4(\vA,\vv) &:= \vv\cdot\vA\vv = \vA : (\vv \otimes \vv)\label{def:I4} =: \lambda^2_{\vv}\\
+	I_5(\vA,\vv) &:= \vv\cdot\vA^2\vv\label{def:I5}
+\end{align}
+with derivatives for \e{symmetric} $\vA$
+\begin{align}
+	\d{I_1}{\vA}(\vA) &:= \d{\tr\vA}{\vA}(\vA) = \d{\vI:\vA}{\vA}(\vA) = \vI\\
+	\d{I_2}{\vA}(\vA) &:= I_1(\vA)\vI - \vA\\
+	\d{I_3}{\vA}(\vA) &:= I_3\vA^{-1}\\
+	\d{I_4}{\vA}(\vA) &:= \vv \otimes \vv\label{def:dI4}\\
+	\d{I_5}{\vA}(\vA) &:= \vv \otimes \vA\vv + \vv\vA \otimes \vv,
+\end{align}
+see \cite[p.216/p.268]{Holzapfel2000}.
+
+Now, $\Psi$ can actually be formulated using the invariants \eqref{def:I1}-\eqref{def:I5} as
+\[
+	\Psi(\vC) = \Psi(I_1(\vC),I_2(\vC),I_3(\vC),I_4(\vC,\va_0),I_5(\vC,\va_0)).
+\]
+This gives the general form
+\begin{align}
+	\vS(X,t) &= 2\d{\Psi}{\vC}(I_1,I_2,I_3,I_4,I_5)\\
+		&= \d{\Psi}{I_1}\d{I_1}{\vC} + \d{\Psi}{I_2}\d{I_2}{\vC} + \d{\Psi}{I_3}\d{I_3}{\vC} + \d{\Psi}{I_4}\d{I_4}{\vC} + \d{\Psi}{I_5}\d{I_5}{\vC}\\
+		&= 2\Biggl[\left(\d{\Psi}{I_1} + I_1\d{\Psi}{I_2}\right)\vI - \d{\Psi}{I_2}\vC + I_3\d{\Psi}{I_3}\vC^{-1}\\
+		&\quad+ \d{\Psi}{I_4}\va_0\otimes\va_0 + \d{\Psi}{I_5}(\va_0\otimes\vA\va_0 + \va_0\vA\otimes\va_0)\Biggr].
+\end{align}
+
+Further, we consider \e{incompressible} material, which is expressed by the condition condition $J(X,t) = 1 \fo X,t$.
+This leads to the constant third invariant $I_3 \equiv 1$, where an additional Lagrange-multiplier $p$ is introduced
+to satisfy the condition via
+\begin{align}
+	\vS(X,t) = p\vC^{-1}(X,t) + 2\d{\Psi}{\vC}(\vC(X,t))
+\end{align}
+
+In the following, we will specify different $\Psi$ to create an additive split as 
+\begin{align}
+	\vS(X,t) = p\vC^{-1}(X,t) + \vSi(X,t) + \vSa(X,t) + \vSf(X,t)
+\end{align}
+
+\subsubsection{Isotropic stress tensor $\vSi$}
+Now, for the muscle setting we use
+\[
+	\Psi(I_1,I_2,I_3) = c_{10}(I_1-3) + c_{01}(I_2-3),
+\]
+which gives
+\begin{align}
+	\vSi(X,t) &= 2(c_{10} + I_1c_{01})\vI - 2c_{01}\vC(X,t)\\
+	\vPi(X,t) &= 2(c_{10} + I_1c_{01})\vF(X,t) - 2c_{01}\vF(X,t)\vC(X,t)
+\end{align}
+
+\subsubsection{Anisotropic stress tensor $\vSa$}
+Further, we introduce the stretch $\lambda_f$ in fibre direction $\va_0(X)$ as
+\begin{align*}
+	\lambda_f(X,t) &:= \sqrt{I_4(\vC(X,t),\va_0(X))}
+\end{align*}
+Now, according to \cite{Markert2005}, we employ
+\begin{align*}
+	\Psi(\lambda_f) := \sumi \frac{b_i}{d_i}(\lambda_f^{d_i} - 1) - b_i\ln\lambda_f
+\end{align*}
+with $n=1$ summands, so that
+\begin{align}
+	\d{\Psi}{\vC}(\lambda_f) &= \d{\Psi}{\lambda_f}(\lambda_f)\d{\lambda_f}{I_4}(I_4)\d{I_4}{\vC}(\vC,\va_0),\label{eq:dpsidC}
+\end{align}
+with
+\begin{align*}
+		 \d{\Psi}{\lambda_f}(\lambda_f) &= \frac{b_1(d_1-1)}{d_1}\lambda_f^{d-1} - b_1\lambda_f^{-1},\\
+		 \d{\lambda_f}{I_4}(I_4) &= \frac{1}{2\sqrt{I_4}} = \frac{1}{2\lambda_f}.
+\end{align*}
+With \eqref{def:dI4} and the above we get
+\begin{align*}
+	2\d{\Psi}{\vC}(\lambda_f) &= 2\left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d-1} - b_1\lambda_f^{-1}\right) \frac{1}{2\lambda_f}\va_0\otimes\va_0\\
+	&= \left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d-2} - b_1\lambda_f^{-2}\right) \va_0\otimes\va_0,
+\end{align*}
+leading to
+\begin{align}
+	\vSa(X,t) &= \left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d-2}(X,t) - b_1\lambda_f^{-2}(X,t)\right) \va_0(X)\otimes\va_0(X)\\
+	\vPa(X,t) &= \left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d-2}(X,t) - b_1\lambda_f^{-2}(X,t)\right) \vF(X,t)\va_0(X)\otimes\va_0(X)
+\end{align}
+
+\subsubsection{Active force tensor $\vSf$}
+Here we define
+\begin{align*}
+	\Psi(\lambda_f) &:= \intl{0}{\lambda_f} p^{act}(s)ds,\\
+	p^{act}(\lambda_f) &:= p^{max}\gamma(\alpha,\lambda_f,\lambda_f'),
+\end{align*}
+with suitable constant $p^{max}$ and function $\gamma$.
+Similar to \eqref{eq:dpsidC} we obtain
+\begin{align}
+	\d{\Psi}{\vC}(\lambda_f) &= \frac{p^{max}}{2\lambda_f}\gamma(\alpha,\lambda_f,\lambda_f')\va_0\otimes\va_0
+\end{align}
+This gives
+\begin{align}
+	\vSf(X,t) &= \frac{p^{max}}{\lambda_f(X,t)}\gamma\left(\alpha,\lambda_f(X,t),\d{\lambda_f}{t}(X,t)\right)\va_0(X)\otimes\va_0(X)\\
+	\vPf(X,t) &= \frac{p^{max}}{\lambda_f(X,t)}\gamma\left(\alpha,\lambda_f(X,t),\d{\lambda_f}{t}(X,t)\right)\vF(X,t)\va_0(X)\otimes\va_0(X)
+\end{align}
+
+
+% \subsubsection{Detour}
+% Prescribing $\vP$ will yield the behaviour of the overall system.
+% The equation $\eqref{def:T}$ also holds for values in the current configuration, i.e.
+% \[
+% 	\vt(x,t,n) = \vsig(x,t)n,
+% \]
+% where $\vsig$ is the symmetric \e{Cauchy stress tensor}.
+
+\section{FEM discretization}
+Nodes $\{\vx_1,\ldots,\vx_N\}$, test space $\H$ spanned by test functions
+$\varphi_1,\ldots,\varphi_N$ with $\varphi_i(\vx_j) = \delta_{ij}$ and $\varphi_k \equiv 0$ on $\partial\Or$ for all $k$.
+We have for each fixed $\varphi_k$:
+\begin{align}
+	\intor \div{\vP(X,t)}\varphi_k(X) dX &= \intor \div{\vP(X,t)\varphi_k(X)} - \vP(X,t)\div{\varphi_k(X)} dX\\
+		 &= \underbrace{\intorb \vP(X,t)\varphi_k(X) dN}_{=0} - \intor \vP(X,t)\div{\varphi_k(X)} dX\\
+		 &= \intor -\vP(X,t)\div{\varphi_k(X)} dX
+\end{align}
+
+\bibliographystyle{plain}
+\bibliography{cbm_library}
+
+\end{document}

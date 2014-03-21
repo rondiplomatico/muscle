@@ -1,4 +1,6 @@
 .project
+*.nlo
+*.nls
 *.?~
 *.??~
 *.mexw32
@@ -6,11 +8,9 @@
 *.mexa64
 *.mexglx
 *.fig
-*.tex
 *.mat
 *.eps
 *.txt
-*.jpg
 *.bin
 *.log
 *.asv
@@ -18,11 +18,4 @@
 *.exe
 *.bat
 *.dll
-+general/+collections/Dictionary.m
-/data
-/temp
-/documentation/bin
-/documentation/mtoc++*
-/documentation/docs
-/documentation/out
-.gitbranch
+

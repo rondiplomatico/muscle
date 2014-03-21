@@ -1,0 +1,328 @@
+\newlength{\myleftmargin}
+\setlength{\myleftmargin}{-6ex}
+\newlength{\fixboxwidth}
+\setlength{\fixboxwidth}{\marginparwidth}
+\addtolength{\fixboxwidth}{\myleftmargin}
+\newcommand{\fix}[1]{\marginpar{%
+    \fbox{\parbox{\fixboxwidth}{\footnotesize \red{#1}}}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% Text commands
+\usepackage{color}
+\definecolor{emph}{rgb}{.1,.4,.1}
+\definecolor{dark-red}{rgb}{0.4,0.15,0.15}
+\definecolor{dark-blue}{rgb}{0.15,0.15,0.4}
+\definecolor{medium-blue}{rgb}{0,0,0.5}
+\newcommand{\ow}[1]{``\emph{#1}''}%\textcolor{emph}{\emph{#1}}
+\newcommand{\e}[1]{\emph{#1}}
+%\newcommand{\red}[1]{\textcolor{red}{#1}}
+%\newenvironment{redp}{\par\color{red}}{\par}
+
+%%%%%%%%%%%%%%%%%%%% Figure stuff
+\newenvironment{myfig}[2]{%
+\def\mystupidworkaround{#1}
+\def\mystupidworkaroundtwo{#2}
+\begin{center}
+}{%
+	\captionof{figure}{\mystupidworkaroundtwo}
+  	\label{\mystupidworkaround}
+\end{center}
+}
+% \usepackage{float}
+% \newenvironment{myfig}[2]{%
+% \def\mystupidworkaround{#1}
+% \def\mystupidworkaroundtwo{#2}
+% \begin{figure}[H]
+% 	\centering
+% }{%
+%  	\caption{\mystupidworkaroundtwo}
+%  	\label{\mystupidworkaround}
+% \end{figure}
+% }
+
+% % MathBBM / MathCal symbols
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\D}{\mathcal{D}}
+\renewcommand{\P}{\mathcal{P}}
+\renewcommand{\L}{\mathcal{L}}
+\newcommand{\Udeim}{\mathcal{U}}
+\newcommand{\E}{\mathcal{E}}
+\newcommand{\V}{\mathcal{V}}
+\newcommand{\W}{\mathcal{W}}
+\newcommand{\Rp}{\mathbb{R}_+}
+
+%%%%%%%%%%%%%%%%%%%%%%%% Dimensions
+% State space: d
+\def\dis{l} % input space
+\def\dos{k} % output space
+\def\dpar{p} % parameter space
+
+%%%%%%%%%%%%%%%%%%%%%%%% Kernel related 
+\newcommand{\K}{K}
+\renewcommand{\H}{\mathcal{H}}
+\newcommand{\Pxdot}{\K(\vx,\cdot)}
+\newcommand{\Pydot}{\K(\vy,\cdot)}
+\newcommand{\Pxidot}{\K(\vx_i,\cdot)}
+\newcommand{\Pxjdot}{\K(\vx_j,\cdot)}
+\newcommand{\Pyidot}{\K(\vy_i,\cdot)}
+\newcommand{\Kxix}{\K(\vx_i,\vx)}
+\newcommand{\spH}[2]{\sp{#1}{#2}_{\H}}
+\newcommand{\spHq}[2]{\sp{#1}{#2}_{\H^q}}
+\newcommand{\noH}[1]{\norm{#1}{\H}}
+\newcommand{\noHq}[1]{\norm{#1}{\H^q}}
+\newcommand{\Kh}{\tilde{\K}}
+\newcommand{\vci}{\vc_i}
+
+%%%%%%%%%%%%%%%%%%%%%%%% Vectors and Matrices
+\newcommand{\mx}[1]{\ensuremath{\left(\begin{matrix}#1\end{matrix}\right)}}
+\newcommand{\sm}[1]{\ensuremath{\left(\begin{smallmatrix}#1\end{smallmatrix}\right)}}
+\newcommand{\makebf}[1]{\boldsymbol{#1}}
+\newcommand{\vnull}{\makebf{0}}
+\newcommand{\vone}{\makebf{1}}
+\newcommand{\vA}{\makebf{A}}
+\newcommand{\vB}{\makebf{B}}
+\newcommand{\vC}{\makebf{C}}
+\newcommand{\vD}{\makebf{D}}
+\newcommand{\vE}{\makebf{E}}
+\newcommand{\vF}{\makebf{F}}
+\newcommand{\vG}{\makebf{G}}
+\newcommand{\vH}{\makebf{H}}
+\newcommand{\vI}{\makebf{I}}
+\newcommand{\vJ}{\makebf{J}}
+\newcommand{\vK}{\makebf{K}}
+\newcommand{\vL}{\makebf{L}}
+\newcommand{\vM}{\makebf{M}}
+\newcommand{\vN}{\makebf{N}}
+\newcommand{\vP}{\makebf{P}}
+\newcommand{\vQ}{\makebf{Q}}
+\newcommand{\vR}{\makebf{R}}
+\newcommand{\vS}{\makebf{S}}
+\newcommand{\vU}{\makebf{U}}
+\newcommand{\vV}{\makebf{V}}
+\newcommand{\vW}{\makebf{W}}
+\newcommand{\vX}{\makebf{X}}
+\newcommand{\vY}{\makebf{Y}}
+\newcommand{\va}{\makebf{a}}
+\newcommand{\vb}{\makebf{b}}
+\newcommand{\vc}{\makebf{c}}
+\newcommand{\ve}{\makebf{e}}
+\newcommand{\vf}{\makebf{f}}
+\newcommand{\vg}{\makebf{g}}
+\newcommand{\vj}{\makebf{j}}
+\newcommand{\vk}{\makebf{k}}
+\newcommand{\vn}{\makebf{n}}
+\newcommand{\vp}{\makebf{p}}
+\newcommand{\vq}{\makebf{q}}
+\newcommand{\vr}{\makebf{r}}
+\newcommand{\vu}{\makebf{u}}
+\newcommand{\vv}{\makebf{v}}
+\newcommand{\vw}{\makebf{w}}
+\newcommand{\vx}{\makebf{x}}
+\newcommand{\vy}{\makebf{y}}
+\newcommand{\vz}{\makebf{z}}
+\newcommand{\val}{\makebf{\alpha}}
+\newcommand{\vmu}{{\makebf{\mu}}}
+\newcommand{\vxi}{\makebf{\xi}}
+\newcommand{\veta}{\makebf{\eta}}
+\newcommand{\vSig}{\makebf{\Sigma}}
+\newcommand{\vLam}{\makebf{\Lambda}}
+
+% Tilde: Projected quantities 
+\newcommand{\vtA}{\tilde{\vA}}
+\newcommand{\vtB}{\tilde{\vB}}
+\newcommand{\vtC}{\tilde{\vC}}
+\newcommand{\vtJ}{\tilde{\vJ}}
+\newcommand{\vtM}{\tilde{\vM}}
+\newcommand{\vtQ}{\tilde{\vQ}}
+\newcommand{\vtU}{\tilde{\vU}}
+\newcommand{\vtV}{\tilde{\vV}}
+\newcommand{\vtc}{\tilde{\vc}}
+\newcommand{\vtq}{\tilde{\vq}}
+\newcommand{\vtx}{\tilde{\vx}}
+\newcommand{\vtv}{\tilde{\vv}}
+\newcommand{\vtz}{\tilde{\vz}}
+\newcommand{\tf}{\tilde{f}}
+\newcommand{\tlambda}{\tilde{\lambda}}
+
+% Hat: Approximated quantities
+\newcommand{\hf}{\hat{f}}
+\newcommand{\vhf}{{\hat{\vf}}}
+\newcommand{\vhV}{{\hat{\vV}}}
+\newcommand{\vhW}{{\hat{\vW}}}
+\newcommand{\vhP}{\hat{\vP}}
+\newcommand{\vhR}{{\hat{\vR}}}
+\newcommand{\vhU}{\hat{\vU}}
+
+% Tilde hat: Projected approximated quantities
+\newcommand{\vthf}{\tilde{\vhf}}
+
+%%%%%%%%%%%%%%%%%%%%%%%% Misc
+\renewcommand{\O}[1]{\ensuremath{\mathcal{O}\left(#1\right)}}
+\newcommand{\bs}{\backslash}
+\newcommand{\fo}{~\forall~}
+\newcommand{\ex}{~\exists~}
+\newcommand{\exu}{~\exists!~}
+\newcommand{\ep}{\epsilon}
+\newcommand{\es}{\emptyset}
+\newcommand{\norm}[2]{\left|\left|#1\right|\right|_{#2}}
+\newcommand{\no}[1]{\norm{#1}{}}
+\newcommand{\noG}[1]{\norm{#1}{G}}
+\newcommand{\Mmo}{\mathcal{C}}
+\newcommand{\mmo}{\mathcal{D}}
+\newcommand{\PM}{\P_{\Mmo}}
+\newcommand{\Pm}{\P_{\mmo}}
+\newcommand{\flux}{f}%
+\newcommand{\sat}{s}%s^{\ep,\tau}
+\newcommand{\col}{p{2cm}}
+
+\renewcommand{\sp}[2]{\left\langle #1,#2 \right\rangle}
+\newcommand{\spG}[2]{\sp{#1}{#2}_{G}}
+% \newcommand{\spHq}[2]{\sp{#1}{#2}_{\H^q}}
+\newcommand{\Ball}[2]{B_{#1}\left(#2\right)}
+
+%%%%%%%%%%%%%%%%%%%%%%%%% Sizes
+\newcommand{\single}{.8\textwidth} % 1 image in row
+\newcommand{\third}{.32\textwidth}
+\newcommand{\half}{.49\textwidth}
+\newcommand{\quarter}{.24\textwidth}
+
+%%%%%%%%%%%%%%%%%%%%%%%%% Sums, integrals, limits 
+\newcommand{\suml}[2]{\sum\limits_{#1}^{#2}}
+\newcommand{\sumi}{\suml{i=1}{n}}
+\newcommand{\sumim}{\suml{i=1}{m}}
+\newcommand{\sumj}{\suml{j=1}{n}}
+\newcommand{\sumjq}{\suml{j=1}{q}}
+\newcommand{\sumr}{\suml{i=1}{r}}
+\newcommand{\sumjk}{\suml{j=1}{k}}
+\newcommand{\sumik}{\suml{j=1}{k}}
+\newcommand{\sumkM}{\suml{k=1}{M}}
+\newcommand{\intl}[2]{\int\limits_{#1}^{#2}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% SVR-Commands
+\newcommand{\ap}{\val^+}
+\newcommand{\am}{\val^-}
+\newcommand{\aip}{\alpha_i^+}
+\newcommand{\aim}{\alpha_i^-}
+\newcommand{\ajp}{\alpha_j^+}
+\newcommand{\ajm}{\alpha_j^-}
+\newcommand{\apm}{\ap-\am}
+\newcommand{\apmb}{\left(\ap-\am\right)}
+\newcommand{\dw}{\nabla W}
+\newcommand{\dwp}{\dw^+(\ap,\am)}
+\newcommand{\dwpi}{\dw_i^+(\ap,\am)}
+\newcommand{\dwpj}{\dw_j^+(\ap,\am)}
+\newcommand{\dwm}{\dw^-(\ap,\am)}
+\newcommand{\dwmi}{\dw_i^-(\ap,\am)}
+\newcommand{\dwmj}{\dw_j^-(\ap,\am)}
+\newcommand{\vdw}{\nabla \vW}
+\newcommand{\clip}[3]{\left[#1\right]^{#2}_{#3}}
+\newcommand{\nonp}[1]{\norm{#1}{\Np}}
+\newcommand{\ripp}{r_i^{++}}
+\newcommand{\sjpp}{s_j^{++}}
+\newcommand{\xip}{\xi_i^+}
+\newcommand{\xim}{\xi_i^-}
+\newcommand{\noep}[1]{\left|#1\right|_\ep}
+\newcommand{\wplus}{\nabla\vw^+} 
+\newcommand{\wm}{\nabla\vw^-}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% VKOGA-Commands
+\newcommand{\tp}{\tilde{\phi}}
+\newcommand{\sfx}{{s_{f,X}}}
+\newcommand{\sfxm}{{s_{f,X_m}}}
+\newcommand{\Pq}{\P^q}
+\newcommand{\PHX}{\P_{\H^X}}
+%\newcommand{\PHXq}{\Pq_{\H^X}}
+\newcommand{\Kinj}{(\vK^{-1})_j^T}
+\newcommand{\OX}{\Omega_X}
+\newcommand{\OXm}{\vx\in\Omega\bs\Omega_{X_{m-1}}}
+\newcommand{\nKx}{\nabla\vK(\vx)}
+\newcommand{\gxf}{G_{X,\vf}} % vectorial gain function
+\newcommand{\px}{\phi_{\vx}}
+\newcommand{\pxv}{\px^{\nabla v}}
+\newcommand{\tpx}{\tp_{\vx}}
+\newcommand{\tpv}{\tp^{\nabla v}}
+\newcommand{\vtpx}{\makebf{\tp}_{\vx}}
+\newcommand{\tpxv}{\tpx^{\nabla v}}
+\newcommand{\tN}{\tilde{N}}
+\newcommand{\im}{{i_{max}}}
+
+%%%%%%%%%%%%%%%%%%%%%% DEIM commands
+\newcommand{\ei}{{\wp_i}}
+\newcommand{\DEI}{\DE_{EI}}
+\newcommand{\DEIJ}{\DE}
+\newcommand{\Prm}{\Pi_m}
+\newcommand{\Pmd}{\Pi_{m'}}
+\newcommand{\proj}{\bigl(\vI - \vV\vW^T\bigr)}
+
+%%%%%%%%%%%%%%%%%%%%%% Operators
+\DeclareMathOperator{\rangeop}{range}
+\DeclareMathOperator{\meanop}{mean}
+\DeclareMathOperator{\sgn}{sign}
+\DeclareMathOperator{\diagmat}{diag}
+\DeclareMathOperator{\divop}{div}
+\newcommand{\sign}[1]{\sgn\left(#1\right)}
+\newcommand{\range}[1]{\rangeop\left(#1\right)}
+\newcommand{\diag}[1]{\diagmat\left(#1\right)}
+\renewcommand{\d}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\dx}{\partial_x}%
+\newcommand{\dd}[2]{\frac{\partial^2 #1}{\partial {#2}^2}}
+
+%%%%%%%%%%%%%%%%%%%%%% Error estimation
+\newcommand{\intt}{\intl{0}{t}}
+\newcommand{\exo}{E_0} % initial error
+\newcommand{\exomu}{\exo(\vmu)}
+\newcommand{\ea}{E_A} % approximation error
+\newcommand{\eproj}{\left(\vI-\vV\vW^T\right)} %projection error
+\newcommand{\fd}{{h_{X,\Omega}}} % fill distance
+\renewcommand{\Ball}[2]{\overline{B_{#1}\left(#2\right)}}
+\newcommand{\Bts}{\Ball{\Theta}{s}}
+\newcommand{\Bty}{\Ball{\Theta}{y}}
+\newcommand{\Bf}{\mathcal{B}} % bell functions
+\newcommand{\DE}{\Delta}
+\newcommand{\DGLE}{\DE_{GLE}}
+\newcommand{\DLSLE}{\DE_{LSLE}} 
+\newcommand{\Gno}{\Gamma_1^c}
+
+%%%%%%%%%%%%%%%%%%%% Code
+\newcommand{\ML}{\textsc{MatLab}}%{\tiny\texttrademark~}
+\newcommand{\KM}{\textit{KerMor}}
+\newcommand{\code}[1]{\lstinline$#1$}
+\definecolor{c-keywords}{rgb}{.1,.1,.5}
+\definecolor{c-identifier}{rgb}{0.3,0.3,0.3}
+
+% \usepackage{verbatim}
+% \lstset{language=Matlab,
+% 	basicstyle=\normalsize\ttfamily,
+% 	keywordstyle=\bfseries\ttfamily\color{c-keywords},
+% 	identifierstyle=\color{c-identifier},
+% 	commentstyle=\color{green},
+% 	stringstyle=\ttfamily,
+% 	showstringspaces=false,
+% 	fancyvrb=true,
+% 	xleftmargin=5pt,
+% 	morekeywords={doc,help,methods,events,properties,abstract,
+%                       classdef,double,true,false,this,access,setaccess,getaccess,
+% 		      varargin, varargout}
+% }
+ 
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %% THEOREM & LEMMA COMMANDS
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+ 	
+% Option 1: Continuous numbering also for defs & remarks
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+% 	% Option 2: Own counters for defs & remarks
+% 	\theoremstyle{definition}
+% 	\newtheorem{definition}{Definition}[section]
+% 	\theoremstyle{remark}
+% 	\newtheorem{remark}{Remark}[section]
+% 	
+% 	%\newtheorem{example}[theorem]{Example}
+% 	%\newtheorem{xca}[theorem]{Exercise}
