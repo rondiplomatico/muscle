@@ -43,7 +43,7 @@ classdef System < models.BaseDynSystem
 %             this.A = this.assembleA;
 
             % Get Mass Matrix
-            this.M = this.assembleM;
+            this.M = dscomponents.ConstMassMatrix(model.Geometry.M);
             
             %% Set system components
             % Core nonlinearity

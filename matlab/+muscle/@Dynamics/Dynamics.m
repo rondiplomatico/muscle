@@ -12,7 +12,23 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         end
         
         function dy = evaluate(this, y, t, mu)
+            g = this.System.Model.Geometry;
             
+            gp = g.gaussp;
+            c = g.cubes;
+            for m = 1:size(c,1)
+                bval = zeros(8,8);
+                cube = c(m,:);
+                for g = 1:size(gp,2)
+                    xi = gp(:,g); % gauss point \xi
+                    J = det(p(:,cube)*this.gradN(xi));
+%                     gjac(m,g) = det(J);
+                    bval = bval + this.gaussw(g)*this.N(xi)*this.N(xi)'*J;
+                end
+                for j=1:8
+                    Mass(cube(j),cube(j:end)) = Mass(cube(j),cube(j:end)) + bval(j,j:end);
+                end
+            end
         end
         
         function dy = evaluateCoreFun(this, y, t, mu)%#ok
