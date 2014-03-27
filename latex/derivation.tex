@@ -39,75 +39,211 @@ As this balance must also be satisfied for each subvolume $\Omega_t\subset\Or$, 
 \end{align}
 
 \subsection{Stress tensor definition}
-We will actually assume
+%Most generally, we consider a \e{traction} force $\vt(\vx,\vn)$ at a current point $\vx\in\Omega$ in normal direction $\vn$. 
+Generally, one can deal with stress tensors expressed purely on current or reference configuration and hybrids, i.e. two-point versions.
+The physically directly interpretable stress tensor is the \e{cauchy stress tensor} $\vsig(\vx,t)$ defined on the current configuration,
+denoting the current stress at $\vx$ on the current unit surface orthogonal to $\vn$ at time $t$.
+For solids, a description of the stresses w.r.t. the reference configuration is more practical, which is why one defines
 \begin{align}
-	\vP(X,t) &:= \vF(X,t)\vS(X,t),
+	\vP(X,t) &:= J\vsig\vF^{-T} &&\text{first Piola-Kirchhoff (stress) tensor}\\
+	\vS(X,t) &:= \vF(X,t)^{-1}\vP(X,t) = J\vF^{-1}\vsig\vF^{-T} && \text{second Piola-Kirchhoff tensor} \label{def:secondpiola}
 \end{align}
-where $\vS(X,t)$ stands for the \e{second Piola-Kirchhoff stress tensor}.
-Now, most generally one makes the assumption that any stress tensor depends on the location and the current deformation, i.e.
-\[
-	\vS(X,t) = \tilde{\Sfun}(\vF(X,t),X),\quad \hat{\Sfun}:\R^{3\times 3} \to \R^{3\times 3}.
-\]
-We assume \e{homogeneous} material, which means that a direct spatial dependence is not given and we thus omit the argument.
-Further, due to the principle of material frame-indifference \cite[p.198]{Holzapfel2000}, $\vS$
-may actually only depend on the rotation-invariant part of $\vF$.
+Loosely, $\vP(X,t)$ (as a two-point tensor) describes the stresses in the current configuration per unit (undeformed) reference area at a reference point $X$.
+The second Piola-Kirchhoff tensor is purely reference-based and describes the stresses in the reference configuration
+per unit (undeformed) reference area at a reference point $X$, see \cite[p. 145ff]{Bonet2008}.
+
+Generally, prescribing the stress tensors (in one form or another) will result in different material behaviour.
+Usually, this stress somehow depends on the deformation $\vF(X,t)$ and $X$ (in case of inhomogeneous material).
+
+\subsubsection{Hyperelasticity}
+In our setting we deal with \e{hyperelastic materials}, which are characterized by the fact that the current stress is only dependent on the
+current configuration/deformation at times $0$ and $t$.
+By the variational approach, we see that the internal virtual work conjugate of $\vP$ is $\dot{\vF}$,
+which allows us to define a \e{elastic potential} or \e{stored strain energy function} as
+\begin{align}
+	\Psi_F(\vF(X,t),X) := \intl{0}{t}\vP(X,s):\dot{\vF}(X,s)ds,
+\end{align}
+which denotes the work done by the stresses per unit undeformed volume from initial to current configuration at $t$,
+see \cite[p.156]{Bonet2008} or \cite[p.207]{Holzapfel2000}.
+Now, by definition, we have
+\begin{align}
+	\dot{\Psi}_F(\vF(X,t),X) = \vP(X,t):\dot{\vF}(X,t)\label{eq:psif_dt1}
+\end{align}
+But considering the analytical time derivative of $\Psi_F$ also gives 
+\begin{align}
+	\d{\Psi_F}{t}(\vF(X,t),X) = \d{\Psi_F}{\vF}(\vF(X,t),X):\d{\vF}{t}(X,t),\label{eq:psif_dt2} 
+\end{align}
+leads to
+\begin{align*}
+	0 &= \dot{\Psi}_F(\vF(X,t),X) - \dot{\Psi}_F(\vF(X,t),X)\\
+	 &= \vP(X,t):\dot{\vF}(X,t) - \d{\Psi_F}{\vF}(\vF(X,t),X):\dot{\vF}(X,t)\\
+	 &= \left(\vP(X,t) - \d{\Psi_F}{\vF}(\vF(X,t),X)\right):\dot{\vF}(X,t)
+\end{align*}
+As this must hold for any $\vF$ (and hence $\dot{\vF}$) we obtain the relation
+\begin{align}
+	\vP(X,t) &= \d{\Psi_F}{\vF}(\vF(X,t),X).
+\end{align}
+This yields a convenient way of specifying a material stress tensor by providing a suitable $\Psi_F$.
+As we will consider \e{homogeneous} material, we will omit the direct spatial dependency of $\Psi_F$ on $X$ in the following.
+
+Further, due to the principle of material frame-indifference \cite[p.198]{Holzapfel2000}, any tensor (e.g. $\vP$)
+may actually only depend on the rotation-invariant part of $\vF$, i.e. $\Psi_F$ must also be invariant under rigid body rotations.
 For any fixed $X,t$ we can decompose $\vF = \vR\vU$ (\cite[p.85]{Holzapfel2000}) with a
 \e{rotation} part $\vR$ with $\vR^T\vR = \vI$ and \e{stretch} part $\vU = \vU^T$.
-Thus $\vS$ may only depend on $\vU$; since
+As
 \[
 	\vC = \vF^T\vF = (\vR\vU)^T\vR\vU = \vU^T\vR^T\vR\vU = \vU\vU = \vU^2, 
 \]
-we will assume that
-\[
-	\vS(X,t) = \Sfun(\vC(X,t))
-\]
-for suitable tensor function $\Sfun$.
-We also introduce the concept of a \e{fibre direction} $\va_0(X) \in\R^3$, where we will omit the argument $X$ in the following.
-Then, for \e{hyperelastic and transversely isotropic} material we have the definition
-\[
-	\vS(X,t) = \Sfun(\vC(X,t)) := 2\d{\Psi}{\vC}(\vC(X,t),\va_0(X)),
-\]
-where $\Psi$ is called \e{strain-energy} function, see \cite[p.207]{Holzapfel2000}.
+one usually defines a $\Psi_C$ depending on $\vC$ instead of $\vF$.
 
-\subsubsection{Invariants}
-We further have for any tensor $\vA$ with eigenvalues $\lambda_1,\lambda_2,\lambda_3$ the \e{invariants}
+Omitting the $(X,t)$-arguments, consider
 \begin{align}
-	I_1(\vA) &:= \tr\vA = \lambda_1 + \lambda_2 + \lambda_3\label{def:I1}\\
-	I_2(\vA) &:= \frac{1}{2}\left((\tr \vA)^2 - \tr\vA^2\right) = \lambda_1\lambda_2 + \lambda_1\lambda_3 + \lambda_2\lambda_3\\
-	I_3(\vA) &:= \det\vA = \lambda_1\lambda_2\lambda_3\label{def:I3}\\
-	I_4(\vA,\vv) &:= \vv\cdot\vA\vv = \vA : (\vv \otimes \vv)\label{def:I4} =: \lambda^2_{\vv}\\
-	I_5(\vA,\vv) &:= \vv\cdot\vA^2\vv\label{def:I5}
+	\vP:\dot{\vF} &= \vF\vS : \dot{\vF} = \tr((\vF\vS)^T\dot{\vF}) = \tr(\vS^T\vF^T\dot{\vF})\\
+	&= \vS : (\vF^T\dot{\vF}) = \vS : \frac{1}{2}(\vF^T\dot{\vF} + \vF^T\dot{\vF})  = \vS : \frac{1}{2}(\dot{\vF}^T\vF + \vF^T\dot{\vF})\\
+	&= \vS : \frac{1}{2}\dot{\vC} = \frac{1}{2}\vS : \dot{\vC}
 \end{align}
-with derivatives for \e{symmetric} $\vA$
+We hence can define
+\begin{align}
+	\Psi_C(\vC(X,t)) &:= \frac{1}{2}\intl{0}{t}\vS(X,s):\dot{\vC}(X,s)ds\\
+		& = \intl{0}{t}\vP(X,s):\dot{\vF}(X,s)ds = \Psi_F(\vF(X,t)),
+\end{align}
+which gives the same strain energy function, albeit defined using $\vC$ instead of $\vF$.
+The same argument as with \eqref{eq:psif_dt1}, \eqref{eq:psif_dt2} yields
+\begin{align}
+	0 &= \left(\frac{1}{2}\vS(X,t) - \d{\Psi_C}{\vC}(\vC(X,t))\right):\dot{\vC}(X,t).\label{eq:secondpiolahyper}
+\end{align}
+As again $\vC,\dot{\vC}$ is assumed arbitrary we obtain a way to specify $\vS$ via $\Psi_C$ as
+\begin{align}
+	\vS(X,t) & := 2\d{\Psi_C}{\vC}(\vC(X,t)).
+\end{align}
+As we will stick with this perspective, we will simply use $\Psi := \Psi_C$ from now on.
+
+\subsubsection{Incompressibility}
+Further, we consider \e{incompressible} material, which is expressed by the condition 
+\[
+	1 = J(X,t) = \det\vF(X,t) = \sqrt{\vC(X,t)}\quad\fo X,t.
+\]
+This especially means
+\begin{align}
+	0 &= \d{J}{t}(X,t) = \d{}{t}\sqrt{\det\vC(X,t)}\nonumber\\
+	&= \d{\sqrt{\det\vC(X,t)}}{\det\vC(X,t)}\d{\det\vC(X,t)}{\vC(X,t)}:\d{\vC}{t}(X,t)\nonumber\\
+	&=\frac{1}{2}\frac{1}{\sqrt{\det\vC(X,t)}} \det(\vC(X,t))\vC(X,t)^{-1}:\dot{\vC}(X,t)\nonumber\\
+	&=\frac{1}{2}\sqrt{\det\vC(X,t)}\vC(X,t)^{-1}:\dot{\vC}(X,t)\nonumber\\
+	&=\frac{1}{2}J(X,t)\vC(X,t)^{-1}:\dot{\vC}(X,t).\label{def:cincompconstr}
+\end{align}
+Now, comparing equations \eqref{eq:secondpiolahyper} and \eqref{def:cincompconstr} we obtain
+\begin{align}
+	0 &= \left(\frac{1}{2}\vS(X,t) - \d{\Psi}{\vC}(\vC(X,t)) + \gamma\frac{1}{2}J(X,t)\vC(X,t)^{-1}\right):\dot{\vC}(X,t),\\
+	\vS(X,t) &= 2\d{\Psi}{\vC}(\vC(X,t)) + \gamma J(X,t)\vC(X,t)^{-1},\label{def:incompressible_secondpiola}
+\end{align}
+where $\gamma$ is an arbitrary scalar.
+In order to relate this quantity to a physical quantitiy, we consider the concept of hydrostatic pressure in a small detour.
+
+\paragraph{Relation to hydrostatic pressure}
+The Cauchy stress tensor $\vsig$ can be split into a \e{volumetric} and \e{deviatoric} part via
+\begin{align}
+	\vsig &= \underbrace{\vsig - p\vI}_{=:\vsig'} + p\vI, & p &:= \frac{1}{3}\tr\vsig.
+\end{align}
+The resulting deviatoric part is trace-free, e.g.
+\begin{align}
+	\tr{\vsig'} &= \tr\left(\vsig - \frac{1}{3}(\tr\vsig)\vI\right) = \suml{i=1}{3}(\vsig_{ii} - \frac{1}{3}\tr\vsig) = \tr\vsig - \tr\vsig = 0.
+\end{align}
+Here, the scalar $p$ is called the \e{hydrostatic pressure}.
+From the definition \eqref{def:secondpiola} of the second Piola-Kirchhoff stress tensor we obtain the same split for $\vS$
+(omitting $X,t$ arguments for readability) via
+\begin{align}
+	\vS &= J\vF^{-1}\vsig\vF^{-T} = J\vF^{-1}(\vsig' + p\vI)\vF^{-T}\\
+		&= J\vF^{-1}\vsig'\vF^{-T} + pJ\vF^{-1}\vF^{-T}\\
+		&=: \vS' + pJ\vC^{-1}.
+\end{align}
+Now, $\vS$ is not necessarily trace-free anymore, but we identify the property
+\begin{align}
+	\vS' : \vC &= J\vF^{-1}\vsig'\vF^{-T} : \vC = J\tr\bigl(\vF^{-1}\vsig'\vF^{-T}\vC\bigr)\\
+		&= J\tr\bigl(\vF^{-1}\vsig'\vF^{-T}\vF^T\vF\bigr) = J\tr\bigl(\vsig'\vF^{-T}\vF^T\vF\vF^{-1}\bigr)\\
+		&= \tr\vsig' = 0.
+\end{align}
+With this an explicit expression for the hydrostatic pressure can be given as
+\begin{align}
+	\vS : \vC &= (\vS' + pJ\vC^{-1}) : \vC = \vS': \vC + pJ\vC^{-1} : \vC\\
+	&= pJ\tr(\vC^{-1}\vC) = pJ\tr(\vI) = 3pJ,\label{def:hydrostaticpressure}
+\end{align}
+Now using \eqref{def:incompressible_secondpiola} in \eqref{def:hydrostaticpressure} gives
+\begin{align}
+	p &= \frac{1}{3}J^{-1}\vS : \vC\\
+	  &= \frac{1}{3}J^{-1}\left[2\d{\Psi}{\vC}(\vC) + \gamma J\vC^{-1}\right] : \vC\\
+	  &= \gamma + \frac{2}{3}J^{-1}\d{\Psi}{\vC}(\vC):\vC,
+\end{align}
+so $p$ and $\gamma$ coincide if $\d{\Psi}{\vC}(\vC):\vC = 0$.
+According to \cite[p. 168]{Bonet2008}, this holds true for a modified $\Psi$ given by
+\begin{align}
+	\hat{\Psi}(\vC) &:= \Psi(\det(\vC)^{-\frac{1}{3}}\vC)
+\end{align}
+Now, we can finally write
+\begin{align}
+	\vS(X,t) = 2\d{\hat\Psi}{\vC}(\vC(X,t)) + pJ(X,t)\vC^{-1}(X,t).\label{def:secondpiola_pressure}
+\end{align}
+Note that in general
+\begin{align*}
+	\d{}{\vC}\det(\vC)^{-\frac{1}{3}}\vC &= -\frac{1}{3}\det(\vC)^{-\frac{4}{3}}\det\vC \vC^{-1} \vC + \det(\vC)^{-\frac{1}{3}}\\
+		&=-\frac{1}{3}\det(\vC)^{-\frac{1}{3}} + \det(\vC)^{-\frac{1}{3}}\\
+		&=\frac{2}{3}\det(\vC)^{-\frac{1}{3}},
+\end{align*}
+and hence
+\begin{align}
+	\d{\hat\Psi}{\vC}(\vC) = \d{\Psi}{\vC}(\det(\vC)^{-\frac{1}{3}}\vC)
+	= \frac{2}{3}\det(\vC)^{-\frac{1}{3}}\d{\Psi}{\vC}(\det(\vC)^{-\frac{1}{3}}\vC) \neq \d{\Psi}{\vC}(\vC).  
+\end{align}
+For the case of incompressible material we have $\det\vC = 1$.
+Hence $\hat{\Psi} = \Psi$ and we have the final form of $\vS$ for incompressible hyperelastic material:
+\begin{align}
+	\vS(X,t) = 2\d{\Psi}{\vC}(\vC(X,t)) + p\vC^{-1}(X,t).\label{def:incompressible_secondpiola_pressure}
+\end{align}
+
+\subsubsection{(Transversely) isotropic material}
+We will also consider \e{isotropic} material, which means the material response is the same, independent from any rotation or translation of
+the reference domain.
+In other words, the strain energy function $\Psi$ is rotation-invariant, as the definition of stress tensors via derivatives already ensures translation invariance. 
+The introduction of \e{fibres} via a fibre direction $\va_0(X)\in\R^3$
+in the described material leads to the extended notion of \e{transversely isotropic} material, where
+the strain energy function is given as
+\[
+	\Psi(\vC,\va_0\otimes \va_0),
+\]
+where the rotation-invariance holds for both arguments.
+
+For any tensor $\vA$ with eigenvalues $\lambda_1,\lambda_2,\lambda_3$ we have the quantities
+\begin{align}
+	I_1(\vA) &:= \tr\vA = \lambda_1 + \lambda_2 + \lambda_3,\label{def:I1}\\
+	I_2(\vA) &:= \frac{1}{2}\left((\tr \vA)^2 - \tr\vA^2\right) = \lambda_1\lambda_2 + \lambda_1\lambda_3 + \lambda_2\lambda_3,\\
+	I_3(\vA) &:= \det\vA = \lambda_1\lambda_2\lambda_3,\label{def:I3}\\
+	I_4(\vA,\vv) &:= \vv\cdot\vA\vv = \vA : (\vv \otimes \vv)\label{def:I4} =: \lambda^2_{\vv},\\
+	I_5(\vA,\vv) &:= \vv\cdot\vA^2\vv,\label{def:I5}
+\end{align}
+called \e{invariants}, as they are not changing if $\vA$ is rotated by any proper orthogonal matrix.
+For \e{symmetric} $\vA$ we have the derivatives of the invariants given as
 \begin{align}
 	\d{I_1}{\vA}(\vA) &:= \d{\tr\vA}{\vA}(\vA) = \d{\vI:\vA}{\vA}(\vA) = \vI\\
 	\d{I_2}{\vA}(\vA) &:= I_1(\vA)\vI - \vA\\
 	\d{I_3}{\vA}(\vA) &:= I_3\vA^{-1}\\
-	\d{I_4}{\vA}(\vA) &:= \vv \otimes \vv\label{def:dI4}\\
-	\d{I_5}{\vA}(\vA) &:= \vv \otimes \vA\vv + \vv\vA \otimes \vv,
+	\d{I_4}{\vA}(\vA,\vv) &:= \vv \otimes \vv\label{def:dI4}\\
+	\d{I_5}{\vA}(\vA,\vv) &:= \vv \otimes \vA\vv + \vv\vA \otimes \vv,
 \end{align}
-see \cite[p.216/p.268]{Holzapfel2000}.
+see e.g. \cite[p.216/p.268]{Holzapfel2000}.
 
 Now, $\Psi$ can actually be formulated using the invariants \eqref{def:I1}-\eqref{def:I5} as
 \[
-	\Psi(\vC) = \Psi(I_1(\vC),I_2(\vC),I_3(\vC),I_4(\vC,\va_0),I_5(\vC,\va_0)).
+	\Psi(\vC,\va_0) = \Psi(I_1(\vC),I_2(\vC),I_3(\vC),I_4(\vC,\va_0),I_5(\vC,\va_0)).
 \]
-This gives the general form
+for which we have
 \begin{align}
-	\vS(X,t) &= 2\d{\Psi}{\vC}(I_1,I_2,I_3,I_4,I_5)\\
-		&= \d{\Psi}{I_1}\d{I_1}{\vC} + \d{\Psi}{I_2}\d{I_2}{\vC} + \d{\Psi}{I_3}\d{I_3}{\vC} + \d{\Psi}{I_4}\d{I_4}{\vC} + \d{\Psi}{I_5}\d{I_5}{\vC}\\
-		&= 2\Biggl[\left(\d{\Psi}{I_1} + I_1\d{\Psi}{I_2}\right)\vI - \d{\Psi}{I_2}\vC + I_3\d{\Psi}{I_3}\vC^{-1}\\
-		&\quad+ \d{\Psi}{I_4}\va_0\otimes\va_0 + \d{\Psi}{I_5}(\va_0\otimes\vA\va_0 + \va_0\vA\otimes\va_0)\Biggr].
+	\d{\Psi}{\vC}(I_1,I_2,I_3,I_4,I_5) &=
+		\d{\Psi}{I_1}\d{I_1}{\vC} + \d{\Psi}{I_2}\d{I_2}{\vC} + \d{\Psi}{I_3}\d{I_3}{\vC} + \d{\Psi}{I_4}\d{I_4}{\vC} + \d{\Psi}{I_5}\d{I_5}{\vC}\\
+		&= \left(\d{\Psi}{I_1} + I_1\d{\Psi}{I_2}\right)\vI - \d{\Psi}{I_2}\vC + I_3\d{\Psi}{I_3}\vC^{-1}\\
+		&\quad+ \d{\Psi}{I_4}\va_0\otimes\va_0 + \d{\Psi}{I_5}(\va_0\otimes\vA\va_0 + \va_0\vA\otimes\va_0).
 \end{align}
 
-Further, we consider \e{incompressible} material, which is expressed by the condition $J(X,t) = 1 \fo X,t$.
-This leads to the constant third invariant $I_3 \equiv 1$, where an additional Lagrange-multiplier $p$ is introduced
-to satisfy the condition via
-\begin{align}
-	\vS(X,t) = p\vC^{-1}(X,t) + 2\d{\Psi}{\vC}(\vC(X,t))
-\end{align}
-
-In the following, we will specify different $\Psi$ to create an additive split as 
+Since we consider incompressible material, $\Psi$ will not depend on the third invariant $I_3 = \det\vC = 1$ as this is already captured in the hydrostatic pressure. 
+In the following, we will specify different $\Psi(I_1,I_2,I_4,I_5)$ depending on different invariants to create an additive split as 
 \begin{align}
 	\vS(X,t) = p\vC^{-1}(X,t) + \vSi(X,t) + \vSa(X,t) + \vSf(X,t)\label{def:S_split}
 \end{align}
@@ -172,12 +308,12 @@ This gives
 \subsubsection{Overall stress tensor}
 Adding the different parts together as given in \eqref{def:S_split} now gives
 \begin{align}
-	\vS(X,t) &= 2(c_{10} + I_1c_{01})\vI - 2c_{01}\vC(X,t)\\
+	\vS(X,t) &= p\vC^{-1}(X,t) + 2(c_{10} + I_1c_{01})\vI - 2c_{01}\vC(X,t)\\
 			 &\quad+\Biggl[\left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d-2}(X,t) - b_1\lambda_f^{-2}(X,t)\right)\nonumber\\
 			 &\quad+\frac{p^{max}}{\lambda_f(X,t)}\gamma\left(\alpha,\lambda_f(X,t),\d{\lambda_f}{t}(X,t)\right)\Biggr]\va_0(X)\otimes\va_0(X)\nonumber\\
 	g(\lambda_f)&:= \left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d-2} - b_1\lambda_f^{-2}\right)+\frac{p^{max}}{\lambda_f}\gamma\left(\alpha,\lambda_f,\d{\lambda_f}{t}\right)\\			 
 	\vP(X,t) &= \vF(X,t)\vS(X,t)\label{def:completeP}\\
-			 &= 2(c_{10} + I_1(\vC(X,t))c_{01})\vF(X,t) - 2c_{01}\vF(X,t)\vC(X,t)\nonumber\\
+			 &= p\vF^{-T}(X,t) + 2(c_{10} + I_1(\vC(X,t))c_{01})\vF(X,t) - 2c_{01}\vF(X,t)\vC(X,t)\nonumber\\
 			 &\quad+g(\lambda_f(X,t))\vF(X,t)\va_0(X)\otimes\va_0(X)\nonumber
 \end{align}
 
