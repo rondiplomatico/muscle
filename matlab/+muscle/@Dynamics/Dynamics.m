@@ -2,42 +2,66 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     
     
     properties
+       System;
        
+       c10 = 6.352e-10;
+       c01 = 3.627;
     end
     
     methods
         function this = Dynamics(sys)
             this.System = sys;
             
+            dfe = this.System.DisplFE;
+            
+            d = dfe.NumDofs * 3;
+            this.xDim = d;
+            this.fDim = d;
         end
         
         function dy = evaluate(this, y, t, mu)
             g = this.System.Model.Geometry;
-            
-            gp = g.gaussp;
-            c = g.cubes;
-            for m = 1:size(c,1)
-                bval = zeros(8,8);
-                cube = c(m,:);
-                for g = 1:size(gp,2)
-                    xi = gp(:,g); % gauss point \xi
-                    J = det(p(:,cube)*this.gradN(xi));
-%                     gjac(m,g) = det(J);
-                    bval = bval + this.gaussw(g)*this.N(xi)*this.N(xi)'*J;
+            dfe = this.System.DisplFE;
+            globidx = this.System.globidx;
+            dy = zeros(size(y));
+            dpe = dfe.DofsPerElement;
+            ng = g.NumGaussp;
+            for m = 1:dfe.NumElems
+                %elem = dfe.elems(m,:);
+                elemidx = globidx(:,:,m);
+                
+                integrand = zeros(3,dpe);
+                for gp = 1:ng
+                    
+                    % TODO evaluate pressure at gp
+                    p = 0;
+                    
+                    pos = 3*(gp-1)+1:3*gp;
+                    dtn = dfe.transgrad(:,pos,m);
+                    % Get coefficients for dofs of current element
+                    c = y(elemidx);
+                    
+                    F = c * dtn;
+                    
+                    % Invariant I1
+                    I1 = sum(sum(c'*c + dtn*dtn'));
+                    
+                    P = p*inv(F)' + 2*(this.c10 + I1*this.c01)*F;
+                    
+                    integrand = integrand + g.gaussw(gp) * P * dtn' * dfe.elem_detjac(m,gp);
+                    
                 end
-                for j=1:8
-                    Mass(cube(j),cube(j:end)) = Mass(cube(j),cube(j:end)) + bval(j,j:end);
-                end
-            end
+                dy(elemidx) = dy(elemidx) + integrand;
+            end 
         end
         
         function dy = evaluateCoreFun(this, y, t, mu)%#ok
             error('evaluate is overridden directly.');
         end
         
-        function J = getStateJacobian(this, y, t, mu)
-            
-        end
+%         function J = getStateJacobian(this, y, t, mu)
+%             
+%         end
         
         function copy = clone(this)
             % Create new instance

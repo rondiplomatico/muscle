@@ -12,7 +12,7 @@ for the $x,y,z$ components of the $i$-th coefficient and hence identify
 also carrying the arguments through to $\vP(X,t) = \vP(X,\vu(t),\vw(t))$.
 This allows us to define operators $\vK: \R^{3N\times N}\to\R^{3N}, \vg:\R^{3N}\to\R^N$ as
 \begin{align}
-	\vK[k](\vu(t),\vw(t)) &:= \intor\vP(X,\vu(t),\vw(t))\divergence\varphi_k(X) dX, && k=1\ldots N\\
+	\vK[k](\vu(t),\vw(t)) &:= \intor\vP(X,\vu(t),\vw(t))\dpk dX, && k=1\ldots N\\
 	\vg_k(\vu(t)) &:= \intor (\det\vF(X,\vu(t))-1)\psi_k(X)dX, && k=1\ldots N
 \end{align}
 Hence, after the FEM discretization we obtain the constrained ODE / differential-algebraic equation (DAE)
@@ -48,22 +48,22 @@ Here are some important formulas for matrix derivatives etc.:
 \begin{align}
 	%\Rightarrow \d{}{\vU}\vS^{-1} &= \lim_{h\to 0}\frac{(\vS+h\vU)^{-1}-\vS^{-1}}{h} = \lim_{h\to 0}\frac{\vS^{-1} - \vS^{-1}h\vU\vS^{-1}-\vS^{-1}}{h}\nonumber\\
 	%	&= -\vS^{-1}\vU\vS^{-1}\nonumber\\
-	\vF(X,\vu + h\ve[j]_i) &= \vF(X,\vu) + \m{\vnull \\ h\divergence\varphi_j(X)^T\\ \vnull}\leftarrow i\nonumber\\
-	&= \vF(X,\vu) + h\ve_i\otimes\divergence\varphi_j(X),\qquad i=1\ldots3,\ve_i\in\R^3 \text{ unit vec}\nonumber\\
-	\Rightarrow \d{}{u[j]_i}\vF(X,\vu) &= \ve_i\otimes\divergence\varphi_j(X),\qquad i=1\ldots3\nonumber\\
+	\vF(X,\vu + h\ve[j]_i) &= \vF(X,\vu) + \m{\vnull \\ h\dpj^T\\ \vnull}\leftarrow i\nonumber\\
+	&= \vF(X,\vu) + h\ve_i\otimes\dpj,\qquad i=1\ldots3,\ve_i\in\R^3 \text{ unit vec}\nonumber\\
+	\Rightarrow \d{}{u[j]_i}\vF(X,\vu) &= \ve_i\otimes\dpj,\qquad i=1\ldots3\nonumber\\
 	(\vS+\Delta\vU)^{-1} &= \vS^{-1} - \vS^{-1}\Delta\vU\vS^{-1} + \O{|\Delta U|^2}\qquad\cite[p.57]{Bonet2008}\label{eq:matrixinversederivative}\\
-	\vF(X,\vu + h\ve[j]_i)^{-1} &= \left(\vF(X,\vu) + h\ve_i\otimes\divergence\varphi_j(X)\right)^{-1}\nonumber\\
-		&\re{eq:matrixinversederivative}\vF(X,\vu)^{-1} - h\vF(X,\vu)^{-1}(\ve_i\otimes\divergence\varphi_j(X))\vF(X,\vu)^{-1} + \O{h^2}\nonumber\\
-	\Rightarrow\d{}{u[j]_i}\vF^{-1}(X,\vu) &= -\vF(X,\vu)^{-1}(\ve_i\otimes\divergence\varphi_j(X))\vF(X,\vu)^{-1}\nonumber\\
-	\Rightarrow\d{}{u[j]_i}\vF^{-T}(X,\vu) &= -\vF(X,\vu)^{-T}(\divergence\varphi_j(X)\otimes\ve_i)\vF(X,\vu)^{-T}\nonumber
+	\vF(X,\vu + h\ve[j]_i)^{-1} &= \left(\vF(X,\vu) + h\ve_i\otimes\dpj\right)^{-1}\nonumber\\
+		&\re{eq:matrixinversederivative}\vF(X,\vu)^{-1} - h\vF(X,\vu)^{-1}(\ve_i\otimes\dpj)\vF(X,\vu)^{-1} + \O{h^2}\nonumber\\
+	\Rightarrow\d{}{u[j]_i}\vF^{-1}(X,\vu) &= -\vF(X,\vu)^{-1}(\ve_i\otimes\dpj)\vF(X,\vu)^{-1}\nonumber\\
+	\Rightarrow\d{}{u[j]_i}\vF^{-T}(X,\vu) &= -\vF(X,\vu)^{-T}(\dpj\otimes\ve_i)\vF(X,\vu)^{-T}\nonumber
 \end{align}
 
 In detail, we have
 % \begin{align*}
 % 	\d{\vF}{\vu[k]}(X,\vu) &= \nabla_{\vu[k]}\vF(X,\vu)\\
-% 			&= \nabla_{\vu[k]}\sumi \vu[i] \otimes \divergence\varphi_i(X) = \bullet\otimes\divergence\varphi_k(X)\\
+% 			&= \nabla_{\vu[k]}\sumi \vu[i] \otimes \dpi = \bullet\otimes\dpk\\
 % 	\nabla_{\vu[k]}(\det\vF(X,\vu)-1) &= \det(\vF(X,\vu))\vF(X,\vu)^{-1}:\nabla_{\vu[k]}\vF(X,\vu)\\
-% 				&= \det(\vF(X,\vu))\vF(X,\vu)^{-1}:\bullet\otimes\divergence\varphi_k(X)
+% 				&= \det(\vF(X,\vu))\vF(X,\vu)^{-1}:\bullet\otimes\dpk
 % \end{align*}
 \subsubsection{Derivation of $\nabla_{\vu}\vK(\vu,\vw)$}
 \begin{align*}
@@ -72,9 +72,9 @@ In detail, we have
 	 	\vdots & \ddots & \vdots\\
 	   \nabla_{\vu[1]}\vK[N](\vu,\vw) & \ldots & \nabla_{\vu[N]}\vK[N](\vu,\vw)}\\
 	\nabla_{\vu[j]}\vK[k](\vu,\vw) &=\m{\d{\vK[k]}{\vu[j]_1}(\vu,\vw) & \ldots & \d{\vK[k]}{\vu[j]_3}(\vu,\vw)}\in\R^{3\times 3},\quad j,k=1\ldots N\\
-	\d{\vK[k]}{\vu[j]_i}(\vu,\vw) &= \d{}{\vu[j]_i} \intor\vP(X,\vu,\vw)\divergence\varphi_k(X) dX\\
-		&=  \intor\d{\vP}{\vu[j]_i}(X,\vu,\vw) \divergence\varphi_k(X) dX\\
-		&= \sumvk\sumgp \d{\vP}{\vu[j]_i}(\pmp,\vu,\vw) \nabla N_{l(k,m)}(X_p)\jmp\in\R^3
+	\d{\vK[k]}{\vu[j]_i}(\vu,\vw) &= \d{}{\vu[j]_i} \intor\vP(X,\vu,\vw)\dpk dX\\
+		&=  \intor\d{\vP}{\vu[j]_i}(X,\vu,\vw) \dpk dX\\
+		&= \sumvk\sumgp \d{\vP}{\vu[j]_i}(\pmp,\vu,\vw) \dNkmp\jmp\in\R^3
 \end{align*}
 Recall from \eqref{def:completeP} that
 \begin{align*}
@@ -83,35 +83,35 @@ Recall from \eqref{def:completeP} that
 \end{align*}
 we consider the single summands of $\vP$ to derive $\d{\vP}{\vu[j]_i}(X,\vu,\vw)$:
 \begin{align*}
-	 \d{}{\vu[j]_i}p(X,\vw)\vF^{-T}(X,\vu) &= -p(X,\vw)\vF(X,\vu)^{-T}(\divergence\varphi_j(X)\otimes\ve_i)\vF(X,\vu)^{-T}\in\R^{3\times 3}
+	 \d{}{\vu[j]_i}p(X,\vw)\vF^{-T}(X,\vu) &= -p(X,\vw)\vF(X,\vu)^{-T}(\dpj\otimes\ve_i)\vF(X,\vu)^{-T}\in\R^{3\times 3}
 \end{align*}
 \begin{align*}
-	\nabla_{\vu[j]}I_1(\vC(X,\vu)) &\re{eq:I1_basis} \nabla_{\vu[j]}\suml{i,l}{N} (\vu[i] \cdot \vu[l])(\divergence\varphi_i(X) \cdot \divergence\varphi_l(X))\\
-	&= \suml{i}{N} \vu[i](\divergence\varphi_i(X) \cdot \divergence\varphi_j(X)) \in\R^3
+	\nabla_{\vu[j]}I_1(\vC(X,\vu)) &\re{eq:I1_basis} \nabla_{\vu[j]}\suml{i,l}{N} (\vu[i] \cdot \vu[l])(\dpi \cdot \divergence\varphi_l(X))\\
+	&= \suml{i}{N} \vu[i](\dpi \cdot \dpj) \in\R^3
 \end{align*}
 \begin{align*}	 
 	 &\d{}{\vu[j]_i}2(c_{10} + I_1(\vC(X,\vu))c_{01})\vF(X,\vu)\\
 	 =& 2(c_{10} + \d{}{\vu[j]_i}I_1(\vC(X,\vu))c_{01})\vF(X,\vu) + 2(c_{10} + I_1(\vC(X,\vu))c_{01})\d{}{\vu[j]_i}\vF(X,\vu)\\
-	 =& 2(c_{10} + c_{01}\suml{l}{N} \vu[l]_i(\divergence\varphi_l(X) \cdot \divergence\varphi_j(X)))\vF(X,\vu)\\
-	 &+ 2(c_{10} + I_1(\vC(X,\vu))c_{01})\ve_i\otimes\divergence\varphi_j(X)\in\R^{3\times 3}
+	 =& 2(c_{10} + c_{01}\suml{l}{N} \vu[l]_i(\divergence\varphi_l(X) \cdot \dpj))\vF(X,\vu)\\
+	 &+ 2(c_{10} + I_1(\vC(X,\vu))c_{01})\ve_i\otimes\dpj\in\R^{3\times 3}
 \end{align*}
 \begin{align*}
 	\d{}{\vu[j]_i}\vC(X,\vu) &= \d{}{\vu[j]_i}\suml{m,l}{N} (\vu[m] \cdot \vu[l])(\divergence\varphi_m(X) \otimes \divergence\varphi_l(X))\\
-	&= \suml{l}{N} \vu[l]_i(\divergence\varphi_j(X) \otimes \divergence\varphi_l(X))\in\R^{3\times 3}
+	&= \suml{l}{N} \vu[l]_i(\dpj \otimes \divergence\varphi_l(X))\in\R^{3\times 3}
 \end{align*}
 \begin{align*}
 	&\d{}{\vu[j]_i}2c_{01}\vF(X,\vu)\vC(X,\vu)\\
 	=& 2c_{01}\left(\left(\d{}{\vu[j]_i}\vF(X,\vu)\right)\vC(X,\vu) + \vF(X,\vu)\d{}{\vu[j]_i}\vC(X,\vu)\right)\\
-	=& 2c_{01}\left(\left(\ve_i\otimes\divergence\varphi_j(X)\right)\vC(X,\vu)
-	+ \vF(X,\vu)\suml{l}{N} \vu[l]_i(\divergence\varphi_j(X) \otimes \divergence\varphi_l(X))\right)\in\R^{3\times 3}
+	=& 2c_{01}\left(\left(\ve_i\otimes\dpj\right)\vC(X,\vu)
+	+ \vF(X,\vu)\suml{l}{N} \vu[l]_i(\dpj \otimes \divergence\varphi_l(X))\right)\in\R^{3\times 3}
 \end{align*}
 \begin{align*}
 	\nabla_{\vu[j]}\lambda_f(X,\vu)^2 &= \nabla_{\vu[j]}\suml{m,l}{N} (\vu[m] \cdot \vu[l])\left(\divergence\varphi_m(X)\cdot a_0(X)\right)(\divergence\varphi_l(X)\cdot a_0(X))\\
-	&= \suml{l}{N} \vu[l]\left(\divergence\varphi_j(X)\cdot a_0(X)\right)(\divergence\varphi_l(X)\cdot a_0(X))\\
+	&= \suml{l}{N} \vu[l]\left(\dpj\cdot a_0(X)\right)(\divergence\varphi_l(X)\cdot a_0(X))\\
 \end{align*}
 \begin{align*}
 	  & \d{}{\vu[j]_i} g(\lambda_f(X,\vu))\vF(X,\vu)\va_0(X)\otimes\va_0(X)\\
-	 =& \left( \d{g}{\lambda_f}(\lambda_f(X,\vu))\d{}{\vu[j]_i}\lambda_f(X,\vu)\vF(X,\vu) + g(\lambda_f(X,\vu))\ve_i\otimes\divergence\varphi_j(X)\right)\va_0(X)\otimes\va_0(X) 
+	 =& \left( \d{g}{\lambda_f}(\lambda_f(X,\vu))\d{}{\vu[j]_i}\lambda_f(X,\vu)\vF(X,\vu) + g(\lambda_f(X,\vu))\ve_i\otimes\dpj\right)\va_0(X)\otimes\va_0(X) 
 \end{align*}
 
 \subsubsection{Derivation of $\nabla_{\vw}\vK(\vu,\vw)$}
@@ -120,9 +120,9 @@ we consider the single summands of $\vP$ to derive $\d{\vP}{\vu[j]_i}(X,\vu,\vw)
 	 = \m{\d{\vK[1]}{\vw_1}(\vu,\vw) & \ldots & \d{\vK[1]}{\vw_N}(\vu,\vw)\\
 	 	\vdots & \ddots & \vdots\\
 	   \d{\vK[N]}{\vw_1}(\vu,\vw) & \ldots & \d{\vK[N]}{\vw_N}(\vu,\vw)}\\
-	\d{\vK[k]}{\vw_i}(\vu,\vw) &= \d{}{\vw_i} \intor\vP(X,\vu,\vw)\divergence\varphi_k(X) dX\\
-		&=  \intor\d{}{\vw_i} \left[p\vF^{-T}(X,\vu) +[\ldots] \right] \divergence\varphi_k(X) dX\\
-		&=  \intor\d{}{d_i} \left[\sumi d_j\psi_j(X)\vF^{-T}(X,\vu) +[\ldots] \right] \divergence\varphi_k(X) dX\\
-		&=  \intor \psi_i(X)\vF^{-T}(X,\vu)\divergence\varphi_k(X) dX\\
-		&= \sumvk\sumgp w_p \psi_i(\pmp)\vF^{-T}(\pmp,\vu) \nabla N_{l(k,m)}(X_p)\jmp\in\R^3
+	\d{\vK[k]}{\vw_i}(\vu,\vw) &= \d{}{\vw_i} \intor\vP(X,\vu,\vw)\dpk dX\\
+		&=  \intor\d{}{\vw_i} \left[p\vF^{-T}(X,\vu) +[\ldots] \right] \dpk dX\\
+		&=  \intor\d{}{d_i} \left[\sumi d_j\psi_j(X)\vF^{-T}(X,\vu) +[\ldots] \right] \dpk dX\\
+		&=  \intor \psi_i(X)\vF^{-T}(X,\vu)\dpk dX\\
+		&= \sumvk\sumgp w_p \psi_i(\pmp)\vF^{-T}(\pmp,\vu) \dNkmp\jmp\in\R^3
 \end{align*}

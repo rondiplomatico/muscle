@@ -78,6 +78,15 @@
 \usepackage{mathtools}
 \DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
 %\newcommand{\sm}[1]{\ensuremath{\left(\begin{smallmatrix}#1\end{smallmatrix}\right)}}
+\newcommand{\Dp}[1]{\nabla\varphi_{#1}(X)}
+\newcommand{\dpk}{\Dp{k}}
+\newcommand{\dpi}{\Dp{i}}
+\newcommand{\dpj}{\Dp{j}}
+% \newcommand{\dpg}[1]{\nabla\varphi_{#1}(\pmp)}
+% \newcommand{\dpgk}{\dpg{k}}
+% \newcommand{\dpgi}{\dpg{i}}
+% \newcommand{\dpgj}{\dpg{j}}
+\newcommand{\dNkmp}{N^\nabla_{l(k,m)}(X_p)}
 
 \allowdisplaybreaks
 \begin{document}
@@ -126,16 +135,16 @@ We define the quantities
 % \end{align*}
 % The second term of \eqref{def:weakform}, with \eqref{def:completeP}, reads as
 % \begin{align*}
-% 	&\intor\vP(X,t)\divergence\varphi_k(X) dX\\ 
+% 	&\intor\vP(X,t)\dpk dX\\ 
 % 		=& \intor2(c_{10} + I_1(\vC(X,t))c_{01})\vF(X,t) - 2c_{01}\vF(X,t)\vC(X,t)\\
-% 		&\quad+g(\lambda_f(X,t))\vF(X,t)\va_0(X)\otimes\va_0(X)\divergence\varphi_k(X)dX\\
-% 		=& \intor2(c_{10} + I_1(\vC(X,t))c_{01})\sumi (\vc_i(t)\otimes \divergence\varphi_i(X))\divergence\varphi_k(X)dX\\
-% 		&-2c_{01}\intor\suml{i,j,l}{N}(\vc_i(t)\cdot \vc_j(t))(\divergence\varphi_l(X)\cdot\divergence\varphi_i(X))(\vc_l(t)\otimes\divergence\varphi_j(X))\divergence\varphi_k(X)dX\\
-% 		&+\intor g(\lambda_f(X,t))\sumi (\vc_i(t)\cdot \va_0(X))(\divergence\varphi_i(X)\cdot\va_0(X))\divergence\varphi_k(X)dX\\
-% 		=& \sumnk\vc_i(t)\intor2(c_{10} + I_1(\vC(X,t))c_{01})(\divergence\varphi_i(X)\cdot\divergence\varphi_k(X))dX\\
+% 		&\quad+g(\lambda_f(X,t))\vF(X,t)\va_0(X)\otimes\va_0(X)\dpkdX\\
+% 		=& \intor2(c_{10} + I_1(\vC(X,t))c_{01})\sumi (\vc_i(t)\otimes \dpi)\dpkdX\\
+% 		&-2c_{01}\intor\suml{i,j,l}{N}(\vc_i(t)\cdot \vc_j(t))(\divergence\varphi_l(X)\cdot\dpi)(\vc_l(t)\otimes\dpj)\dpkdX\\
+% 		&+\intor g(\lambda_f(X,t))\sumi (\vc_i(t)\cdot \va_0(X))(\dpi\cdot\va_0(X))\dpkdX\\
+% 		=& \sumnk\vc_i(t)\intor2(c_{10} + I_1(\vC(X,t))c_{01})(\dpi\cdot\dpk)dX\\
 % 		&-2c_{01}\suml{i,j,l\in\Nk}{}(\vc_i(t)\cdot \vc_j(t))\vc_l(t)
-% 		\intor(\divergence\varphi_l(X)\cdot\divergence\varphi_i(X))(\divergence\varphi_j(X)\cdot\divergence\varphi_k(X))dX\\
-% 		&+\sumnk \intor g(\lambda_f(X,t))(\vc_i(t)\cdot \va_0(X))(\divergence\varphi_i(X)\cdot\va_0(X))\divergence\varphi_k(X)dX
+% 		\intor(\divergence\varphi_l(X)\cdot\dpi)(\dpj\cdot\dpk)dX\\
+% 		&+\sumnk \intor g(\lambda_f(X,t))(\vc_i(t)\cdot \va_0(X))(\dpi\cdot\va_0(X))\dpkdX
 % \end{align*}
 
 \bibliographystyle{plain}

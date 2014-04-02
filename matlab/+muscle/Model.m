@@ -23,7 +23,7 @@ classdef Model < models.BaseFullModel
             this.SaveTag = sprintf('musclemodel_%s','');
             this.Data = data.ModelData(this);
             %this.Data.useFileTrajectoryData;
-            this.T = 150; % [ms]
+            this.T = 1; % [ms]
             this.dt = .1; % [ms]
             
             this.Geometry = cubegeom;
@@ -37,7 +37,7 @@ classdef Model < models.BaseFullModel
             % this.System.MaxTimestep = 0.0005; % [ms]
             % this.ODESolver = solvers.SemiImplicitEuler(this);
             
-            this.ODESolver = solvers.MLWrapper(@ode15s);
+            this.ODESolver = solvers.MLode15i;
             this.System.MaxTimestep = []; %model.dt;
         end
         

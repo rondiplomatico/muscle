@@ -63,6 +63,7 @@ classdef cubegeom < handle
     properties(Dependent)
         NumCubes;
         NumNodes;
+        NumGaussp;
     end
     
     properties(SetAccess=private)
@@ -79,11 +80,16 @@ classdef cubegeom < handle
             end
             this.pts = pts;
             this.cubes = cubes;
-%             s = RandStream('mt19937ar','Seed',1);
-%             this.gaussp = 2*(s.rand(3,5)-.5);
-%             this.gaussw = s.rand(1,5);
-            this.gaussp = [0 0 0]';
-            this.gaussw = 1;
+            s = RandStream('mt19937ar','Seed',1);
+
+            % Init 27 Gauss points for 3-rule
+            g = [-sqrt(3/5) 0 sqrt(3/5)];
+            w = [5/9 8/9 5/9];
+            [WX,WY,WZ] = meshgrid(w);
+            [GX,GY,GZ] = meshgrid(g);
+            W = WX.*WY.*WZ;
+            this.gaussp = [GX(:) GY(:) GZ(:)]';
+            this.gaussw = W(:);
             
             e = int16.empty(0,2);
             for i=1:size(cubes,1)
@@ -131,25 +137,14 @@ classdef cubegeom < handle
         function nc = get.NumNodes(this)
             nc = size(this.pts,2);
         end
+        
+        function nc = get.NumGaussp(this)
+            nc = size(this.gaussp,2);
+        end
+        
     end
     
     methods(Static)
-%         function [pts, edges] = DemoCubeGrid
-%             % Generate regular grid
-%             [X,Y,Z] = ndgrid(-1:1,-1:1,-1:1);
-%             pts = [X(:) Y(:) Z(:)];
-%             
-%             % Hack: find all points with distance one
-%             sq = sum(pts.*pts,2)';
-%             n = size(pts,1);
-%             r = ((ones(n,1)*sq)' + ones(n,1)*sq - 2*(pts*pts'));
-%             [i,j] = find(tril(r) == 1);
-%             edges = [j i];
-%             
-%             % Slightly deviate the grid
-%             pts = pts + rand(size(pts))*.05;
-%         end
-
         function res = test_CubeGeom
             c = cubegeom;
             [X,Y,Z] = ndgrid(-1:2:1,-1:2:1,-1:2:1);
@@ -160,9 +155,18 @@ classdef cubegeom < handle
             res = true;
         end
         
-        function [pts, cubes] = DemoCubeGrid
+        function [pts, cubes] = DemoCubeGrid(xr,yr,zr)
+            if nargin < 3
+                zr = -1:1;
+                if nargin < 2
+                    yr = -1:1;
+                    if nargin < 1
+                        xr = -1:1;
+                    end
+                end
+            end
             % Generate regular grid
-            [X,Y,Z] = ndgrid(-1:1,-1:1,-1:1);
+            [X,Y,Z] = ndgrid(xr,yr,zr);
             pts = [X(:) Y(:) Z(:)]';
             
             cubes = double.empty(0,8);

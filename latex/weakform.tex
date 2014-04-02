@@ -23,7 +23,7 @@ The right hand side can be transformed as
 As $\H$ is spanned by linear independent $\varphi_k$,
 this gives $3N+N$ equations (for each test function $\varphi_k$, 3D displacement and one constraint) as
 \begin{align}
-	\intor \rho_0(X)\d{\vV}{t}(X,t)\varphi_k(X)dX + \intor\vP(X,t)\divergence\varphi_k(X) dX &= \vnull && \fo k=1\ldots N\label{def:weakform}\\
+	\intor \rho_0(X)\d{\vV}{t}(X,t)\varphi_k(X)dX + \intor\vP(X,t)\dpk dX &= \vnull && \fo k=1\ldots N\label{def:weakform}\\
 	\intor (J(X,t)-1)\psi_k(X)dX &= 0 && \fo k=1\ldots N\label{def:weakform_nb}
 \end{align}
 
@@ -40,28 +40,28 @@ With this we have
 		   = \sumi\m{c_{i,1}\d{\varphi_i}{X_1} & \dots & c_{i,1}\d{\varphi_i}{X_3}\\
 		   				\vdots & \ddots & \vdots\\
 		   				c_{i,3}\d{\varphi_i}{X_1} & \dots & c_{i,3}\d{\varphi_i}{X_3}}\\
-		   &=\sumi \vc_i(t)\cdot \grad\varphi_i(X) = \sumi \vc_i(t)\otimes \divergence\varphi_i(X).
+		   &=\sumi \vc_i(t)\cdot \grad\varphi_i(X) = \sumi \vc_i(t)\otimes \dpi.
 \end{align}
 This can be used to derive the quantities
 \begin{align}
 	I_1(\vC(X,t)) &= \tr\vC(X,t) = \tr(\vF(X,t)^T\vF(X,t)) = \vF(X,t) : \vF(X,t)\nonumber\\
-	&= \sumi \vc_i(t)\otimes \divergence\varphi_i(X) : \sumi \vc_i(t)\otimes \divergence\varphi_i(X)\nonumber\\
-	&= \sumi\sumj \left(\vc_i(t)\otimes \divergence\varphi_i(X)\right) : (\vc_j(t)\otimes \divergence\varphi_j(X))\nonumber\\
-	&= \sumi\sumj (\vc_i(t) \cdot \vc_j(t))(\divergence\varphi_i(X) \cdot \divergence\varphi_j(X))\label{eq:I1_basis}\\
-	\vF(X,t)^T\vF(X,t) &= \sumi\sumj \bigl(\vc_i(t)\otimes\divergence\varphi_i(X)\bigr)^T\vc_j(t)\otimes\divergence\varphi_j(X)\nonumber\\
-	 &= \sumi\sumj \bigl(\divergence\varphi_i(X)\otimes\vc_i(t)\bigr)\vc_j(t)\otimes\divergence\varphi_j(X)\nonumber\\
-	 &=\sumi\sumj (\vc_i(t)\cdot \vc_j(t))\divergence\varphi_i(X)\otimes\divergence\varphi_j(X)\nonumber\\
+	&= \sumi \vc_i(t)\otimes \dpi : \sumi \vc_i(t)\otimes \dpi\nonumber\\
+	&= \sumi\sumj \left(\vc_i(t)\otimes \dpi\right) : (\vc_j(t)\otimes \dpj)\nonumber\\
+	&= \sumi\sumj (\vc_i(t) \cdot \vc_j(t))(\dpi \cdot \dpj)\label{eq:I1_basis}\\
+	\vF(X,t)^T\vF(X,t) &= \sumi\sumj \bigl(\vc_i(t)\otimes\dpi\bigr)^T\vc_j(t)\otimes\dpj\nonumber\\
+	 &= \sumi\sumj \bigl(\dpi\otimes\vc_i(t)\bigr)\vc_j(t)\otimes\dpj\nonumber\\
+	 &=\sumi\sumj (\vc_i(t)\cdot \vc_j(t))\dpi\otimes\dpj\nonumber\\
 	\lambda_f(X,t)^2 &=I_4(\vC(X,t),a_0(X)) = \vC(X,t):(a_0(X)\otimes a_0(X))\nonumber\\
 			&=  \vF(X,t)^T\vF(X,t) : (a_0(X)\otimes a_0(X))\nonumber\\
-			&=  \sumi\sumj (\vc_i(t)\cdot \vc_j(t))\bigl(\divergence\varphi_i(X)\otimes\divergence\varphi_j(X)\bigr) : (a_0(X)\otimes a_0(X))\nonumber\\
-			&=  \sumi\sumj (\vc_i(t)\cdot \vc_j(t))\left(\divergence\varphi_i(X)\cdot a_0(X)\right)(\divergence\varphi_j(X)\cdot a_0(X))\label{eq:lambdaf_basis}\\
-	\d{\lambda_f^2}{t}(X,t) &= 2\lambda_f \suml{i,j}{N} (\vc'_i(t)\cdot \vc_j(t) + \vc_i(t)\cdot \vc'_j(t))\left(\divergence\varphi_i(X)\cdot a_0(X)\right)(\divergence\varphi_j(X)\cdot a_0(X))\nonumber\\
-		&= 4\lambda_f \suml{i,j}{N} (\vc_i(t)\cdot \vc'_j(t))\left(\divergence\varphi_i(X)\cdot a_0(X)\right)(\divergence\varphi_j(X)\cdot a_0(X))\nonumber\\
-    \vF(X,t)\vF(X,t)^T\vF(X,t) &= \sumk\vc_k(t)\otimes\divergence\varphi_k(X)\sumi\sumj (\vc_i(t)\cdot \vc_j(t))\divergence\varphi_i(X)\otimes\divergence\varphi_j(X)\nonumber\\
-    	&= \suml{i,j,k}{N}(\vc_i(t)\cdot \vc_j(t))(\vc_k(t)\otimes\divergence\varphi_k(X))\divergence\varphi_i(X)\otimes\divergence\varphi_j(X)\nonumber\\
-    	&= \suml{i,j,k}{N}(\vc_i(t)\cdot \vc_j(t))(\divergence\varphi_k(X)\cdot\divergence\varphi_i(X))(\vc_k(t)\otimes\divergence\varphi_j(X))\nonumber\\
-    \vF(X,t)(\va_0(X)\otimes\va_0(X)) &= \sumi \vc_i(t)\otimes \divergence\varphi_i(X)(\va_0(X)\otimes\va_0(X))\nonumber\\
-    &= \sumi (\vc_i(t)\otimes \va_0(X))(\divergence\varphi_i(X)\cdot\va_0(X))\nonumber
+			&=  \sumi\sumj (\vc_i(t)\cdot \vc_j(t))\bigl(\dpi\otimes\dpj\bigr) : (a_0(X)\otimes a_0(X))\nonumber\\
+			&=  \sumi\sumj (\vc_i(t)\cdot \vc_j(t))\left(\dpi\cdot a_0(X)\right)(\dpj\cdot a_0(X))\label{eq:lambdaf_basis}\\
+	\d{\lambda_f^2}{t}(X,t) &= 2\lambda_f \suml{i,j}{N} (\vc'_i(t)\cdot \vc_j(t) + \vc_i(t)\cdot \vc'_j(t))\left(\dpi\cdot a_0(X)\right)(\dpj\cdot a_0(X))\nonumber\\
+		&= 4\lambda_f \suml{i,j}{N} (\vc_i(t)\cdot \vc'_j(t))\left(\dpi\cdot a_0(X)\right)(\dpj\cdot a_0(X))\nonumber\\
+    \vF(X,t)\vF(X,t)^T\vF(X,t) &= \sumk\vc_k(t)\otimes\dpk\sumi\sumj (\vc_i(t)\cdot \vc_j(t))\dpi\otimes\dpj\nonumber\\
+    	&= \suml{i,j,k}{N}(\vc_i(t)\cdot \vc_j(t))(\vc_k(t)\otimes\dpk)\dpi\otimes\dpj\nonumber\\
+    	&= \suml{i,j,k}{N}(\vc_i(t)\cdot \vc_j(t))(\dpk\cdot\dpi)(\vc_k(t)\otimes\dpj)\nonumber\\
+    \vF(X,t)(\va_0(X)\otimes\va_0(X)) &= \sumi \vc_i(t)\otimes \dpi(\va_0(X)\otimes\va_0(X))\nonumber\\
+    &= \sumi (\vc_i(t)\otimes \va_0(X))(\dpi\cdot\va_0(X))\nonumber
 \end{align}
 
 \subsection{Domain decomposition, basis functions and master reference volume}
@@ -89,7 +89,8 @@ Using the notation
 \end{align}
 which satisfies $\Omega_m = \Phi_m(\Or)$ and has the Jacobian
 \begin{align}
-	\nabla\Phi_m(X) &= \vX^m\nabla\vN(X) \in \R^{3\times 3}.\label{def:refbasis_jacobian}
+	J\Phi_m(X) &= \m{\grad \Phi_{m_1}(X)\\\grad \Phi_{m_2}(X)\\\grad \Phi_{m_3}(X)\\} 
+	= \vX^m\m{\grad N_1(X)\\ \vdots\\\grad N_8(X)} = \vX^m\nabla\vN(X) \in \R^{3\times 3}.\label{def:refbasis_jacobian}
 \end{align}
  
 With the edge/volume/neighbor index sets
@@ -107,6 +108,11 @@ we now define the basis functions $\varphi_k$ via
 	l(k,m) &:= \{i\in\{1\ldots 8\}~|~ N_i(\Phi_m^{-1}(\vx_k))=1\},\quad m=1\ldots M.
 \end{align}
 Here $l(k,m)$ refers to the local corner index of the basis function on $\Omega_m$ that equals one at $\vx_k$.
+For the gradient of $\varphi_k$ we thus obtain
+\begin{align*}
+	\nabla\varphi_k(X)^T &= \grad\varphi_k(X) \re{def:referencebasisfun} \grad (N_{l(k,m)}(\Phi^{-1}_m(X)))\\
+					  &= \grad N_{l(k,m)}(\Phi^{-1}_m(X))J\Phi^{-1}_m(X) && X\in\Omega_m, m\in V_k
+\end{align*}
 
 We further apply a Gauss Quadrature on $\Om$ with
 \begin{align}
@@ -123,8 +129,17 @@ With the above and the transformation theorem we now have for any integrable $f(
 	& = \intl{\Om}{}f(\Phi_m(X),t)\varphi_k(\Phi_m(X))|\det \nabla\Phi(X)|dX\nonumber\\
 	& \re{def:gaussintapprox} \sumgp w_pf(\pmp,t)\varphi_k(\pmp)|\det \nabla\Phi(X_p)|\nonumber\\
 	& \re{def:referencebasisfun} \sumgp w_pf(\pmp,t)N_{l(k,m)}(\Phi_m^{-1}(\pmp))|\det \nabla\Phi(X_p)|\nonumber\\
-	& \re{def:refbasis_jacobian} \sumgp w_pf(\pmp,t)N_{l(k,m)}(X_p)|\det \vX^m\nabla\vN(X_p)|\nonumber\\
-	\intl{\Omega_m}{}f(X,t)\nabla\varphi_k(X)dX &= \sumgp w_pf(\pmp,t)\nabla N_{l(k,m)}(X_p)|\det \vX^m\nabla\vN(X_p)|\label{eq:fgradphidx}
+	& \re{def:refbasis_jacobian} \sumgp w_pf(\pmp,t)N_{l(k,m)}(X_p)|\det \vX^m\nabla\vN(X_p)|\nonumber
+\end{align}
+We further have
+\begin{align}
+	\nabla\varphi_k(\pmp)^T &= \grad N_{l(k,m)}(\Phi^{-1}_m(\pmp))J\Phi^{-1}_m(\pmp)\nonumber\\
+		&= \grad N_{l(k,m)}(X_p))J\Phi^{-1}_m(\Phi_m(X_p))\nonumber\\
+		&= \grad N_{l(k,m)}(X_p))\left(J\Phi_m(X_p)\right)^{-1}\nonumber\\
+	\nabla\varphi_k(\pmp) &= \left(J\Phi_m(X_p)\right)^{-T}\nabla N_{l(k,m)}(X_p))\nonumber\\
+		&= (\vX^m\nabla\vN(X_p))^{-T}\nabla N_{l(k,m)}(X_p)\\
+		&=: \dNkmp \in\R^3\\
+	\intl{\Omega_m}{}f(X,t)\nabla\varphi_k(X)dX &= \sumgp w_pf(\pmp,t)\dNkmp|\det \vX^m\nabla\vN(X_p)|\label{eq:fgradphidx}
 \end{align}
 
 \subsection{Application to weak form}
@@ -144,34 +159,34 @@ Finally, for a fixed $k\in\{1,\ldots, N\}$ we have for the first term of \eqref{
 
 The second term of \eqref{def:weakform}, with \eqref{def:completeP}, reads as
 \begin{align*}
-		&\intor\vP(X,t)\divergence\varphi_k(X) dX\\
-		=& \suml{m=1}{M}\intl{\Omega_m}{}\vP(X,t)\divergence\varphi_k(X) dX
-			= \sumvk\intl{\Omega_m}{}\vP(X,t)\divergence\varphi_k(X) dX\\
-		\re{eq:fgradphidx}&\sumvk\sumgp w_p\vP(\pmp,t)\nabla N_{l(k,m)}(X_p)|\det \vX^m\nabla\vN(X_p)|\\
-		\re{def:jacshorthand}&\sumvk\sumgp w_p\vP(\pmp,t)\nabla N_{l(k,m)}(X_p)\jmp\\
+		&\intor\vP(X,t)\dpk dX\\
+		=& \suml{m=1}{M}\intl{\Omega_m}{}\vP(X,t)\dpk dX
+			= \sumvk\intl{\Omega_m}{}\vP(X,t)\dpk dX\\
+		\re{eq:fgradphidx}&\sumvk\sumgp w_p\vP(\pmp,t)\dNkmp|\det \vX^m\nabla\vN(X_p)|\\
+		\re{def:jacshorthand}&\sumvk\sumgp w_p\vP(\pmp,t)\dNkmp\jmp\\
 		\re{def:completeP}&\sumvk\sumgp w_p\Bigl[p(\pmp,t)\vF^{-T}(\pmp,t) + 2(c_{10} + I_1(\vC(\pmp,t))c_{01})\vF(\pmp,t)\\
-			 &- 2c_{01}\vF(\pmp,t)\vC(\pmp,t)+g(\lambda_f(\pmp,t))\vF(\pmp,t)\va_0(\pmp)\otimes\va_0(\pmp)\Bigr]\nabla N_{l(k,m)}(X_p)\jmp\nonumber.
+			 &- 2c_{01}\vF(\pmp,t)\vC(\pmp,t)+g(\lambda_f(\pmp,t))\vF(\pmp,t)\va_0(\pmp)\otimes\va_0(\pmp)\Bigr]\dNkmp\jmp\nonumber.
 \end{align*}
 In detail we have
 \begin{align*}
 	I_1(\vC(\pmp,t)) &\re{eq:I1_basis} \sumi\sumj (\vc_i(t) \cdot \vc_j(t))(\divergence\varphi_i(\pmp) \cdot \divergence\varphi_j(\pmp))\\
 	&\re{def:referencebasisfun} \suml{i,j\in E_m}{} (\vc_i(t) \cdot \vc_j(t))(\divergence\varphi_i(\pmp) \cdot \divergence\varphi_j(\pmp))\\
-	&\re{def:referencebasisfun} \suml{i,j\in E_m}{} (\vc_i(t) \cdot \vc_j(t))(\nabla N_{l(i,m)}(X_p) \cdot \nabla N_{l(j,m)}(X_p))\\
+	%&\re{def:referencebasisfun} \suml{i,j\in E_m}{} (\vc_i(t) \cdot \vc_j(t))(\nabla N_{l(i,m)}(X_p) \cdot \nabla N_{l(j,m)}(X_p))\\
 	\vF(\pmp,t)\vC(\pmp,t) &= \vF(\pmp,t)\vF(\pmp,t)^T\vF(\pmp,t)\\
     	&= \suml{i,j,k}{N}(\vc_i(t)\cdot \vc_j(t))(\divergence\varphi_k(\pmp)\cdot\divergence\varphi_i(\pmp))(\vc_k(t)\otimes\divergence\varphi_j(\pmp))\\
-    	&= \suml{i,j,q\in E_m}{}(\vc_i(t)\cdot \vc_j(t))(\nabla N_{l(q,m)}(X_p)\cdot\nabla N_{l(i,m)}(X_p))(\vc_q(t)\otimes\nabla N_{l(j,m)}(X_p))\\
+    	%&= \suml{i,j,q\in E_m}{}(\vc_i(t)\cdot \vc_j(t))(\nabla N_{l(q,m)}(X_p)\cdot\nabla N_{l(i,m)}(X_p))(\vc_q(t)\otimes\nabla N_{l(j,m)}(X_p))\\
     \lambda_f(\pmp,t)^2 &\re{eq:lambdaf_basis}
     		\sumi\sumj (\vc_i(t)\cdot \vc_j(t))\left(\divergence\varphi_i(\pmp)\cdot a_0(\pmp)\right)(\divergence\varphi_j(\pmp)\cdot a_0(\pmp))\nonumber\\
-    	&= \suml{i,j\in E_m}{} (\vc_i(t)\cdot \vc_j(t))\left(\nabla N_{l(i,m)}(X_p)\cdot a_0(\pmp)\right)(\nabla N_{l(j,m)}(X_p))\cdot a_0(\pmp))\nonumber
-\end{align*} 
-\begin{align*}  	
+    	%&= \suml{i,j\in E_m}{} (\vc_i(t)\cdot \vc_j(t))\left(\nabla N_{l(i,m)}(X_p)\cdot a_0(\pmp)\right)(\nabla N_{l(j,m)}(X_p))\cdot a_0(\pmp))\nonumber
+%\end{align*} 
+%\begin{align*}  	
     \vF(\pmp,t)(\va_0(\pmp)\otimes\va_0(\pmp)) 
     	&= \sumi (\vc_i(t)\otimes \va_0(\pmp))(\divergence\varphi_i(\pmp)\cdot\va_0(\pmp))\nonumber\\
-    	&= \suml{i\in E_m}{} (\vc_i(t)\otimes \va_0(\pmp))(\nabla N_{l(i,m)}(X_p)\cdot\va_0(\pmp))\nonumber
+    	%&= \suml{i\in E_m}{} (\vc_i(t)\otimes \va_0(\pmp))(\nabla N_{l(i,m)}(X_p)\cdot\va_0(\pmp))\nonumber
 \end{align*}
 By the same arguments, condition/equation \eqref{def:weakform_nb} now reads as
 \begin{align*}
-	\intor (J(X,t)-1)\varphi_k(X)dX &= \sumvk\sumgp w_p (\det\vF(\pmp,t)-1) N_{l(k,m)}(X_p)\jmp\\
+	\intor (J(X,t)-1)\psi_k(X)dX &= \sumvk\sumgp w_p (\det\vF(\pmp,t)-1) N_{l(k,m)}(X_p)\jmp\\
 	&= \sumvk\sumgp w_p \left(\det\left(\sumi \vc_i(t)\otimes \divergence\varphi_i(\pmp)\right)-1\right) N_{l(k,m)}(X_p)\jmp\\
 	&= \sumvk\sumgp w_p \left(\det\left(\sum_{i\in E_m} \vc_i(t)\otimes \divergence\varphi_i(\pmp)\right)-1\right) N_{l(k,m)}(X_p)\jmp.\\
 \end{align*}
