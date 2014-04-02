@@ -274,18 +274,18 @@ with $n=1$ summands, so that
 \end{align}
 with
 \begin{align*}
-		 \d{\Psi}{\lambda_f}(\lambda_f) &= \frac{b_1(d_1-1)}{d_1}\lambda_f^{d-1} - b_1\lambda_f^{-1},\\
+		 \d{\Psi}{\lambda_f}(\lambda_f) &= \frac{b_1(d_1-1)}{d_1}\lambda_f^{d_1-1} - b_1\lambda_f^{-1},\\
 		 \d{\lambda_f}{I_4}(I_4) &= \frac{1}{2\sqrt{I_4}} = \frac{1}{2\lambda_f}.
 \end{align*}
 With \eqref{def:dI4} and the above we get
 \begin{align*}
-	2\d{\Psi}{\vC}(\lambda_f) &= 2\left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d-1} - b_1\lambda_f^{-1}\right) \frac{1}{2\lambda_f}\va_0\otimes\va_0\\
-	&= \left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d-2} - b_1\lambda_f^{-2}\right) \va_0\otimes\va_0,
+	2\d{\Psi}{\vC}(\lambda_f) &= 2\left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d_1-1} - b_1\lambda_f^{-1}\right) \frac{1}{2\lambda_f}\va_0\otimes\va_0\\
+	&= \left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d_1-2} - b_1\lambda_f^{-2}\right) \va_0\otimes\va_0,
 \end{align*}
 leading to
 \begin{align}
-	\vSa(X,t) &= \left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d-2}(X,t) - b_1\lambda_f^{-2}(X,t)\right) \va_0(X)\otimes\va_0(X)\\
-	\vPa(X,t) &= \left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d-2}(X,t) - b_1\lambda_f^{-2}(X,t)\right) \vF(X,t)\va_0(X)\otimes\va_0(X)
+	\vSa(X,t) &= \left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d_1-2}(X,t) - b_1\lambda_f^{-2}(X,t)\right) \va_0(X)\otimes\va_0(X)\\
+	\vPa(X,t) &= \left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d_1-2}(X,t) - b_1\lambda_f^{-2}(X,t)\right) \vF(X,t)\va_0(X)\otimes\va_0(X)
 \end{align}
 
 \subsubsection{Active force tensor $\vSf$}
@@ -309,9 +309,10 @@ This gives
 Adding the different parts together as given in \eqref{def:S_split} now gives
 \begin{align}
 	\vS(X,t) &= p\vC^{-1}(X,t) + 2(c_{10} + I_1c_{01})\vI - 2c_{01}\vC(X,t)\\
-			 &\quad+\Biggl[\left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d-2}(X,t) - b_1\lambda_f^{-2}(X,t)\right)\nonumber\\
+			 &\quad+\Biggl[\left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d_1-2}(X,t) - b_1\lambda_f^{-2}(X,t)\right)\nonumber\\
 			 &\quad+\frac{p^{max}}{\lambda_f(X,t)}\gamma\left(\alpha,\lambda_f(X,t),\d{\lambda_f}{t}(X,t)\right)\Biggr]\va_0(X)\otimes\va_0(X)\nonumber\\
-	g(\lambda_f)&:= \left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d-2} - b_1\lambda_f^{-2}\right)+\frac{p^{max}}{\lambda_f}\gamma\left(\alpha,\lambda_f,\d{\lambda_f}{t}\right)\\			 
+	g(\lambda_f)&:= \left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d_1-2} - b_1\lambda_f^{-2}\right)
+		+\frac{p^{max}}{\lambda_f}\gamma\left(\alpha,\lambda_f,\d{\lambda_f}{t}\right)\label{def:g}\\			 
 	\vP(X,t) &= \vF(X,t)\vS(X,t)\label{def:completeP}\\
 			 &= p\vF^{-T}(X,t) + 2(c_{10} + I_1(\vC(X,t))c_{01})\vF(X,t) - 2c_{01}\vF(X,t)\vC(X,t)\nonumber\\
 			 &\quad+g(\lambda_f(X,t))\vF(X,t)\va_0(X)\otimes\va_0(X)\nonumber

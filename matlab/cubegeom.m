@@ -1,15 +1,45 @@
 classdef cubegeom < handle
 %
 
-%% Cube indexing:
-%  /7---8 1: (-1,-1,-1)
-% 3-+-4/| 2: ( 1,-1,-1)
-% | 5-+-6 3: (-1, 1,-1) 
-% 1---2/  4: ( 1, 1,-1)
-%         5: (-1,-1, 1)
-%         6: ( 1,-1, 1)
-%         7: (-1, 1, 1)
-%         8: ( 1, 1, 1)
+
+%% Cube indexing for triquadratic:
+%       /       /
+%      /       /
+%     7---8---9
+%     |   /    |
+%     5 10     6 /
+%     |/      |/
+%     1---2---3
+%     -1    -1    -1
+%      0    -1    -1
+%      1    -1    -1
+%     -1     0    -1
+%     % 0     0    -1
+%      1     0    -1
+%     -1     1    -1
+%      0     1    -1
+%      1     1    -1
+%     -1    -1     0
+%     % 0    -1     0
+%      1    -1     0
+%     %-1     0     0
+%     % 0     0     0
+%     % 1     0     0
+%     -1     1     0
+%     % 0     1     0
+%      1     1     0
+%     -1    -1     1
+%      0    -1     1
+%      1    -1     1
+%     -1     0     1
+%     % 0     0     1
+%      1     0     1
+%     -1     1     1
+%      0     1     1
+%      1     1     1
+%
+% without combinations 5,11,13,14,15,17 and 23 (they are neither on a
+% corner or an edge due to 2 zero entries)
     
     properties
         % n x 3 position vector of nodes
@@ -21,10 +51,6 @@ classdef cubegeom < handle
         % 2 x k index vector for edges between two points
         edges;
         
-        % cell array of dim n containing indices of all cubes that are
-        % adjacent to the n-th point
-        pts_cubes;
-        
         % m x g The determinants of the deformation jacobians at the gauss
         % points
 %         cube_detjac;
@@ -32,9 +58,6 @@ classdef cubegeom < handle
         % n x 1 cell array containing the indices of the neighboring points
         % of the n-th point
 %         neighbors;
-        
-        % The mass matrix
-        M;
     end
     
     properties(Dependent)
@@ -43,24 +66,6 @@ classdef cubegeom < handle
     end
     
     properties(SetAccess=private)
-        N = @(x)[   (1-x(1,:)).*(1-x(2,:)).*(1-x(3,:));... % 1
-            (1+x(1,:)).*(1-x(2,:)).*(1-x(3,:));...
-            (1-x(1,:)).*(1+x(2,:)).*(1-x(3,:));... % 3
-            (1+x(1,:)).*(1+x(2,:)).*(1-x(3,:));...
-            (1-x(1,:)).*(1-x(2,:)).*(1+x(3,:));... % 5
-            (1+x(1,:)).*(1-x(2,:)).*(1+x(3,:));...
-            (1-x(1,:)).*(1+x(2,:)).*(1+x(3,:));... % 7
-            (1+x(1,:)).*(1+x(2,:)).*(1+x(3,:));]/8;
-
-        gradN = @(x)[-(1-x(2,:)).*(1-x(3,:)) -(1-x(1,:)).*(1-x(3,:)) -(1-x(1,:)).*(1-x(2,:));... % 1
-            (1-x(2,:)).*(1-x(3,:)) -(1+x(1,:)).*(1-x(3,:)) -(1+x(1,:)).*(1-x(2,:));...
-            -(1+x(2,:)).*(1-x(3,:)) (1-x(1,:)).*(1-x(3,:)) -(1-x(1,:)).*(1+x(2,:));... % 3
-            (1+x(2,:)).*(1-x(3,:))  (1+x(1,:)).*(1-x(3,:)) -(1+x(1,:)).*(1+x(2,:));...
-            -(1-x(2,:)).*(1+x(3,:)) -(1-x(1,:)).*(1+x(3,:)) (1-x(1,:)).*(1-x(2,:));... % 5
-            (1-x(2,:)).*(1+x(3,:)) -(1+x(1,:)).*(1+x(3,:)) (1+x(1,:)).*(1-x(2,:));...
-            -(1+x(2,:)).*(1+x(3,:)) (1-x(1,:)).*(1+x(3,:)) (1-x(1,:)).*(1+x(2,:));... % 7
-            (1+x(2,:)).*(1+x(3,:))  (1+x(1,:)).*(1+x(3,:)) (1+x(1,:)).*(1+x(2,:))]/8;
-        
         gaussp;
         
         gaussw;
@@ -74,64 +79,28 @@ classdef cubegeom < handle
             end
             this.pts = pts;
             this.cubes = cubes;
-            s = RandStream('mt19937ar','Seed',1);
+%             s = RandStream('mt19937ar','Seed',1);
 %             this.gaussp = 2*(s.rand(3,5)-.5);
 %             this.gaussw = s.rand(1,5);
             this.gaussp = [0 0 0]';
             this.gaussw = 1;
             
-            this.precomputeStuff;
-        end
-        
-        function precomputeStuff(this)
-            %% Compute edges from cubes.
-            % Mind the corner numbering of the cubes! (see above)
             e = int16.empty(0,2);
-            c = this.cubes;
-            p = this.pts;
-            np = size(p,2);
-            for i=1:size(c,1)
-                hlp = c(i,[1 2 1 3 1 5 3 4 2 4 4 8 3 7 ...
-                           8 7 5 7 6 2 6 5 6 8]);
+            for i=1:size(cubes,1)
+                hlp = cubes(i,[1 2 1 3 1 5 3 4 2 4 4 8 3 7 ...
+                    8 7 5 7 6 2 6 5 6 8]);
                 e(end+1:end+12,:) = reshape(hlp',2,[])';
             end
             e = unique(e,'rows');
             this.edges = e;
             
             %% Compute neighbors
-%             n = cell(np,1);
-%             for i=1:np
-%                 n{i} = unique([e(e(:,1) == i,2); e(e(:,2) == i,1)])';
-%             end
-%             this.neighbors = n;
+            %             n = cell(np,1);
+            %             for i=1:np
+            %                 n{i} = unique([e(e(:,1) == i,2); e(e(:,2) == i,1)])';
+            %             end
+            %             this.neighbors = n;
             
-            %% Compute node to cube indices
-            pv = cell(np,1);
-            for i=1:np
-               pv{i} = find(sum(c == i,2));
-            end
-            this.pts_cubes = pv;
-            
-            %% Mass matrix
-            % Iterate each cube
-            gp = this.gaussp;
-%             gjac = zeros(size(c,1),size(gp,2));
-            Mass = zeros(np,np);
-            for m = 1:size(c,1)
-                bval = zeros(8,8);
-                cube = c(m,:);
-                for g = 1:size(gp,2)
-                    xi = gp(:,g); % gauss point \xi
-                    J = det(p(:,cube)*this.gradN(xi));
-%                     gjac(m,g) = det(J);
-                    bval = bval + this.gaussw(g)*this.N(xi)*this.N(xi)'*J;
-                end
-                for j=1:8
-                    Mass(cube(j),cube(j:end)) = Mass(cube(j),cube(j:end)) + bval(j,j:end);
-                end
-            end
-            this.M = sparse(Mass + Mass');
-%             this.cube_detjac = gjac;
         end
         
         function plot(this, pm)
@@ -147,8 +116,6 @@ classdef cubegeom < handle
             for k=1:size(e,1)
                 plot3(h,p(1,[e(k,1) e(k,2)]),p(2,[e(k,1) e(k,2)]),p(3,[e(k,1) e(k,2)]),'r');
             end
-            h = pm.nextPlot('mass','Mass matrix','node','node');
-            mesh(h,full(this.M));
             
             if nargin < 2
                 pm.done;
@@ -195,7 +162,7 @@ classdef cubegeom < handle
         
         function [pts, cubes] = DemoCubeGrid
             % Generate regular grid
-            [X,Y,Z] = ndgrid(-1:1,-2:1,-1:3);
+            [X,Y,Z] = ndgrid(-1:1,-1:1,-1:1);
             pts = [X(:) Y(:) Z(:)]';
             
             cubes = double.empty(0,8);
