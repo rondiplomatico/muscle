@@ -91,15 +91,6 @@ classdef cubegeom < handle
             this.gaussp = [GX(:) GY(:) GZ(:)]';
             this.gaussw = W(:);
             
-            e = int16.empty(0,2);
-            for i=1:size(cubes,1)
-                hlp = cubes(i,[1 2 1 3 1 5 3 4 2 4 4 8 3 7 ...
-                    8 7 5 7 6 2 6 5 6 8]);
-                e(end+1:end+12,:) = reshape(hlp',2,[])';
-            end
-            e = unique(e,'rows');
-            this.edges = e;
-            
             %% Compute neighbors
             %             n = cell(np,1);
             %             for i=1:np
@@ -145,16 +136,6 @@ classdef cubegeom < handle
     end
     
     methods(Static)
-        function res = test_CubeGeom
-            c = cubegeom;
-            [X,Y,Z] = ndgrid(-1:2:1,-1:2:1,-1:2:1);
-            p = [X(:) Y(:) Z(:)]';
-            if ~isequal(c.N(p),eye(8))
-                error('Basis function mismatch');
-            end
-            res = true;
-        end
-        
         function [pts, cubes] = DemoCubeGrid(xr,yr,zr)
             if nargin < 3
                 zr = -1:1;

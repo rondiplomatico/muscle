@@ -6,27 +6,50 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
        
        c10 = 6.352e-10;
        c01 = 3.627;
+       
+       % A helper array containing the indices of the actual degrees of
+       % freedom in the global dof indexing.
+       %
+       % Used to join dofs with dirichlet values
+       dof_idx;
     end
     
     methods
         function this = Dynamics(sys)
             this.System = sys;
+            this.MultiArgumentEvaluations = false;
             
-            dfe = this.System.DisplFE;
+            dfe = sys.DisplFE;
             
-            d = dfe.NumDofs * 3;
+            dirvals = length(sys.bc_dir_val);
+            d = dfe.NumNodes * 6 - dirvals;
             this.xDim = d;
             this.fDim = d;
+            
+            pos = 1:(dfe.NumNodes * 6);
+            pos(sys.bc_dir_idx) = [];
+            this.dof_idx = pos;
         end
         
-        function dy = evaluate(this, y, t, mu)
-            g = this.System.Model.Geometry;
-            dfe = this.System.DisplFE;
-            globidx = this.System.globidx;
-            dy = zeros(size(y));
+        function dy = evaluateCoreFun(this, y, t, mu)
+            sys = this.System;
+            g = sys.Model.Geometry;
+            dfe = sys.DisplFE;
+            globidx = sys.globidx;
+            
+            % Include dirichlet values to state vector
+            yall = zeros(dfe.NumNodes*6,1);
+            yall(this.dof_idx) = y;
+            yall(sys.bc_dir_idx) = sys.bc_dir_val;
+            
+            % Init dy to yall vector.
+            % THIS ALREADY FULFILLS THE x' = v ODE PART!
+            dy = yall;
+            
             dpe = dfe.DofsPerElement;
             ng = g.NumGaussp;
-            for m = 1:dfe.NumElems
+            ne = dfe.NumElems;
+            for m = 1:ne
                 %elem = dfe.elems(m,:);
                 elemidx = globidx(:,:,m);
                 
@@ -34,12 +57,12 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                 for gp = 1:ng
                     
                     % TODO evaluate pressure at gp
-                    p = 0;
+                    p = .01;
                     
                     pos = 3*(gp-1)+1:3*gp;
                     dtn = dfe.transgrad(:,pos,m);
-                    % Get coefficients for dofs of current element
-                    c = y(elemidx);
+                    % Get coefficients for nodes of current element
+                    c = yall(elemidx);
                     
                     F = c * dtn;
                     
@@ -52,12 +75,15 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                     
                 end
                 dy(elemidx) = dy(elemidx) + integrand;
-            end 
+            end
+            % Remove values at dirichlet nodes
+            %dy(sys.bc_dir_idx)
+            dy(sys.bc_dir_idx) = [];
         end
         
-        function dy = evaluateCoreFun(this, y, t, mu)%#ok
-            error('evaluate is overridden directly.');
-        end
+%         function dy = evaluateCoreFun(this, y, t, mu)%#ok
+%             error('evaluate is overridden directly.');
+%         end
         
 %         function J = getStateJacobian(this, y, t, mu)
 %             

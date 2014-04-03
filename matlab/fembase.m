@@ -12,11 +12,13 @@ classdef fembase < handle
         % The mass matrix
         M;
         
-        dofs;
+        nodes;
         
         elems;
         
         elem_detjac;
+        
+        edges;
         
         % transformed basis function gradients, stored in eldofs x gp*3
         % x element matrix (accessible in 20x3-chunks for each gauss point and element)
@@ -24,7 +26,7 @@ classdef fembase < handle
     end
     
     properties(Dependent)
-        NumDofs;
+        NumNodes;
         NumElems;
         DofsPerElement;
     end
@@ -43,7 +45,7 @@ classdef fembase < handle
             
             g = this.geo;
             el = this.elems;
-            dof = this.dofs;
+            dof = this.nodes;
             np = size(dof,2);
             
 %             %% Compute node to cube indices
@@ -61,7 +63,7 @@ classdef fembase < handle
             Mass = zeros(np,np);
             % Number of elements
             nel = size(el,1);
-            % DOFs per Element
+            % nodes per Element
             eldofs = size(el,2);
             % Jacobian of element deformation at gauss points
             eljac = zeros(nel,ngp);
@@ -79,9 +81,9 @@ classdef fembase < handle
                     xi = gp(:,gi);
                     dNxi = this.gradN(xi);
                     % Jacobian of isogeometric mapping
-                    Jac = this.dofs(:,elem)*dNxi;
+                    Jac = this.nodes(:,elem)*dNxi;
                     %% Mass matrix related
-                    % Jacobian at gauss point: get coordinates of dofs (8
+                    % Jacobian at gauss point: get coordinates of nodes (8
                     % for trilinear, 20 for triquadratic) and multiply with
                     % gradient
                     eljac(m,gi) = det(Jac);
@@ -104,9 +106,9 @@ classdef fembase < handle
             this.elem_detjac = eljac;
         end
         
-        function J = getJacobian(this, elem, xi)
-            J = this.dofs(:,elem)*this.gradN(xi);
-        end
+%         function J = getJacobian(this, elem, xi)
+%             J = this.nodes(:,elem)*this.gradN(xi);
+%         end
         
         function plot(this, pm)
             if nargin < 2
@@ -115,8 +117,8 @@ classdef fembase < handle
             end
             this.geo.plot(pm);
             
-            p = this.dofs;
-            h = pm.nextPlot('dofs','Grid DOFs','x','y');
+            p = this.nodes;
+            h = pm.nextPlot('nodes','Grid nodes','x','y');
             plot3(h,p(1,:),p(2,:),p(3,:),'k.','MarkerSize',14);
             
             h = pm.nextPlot('mass','Mass matrix','node','node');
@@ -125,8 +127,6 @@ classdef fembase < handle
             pm.nextPlot('mass_pattern','Mass matrix pattern','dof','dof');
             spy(this.M);
             
-            
-            
             if nargin < 2
                 pm.done;
             end
@@ -134,8 +134,8 @@ classdef fembase < handle
     end
     
     methods
-        function value = get.NumDofs(this)
-            value = size(this.dofs,2);
+        function value = get.NumNodes(this)
+            value = size(this.nodes,2);
         end
         
         function value = get.NumElems(this)

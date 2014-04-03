@@ -102,20 +102,31 @@ classdef triquadratic < fembase
             j = [1 1  2  2  1  3  2  4 3  3  4 4  1  5 2  6  3  7  4  8  5  5  6  6  5  7  6  8  7  7  8  8];
             s = [1 .5 .5 1 .5 .5 .5 .5 1 .5 .5 1 .5 .5 .5 .5 .5 .5 .5 .5 1  .5 .5 1  .5 .5 .5 .5 1  .5 .5 1];
             T = sparse(i,j,s,20,8);
-            dofs = zeros(3,nc*20);
+            nodes = zeros(3,nc*20);
             elems = zeros(nc,20);
-            % Iterate all cubes and collect dofs
+            % Iterate all cubes and collect nodes
             for cidx = 1:nc
                 cube = c(cidx,:);
                 pos = 20*(cidx-1)+1:20*cidx;
-                dofs(:,pos) = p(:,cube)*T';
+                nodes(:,pos) = p(:,cube)*T';
                 elems(cidx,:) = pos;
             end
-            [dofs, ~, elems] = unique(dofs','rows');
-            this.dofs = dofs';
+            [nodes, ~, elems] = unique(nodes','rows');
+            this.nodes = nodes';
             this.elems = reshape(elems,20,[])';
             
             init@fembase(this);
+            
+            %% Compute edges
+            e = int16.empty(0,2);
+            for i=1:size(this.elems,1)
+                hlp = this.elems(i,[1 2 1 4 1 9 2 3 3 5 3 10 4 6 5 8 6 7 ...
+                    6 11 7 8 8 12 9 13 10 15 11 18 12 20 13 14 13 16 ...
+                    14 15 15 17 16 18 17 20 18 19 19 20]);
+                e(end+1:end+24,:) = reshape(hlp',2,[])';
+            end
+            e = unique(e,'rows');
+            this.edges = e;
         end
     end
     
@@ -123,6 +134,13 @@ classdef triquadratic < fembase
         function res = test_QuadraticBasisFun
             q = triquadratic;
             res = fembase.test_BasisFun(q);
+            
+            % test for correct basis function values on nodes
+            [X,Y,Z] = ndgrid(-1:1:1,-1:1:1,-1:1:1);
+            p = [X(:) Y(:) Z(:)]';
+            % Remove 7 (inner points not used here)
+            p(:,[5,11,13,14,15,17,23]) = [];
+            res = res && isequal(q.N(p),eye(20));
         end
     end
     
