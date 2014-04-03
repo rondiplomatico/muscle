@@ -23,22 +23,23 @@ classdef Model < models.BaseFullModel
             this.SaveTag = sprintf('musclemodel_%s','');
             this.Data = data.ModelData(this);
             %this.Data.useFileTrajectoryData;
-            this.T = 1; % [ms]
-            this.dt = .1; % [ms]
             
             this.Geometry = cubegeom;
-            
             this.System = muscle.System(this);
             
             % True timestepping in ODE solver
             %   this.System.MaxTimestep = 1e-5; % [ms]
-            %   this.System.MaxTimestep = 1e-4; % [ms]
-            %   this.System.MaxTimestep = 1e-3; % [ms]
-            % this.System.MaxTimestep = 0.0005; % [ms]
-            % this.ODESolver = solvers.SemiImplicitEuler(this);
+            this.dt = 0.0001;
+            this.T = 0.001;
+            this.System.MaxTimestep = 0.0001; % [ms]
+            this.ODESolver = solvers.ExplEuler;
             
-            this.ODESolver = solvers.MLode15i;
-            this.System.MaxTimestep = []; %model.dt;
+%             this.T = 1; % [ms]
+%             this.dt = .1; % [ms]
+%             this.ODESolver = solvers.MLode15i;
+%             this.System.MaxTimestep = []; %model.dt;
+
+            
         end
         
         function varargout = plot(this, varargin)

@@ -163,8 +163,8 @@ classdef cubegeom < handle
             end
             
             % Slightly deviate the grid
-%             s = RandStream('mt19937ar','Seed',1);
-%             pts = pts + s.rand(size(pts))*.2;
+            s = RandStream('mt19937ar','Seed',1);
+            pts = pts + s.rand(size(pts))*.2;
         end
     end
     

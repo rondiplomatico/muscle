@@ -112,7 +112,7 @@ classdef fembase < handle
         
         function plot(this, pm)
             if nargin < 2
-                pm = PlotManager(false,2,2);
+                pm = PlotManager(false,1,2);
                 pm.LeaveOpen = true;
             end
             this.geo.plot(pm);

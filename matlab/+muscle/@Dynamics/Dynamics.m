@@ -6,12 +6,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
        
        c10 = 6.352e-10;
        c01 = 3.627;
-       
-       % A helper array containing the indices of the actual degrees of
-       % freedom in the global dof indexing.
-       %
-       % Used to join dofs with dirichlet values
-       dof_idx;
     end
     
     methods
@@ -25,26 +19,29 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             d = dfe.NumNodes * 6 - dirvals;
             this.xDim = d;
             this.fDim = d;
-            
-            pos = 1:(dfe.NumNodes * 6);
-            pos(sys.bc_dir_idx) = [];
-            this.dof_idx = pos;
         end
         
-        function dy = evaluateCoreFun(this, y, t, mu)
+        function duv = evaluateCoreFun(this, uv, t, mu)
             sys = this.System;
             g = sys.Model.Geometry;
             dfe = sys.DisplFE;
             globidx = sys.globidx;
             
+            fielddofs = dfe.NumNodes*3;
+            
             % Include dirichlet values to state vector
-            yall = zeros(dfe.NumNodes*6,1);
-            yall(this.dof_idx) = y;
-            yall(sys.bc_dir_idx) = sys.bc_dir_val;
+            uvall = zeros(2*fielddofs,1);
+            uvall(sys.dof_idx) = uv;
+            uvall(sys.bc_dir_idx) = sys.bc_dir_val;
             
             % Init dy to yall vector.
-            % THIS ALREADY FULFILLS THE x' = v ODE PART!
-            dy = yall;
+            duv = zeros(size(uvall));
+            % THIS ALREADY FULFILLS THE u' = v ODE PART!
+            duv(1:fielddofs) = uvall(fielddofs+1:end);
+            
+            if t > 0
+                a  =5 ;
+            end
             
             dpe = dfe.DofsPerElement;
             ng = g.NumGaussp;
@@ -57,28 +54,32 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                 for gp = 1:ng
                     
                     % TODO evaluate pressure at gp
-                    p = .01;
+                    p = .1;
                     
                     pos = 3*(gp-1)+1:3*gp;
                     dtn = dfe.transgrad(:,pos,m);
                     % Get coefficients for nodes of current element
-                    c = yall(elemidx);
+                    c = uvall(elemidx);
                     
                     F = c * dtn;
                     
                     % Invariant I1
-                    I1 = sum(sum(c'*c + dtn*dtn'));
+                    I1 = sum(sum((c'*c) .* (dtn*dtn')));
                     
                     P = p*inv(F)' + 2*(this.c10 + I1*this.c01)*F;
                     
                     integrand = integrand + g.gaussw(gp) * P * dtn' * dfe.elem_detjac(m,gp);
                     
                 end
-                dy(elemidx) = dy(elemidx) + integrand;
+                % We have v' + K(u) = 0, so the values of K(u) must be
+                % written at the according locations of v'; those are the
+                % same but +fielddofs later each
+                outidx = elemidx + fielddofs;
+                duv(outidx) = duv(outidx) + integrand;
             end
             % Remove values at dirichlet nodes
             %dy(sys.bc_dir_idx)
-            dy(sys.bc_dir_idx) = [];
+            duv(sys.bc_dir_idx) = [];
         end
         
 %         function dy = evaluateCoreFun(this, y, t, mu)%#ok

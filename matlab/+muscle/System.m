@@ -33,6 +33,12 @@ classdef System < models.BaseDynSystem
        % The positions of the dirichlet values within the GLOBAL node/xyz
        % state space vector
        bc_dir_idx;
+       
+       % A helper array containing the indices of the actual degrees of
+       % freedom in the global dof indexing.
+       %
+       % Used to join dofs with dirichlet values
+       dof_idx;
     end
     
     methods
@@ -44,27 +50,37 @@ classdef System < models.BaseDynSystem
             this = this@models.BaseDynSystem(model);
             
             geo = model.Geometry;
+            
             tq = triquadratic(geo);
-            %tq = trilinear(geo);
+%             tq = trilinear(geo);
+            
             % Save for Dynamics
             this.DisplFE = tq;
             
             %% Dirichlet conditions
             dir = false(3,tq.NumNodes);
-            dir(:,1) = true;
-            dir(:,2) = true;
-            %this.bc_dir = dir;
+            idx = randperm(tq.NumNodes);
+            fixed = idx(1:10);
+            for k = 1:length(fixed)
+                dir(:,fixed(k)) = true;
+            end
+            this.bc_dir = dir;
             
             % Position of position entries in global state space vector
-            positiondofs_start_global = tq.NumNodes * 3;
+            velocitydofs_start_global = tq.NumNodes * 3;
             
             % The according velocities are all zero for dirichlet points
-            this.bc_dir_val = [zeros(size(tq.nodes(dir))); tq.nodes(dir)];
+            this.bc_dir_val = [tq.nodes(dir); zeros(size(tq.nodes(dir)))];
             
             % Collect indices of dirichlet values per 3-set of x,y,z values
             bc_dir_relpos = find(dir(:));
             % Same positions for points and velocity
-            this.bc_dir_idx = [bc_dir_relpos; bc_dir_relpos + positiondofs_start_global];
+            this.bc_dir_idx = [bc_dir_relpos; bc_dir_relpos + velocitydofs_start_global];
+            
+            % Compute dof positions in global state space vector
+            pos = 1:(tq.NumNodes * 6);
+            pos(this.bc_dir_idx) = [];
+            this.dof_idx = pos;
             
             % Construct global indices in y from element nodes. Each dof in
             % an element is used three times for x,y,z displacement. The
@@ -80,7 +96,7 @@ classdef System < models.BaseDynSystem
                 globalelementdofs(:,:,m) = [hlp; hlp+1; hlp+2];
             end
             % The element dofs are for the positions and not velocities
-            globalelementdofs = globalelementdofs + positiondofs_start_global;
+            % globalelementdofs = globalelementdofs + positiondofs_start_global;
             this.globidx = globalelementdofs;
             
             %% Compile Mass Matrix
@@ -117,23 +133,41 @@ classdef System < models.BaseDynSystem
             end
             
             dfem = this.DisplFE;
-            xstart = dfem.NumNodes * 3 + 1;
+            vstart = dfem.NumNodes * 3;
             e = dfem.edges;
+            
+            % Re-add the dirichlet nodes
+            yall = zeros(dfem.NumNodes * 6, size(y,2));
+            yall(this.dof_idx,:) = y;
+            for k=1:length(this.bc_dir_idx)
+                yall(this.bc_dir_idx(k),:) = this.bc_dir_val(k);
+            end
+            y = yall;
+            
+            bc_dir_applies = sum(this.bc_dir,1) >= 1;
             
             h = pm.nextPlot('geo','Output','x','y');
             for ts = 1:length(t)
-                
-                p = reshape(y(xstart:end,ts),3,[]);
-                plot3(h,p(1,:),p(2,:),p(3,:),'k.','MarkerSize',14);
+                % Quit if figure has been closed
+                if ~ishandle(h)
+                    break;
+                end
+                u = reshape(y(1:vstart,ts),3,[]);
+                v = reshape(y(vstart+1:end,ts),3,[]);
+                plot3(h,u(1,:),u(2,:),u(3,:),'k.','MarkerSize',14);
+                %quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'k.','MarkerSize',14);
+                quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'MarkerSize',14);
                 hold(h,'on');
+                plot3(h,u(1,bc_dir_applies),u(2,bc_dir_applies),u(3,bc_dir_applies),'bx','MarkerSize',14);
                 for k=1:size(e,1)
-                    plot3(h,p(1,[e(k,1) e(k,2)]),p(2,[e(k,1) e(k,2)]),p(3,[e(k,1) e(k,2)]),'r');
+                    plot3(h,u(1,[e(k,1) e(k,2)]),u(2,[e(k,1) e(k,2)]),u(3,[e(k,1) e(k,2)]),'r');
                 end
                 axis(h,'tight');
                 title(h,sprintf('Deformation at t=%g',t(ts)));
                 hold(h,'off');
                 
-                pause(.4);
+                pause(.01);
+%                 pause;
             end
 
             if nargin < 4
