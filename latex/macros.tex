@@ -1,0 +1,243 @@
+%--------------------------------------------------------------------------------------------------
+%
+% place to define macros, shortcuts, etc. ...
+%
+%--------------------------------------------------------------------------------------------------
+%
+ % e.g., i.e., c.f.
+%
+%--------------------------------------------------------------------------------------------------
+%
+\newcommand{\eg}{e.g.~}
+\newcommand{\ie}{i.e.~}
+\newcommand{\iec}{i.e.,}
+\newcommand{\cf}{c.f.~}
+%
+%--------------------------------------------------------------------------------------------------
+%
+% ENVIRONMENTS
+%
+%--------------------------------------------------------------------------------------------------
+% figure
+\newcommand\bfg[1]{
+        \begin{figure}[#1]
+        \begin{center}
+}
+\newcommand\efg{
+        \end{center}
+        \end{figure}
+} 
+%
+% minipage  <--- NOT WORKING ...?
+\newcommand\bmp[1]{
+        \begin{minipage}{#1}
+        \begin{center}
+}
+\newcommand\emp[1]{
+        \end{center}
+        \end{minipage}
+}                
+%
+%--------------------------------------------------------------------------------------------------
+%
+ % REFERENCES
+%
+%--------------------------------------------------------------------------------------------------
+% equation
+\newcommand{\eqnrefE}[1]{\textup{Equation~}(\ref{#1})}
+\newcommand{\eqnref}[1]{(\ref{#1})}
+%
+% figure
+\newcommand{\figref}[1]{\textup{Figure~}\ref{#1}}
+%
+% table
+\newcommand{\tabref}[1]{\textup{Table~}\ref{#1}}
+%
+% chapter
+\newcommand{\chref}[1]{\textup{Chapter~}\ref{#1}}
+%
+% section
+\newcommand{\secref}[1]{\textup{Section~}\ref{#1}}
+%
+% subsection
+\newcommand{\subsecref}[1]{\textup{Subsection~}\ref{#1}}
+%
+%--------------------------------------------------------------------------------------------------
+%
+% SHORTCUTS IN MATHEMATICS
+%
+%--------------------------------------------------------------------------------------------------
+% environments
+%
+% equation + label - (use as \beq{wantedlabelname} ... \eeq)
+% --> use equation + split for one alignment
+\newcommand{\beq}[1]{\begin{equation}\label{#1}}
+\newcommand{\eeq}{\end{equation}}
+%
+% split
+\newcommand{\splt}[1]{\begin{split} #1 \end{split}}
+%
+% align - (use as \alg{...})
+% --> use align for multiple alignments & each line numbered
+\newcommand{\alg}[1]{\begin{align} #1 \end{align}} 
+%
+% array
+\newcommand{\barray}[1]{\begin{array}{#1}}
+\newcommand{\earray}{\end{array}}
+%
+%------------------------------------------------
+% short notations
+%
+% number symbols
+%\newcommand{\N}{\mathbb{N}} % integer numbers
+%\newcommand{\R}{\mathbb{R}} % real numbers
+%
+% bold numbers
+\newcommand{\Bzero}{\boldsymbol{0}}
+\newcommand{\Bone}{\boldsymbol{1}}
+%
+% bold letters - small
+\newcommand{\Ba}{\boldsymbol{a}}
+\newcommand{\Bb}{\boldsymbol{b}}
+\newcommand{\Bc}{\boldsymbol{c}}
+\newcommand{\Bd}{\boldsymbol{d}}
+\newcommand{\Be}{\boldsymbol{e}}
+%\newcommand{\Bf}{\boldsymbol{f}}
+\newcommand{\Bg}{\boldsymbol{g}}
+\newcommand{\Bh}{\boldsymbol{h}}
+\newcommand{\Bi}{\boldsymbol{i}}
+\newcommand{\Bj}{\boldsymbol{j}}
+\newcommand{\Bk}{\boldsymbol{k}}
+\newcommand{\Bl}{\boldsymbol{l}}
+\newcommand{\Bm}{\boldsymbol{m}}
+\newcommand{\Bn}{\boldsymbol{n}}
+\newcommand{\Bo}{\boldsymbol{o}}
+\newcommand{\Bp}{\boldsymbol{p}}
+\newcommand{\Bq}{\boldsymbol{q}}
+\newcommand{\Br}{\boldsymbol{r}}
+\newcommand{\Bs}{\boldsymbol{s}}
+\newcommand{\Bt}{\boldsymbol{t}}
+\newcommand{\Bu}{\boldsymbol{u}}
+\newcommand{\Bv}{\boldsymbol{v}}
+\newcommand{\Bw}{\boldsymbol{w}}
+\newcommand{\Bx}{\boldsymbol{x}}
+\newcommand{\By}{\boldsymbol{y}}
+\newcommand{\Bz}{\boldsymbol{z}}
+%
+% bold letters - capital
+\newcommand{\BA}{\boldsymbol{A}}
+\newcommand{\BB}{\boldsymbol{B}}
+\newcommand{\BC}{\boldsymbol{C}}
+\newcommand{\BD}{\boldsymbol{D}}
+\newcommand{\BE}{\boldsymbol{E}}
+\newcommand{\BF}{\boldsymbol{F}}
+\newcommand{\BG}{\boldsymbol{G}}
+\newcommand{\BH}{\boldsymbol{H}}
+\newcommand{\BI}{\boldsymbol{I}}
+\newcommand{\BJ}{\boldsymbol{J}}
+\newcommand{\BK}{\boldsymbol{K}}
+\newcommand{\BL}{\boldsymbol{L}}
+\newcommand{\BM}{\boldsymbol{M}}
+\newcommand{\BN}{\boldsymbol{N}}
+\newcommand{\BO}{\boldsymbol{O}}
+\newcommand{\BP}{\boldsymbol{P}}
+\newcommand{\BQ}{\boldsymbol{Q}}
+\newcommand{\BR}{\boldsymbol{R}}
+\newcommand{\BS}{\boldsymbol{S}}
+\newcommand{\BT}{\boldsymbol{T}}
+\newcommand{\BU}{\boldsymbol{U}}
+\newcommand{\BV}{\boldsymbol{V}}
+\newcommand{\BW}{\boldsymbol{W}}
+\newcommand{\BX}{\boldsymbol{X}}
+\newcommand{\BY}{\boldsymbol{Y}}
+\newcommand{\BZ}{\boldsymbol{Z}}
+%
+% bold greek symbols - small
+\newcommand{\Balpha}{\boldsymbol{\alpha}}
+\newcommand{\Bbeta}{\boldsymbol{\beta}}
+\newcommand{\Bgamma}{\boldsymbol{\gamma}}
+\newcommand{\Bdelta}{\boldsymbol{\delta}}
+\newcommand{\Bepsilon}{\boldsymbol{\epsilon}}
+\newcommand{\Bvarepsilon}{\boldsymbol{\varepsilon}}
+\newcommand{\Bzeta}{\boldsymbol{\zeta}}
+\newcommand{\Beta}{\boldsymbol{\eta}}
+\newcommand{\Btheta}{\boldsymbol{\theta}}
+\newcommand{\Biota}{\boldsymbol{\iota}}
+\newcommand{\Bkappa}{\boldsymbol{\kappa}}
+\newcommand{\Bvarkappa}{\boldsymbol{\varkappa}}
+\newcommand{\Blambda}{\boldsymbol{\lambda}}
+\newcommand{\Bmu}{\boldsymbol{\mu}}
+\newcommand{\Bnu}{\boldsymbol{\nu}}
+\newcommand{\Bxi}{\boldsymbol{\xi}}
+\newcommand{\Bpi}{\boldsymbol{\pi}}
+\newcommand{\Brho}{\boldsymbol{\rho}}
+\newcommand{\Bvarrho}{\boldsymbol{\varrho}}
+\newcommand{\Bsigma}{\boldsymbol{\sigma}}
+\newcommand{\Btau}{\boldsymbol{\tau}}
+\newcommand{\Bupsilon}{\boldsymbol{\upsilon}}
+\newcommand{\Bphi}{\boldsymbol{\phi}}
+\newcommand{\Bvarphi}{\boldsymbol{\varphi}}
+\newcommand{\Bchi}{\boldsymbol{\chi}}
+\newcommand{\Bpsi}{\boldsymbol{\psi}}
+\newcommand{\Bomega}{\boldsymbol{\omega}}
+%
+% bold greek symbols - capital
+\newcommand{\Alpha}{A}
+\newcommand{\BAlpha}{\boldsymbol{\Alpha}}
+\newcommand{\BBeta}{\boldsymbol{B}}
+\newcommand{\BGamma}{\boldsymbol{\Gamma}}
+\newcommand{\BDelta}{\boldsymbol{\Delta}}
+\newcommand{\Epsilon}{E}
+\newcommand{\BEpsilon}{\boldsymbol{\Epsilon}}
+\newcommand{\Zeta}{Z}
+\newcommand{\BZeta}{\boldsymbol{\Zeta}}
+\newcommand{\Eta}{H}
+\newcommand{\BEta}{\boldsymbol{\Eta}}
+\newcommand{\BTheta}{\boldsymbol{\Theta}}
+\newcommand{\Iota}{I}
+\newcommand{\BIota}{\boldsymbol{\Iota}}
+\newcommand{\Kappa}{K}
+\newcommand{\BKappa}{\boldsymbol{\Kappa}}
+\newcommand{\BLambda}{\boldsymbol{\Lambda}}
+\newcommand{\Mu}{M}
+\newcommand{\BMu}{\boldsymbol{\Mu}}
+\newcommand{\Nu}{N}
+\newcommand{\BNu}{\boldsymbol{\Nu}}
+\newcommand{\BXi}{\boldsymbol{\Xi}}
+\newcommand{\BPi}{\boldsymbol{\Pi}}
+\newcommand{\Rho}{R}
+\newcommand{\BRho}{\boldsymbol{\Rho}}
+\newcommand{\BSigma}{\boldsymbol{\Sigma}}
+\newcommand{\Tau}{T}
+\newcommand{\BTau}{\boldsymbol{\Tau}}
+\newcommand{\BUpsilon}{\boldsymbol{\Upsilon}}
+\newcommand{\BPhi}{\boldsymbol{\Phi}}
+\newcommand{\Chi}{X}
+\newcommand{\BChi}{\boldsymbol{\Chi}}
+\newcommand{\BPsi}{\boldsymbol{\Psi}}
+\newcommand{\BOmega}{\boldsymbol{\Omega}}
+%
+% special stuff
+\newcommand{\delOmega}{\partial\Omega}
+%
+%------------------------------------------------
+%
+% partial derivative - (use by \delby{}{})
+\newcommand{\delby}[2]{\frac{\partial #1}{\partial #2}}
+%
+% integral - (use by \intlim{start}{stop}{integrand}{variable})
+\newcommand{\intlim}[4]{
+  \int\limits_{#1}^{#2}{#3}\hspace{2pt}d#4  
+}
+%
+% sum - (use by \sumlim{start}{stop}{summands})
+\newcommand{\sumlim}[3]{
+  \sum\limits_{#1}^{#2}{#3} 
+}
+%
+% norm with varying size
+%\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+%
+%--------------------------------------------------------------------------------------------------
+%
+%--------------------------------------------------------------------------------------------------

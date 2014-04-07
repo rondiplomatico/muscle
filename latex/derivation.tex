@@ -301,8 +301,8 @@ Similar to \eqref{eq:dpsidC} we obtain
 \end{align}
 This gives
 \begin{align}
-	\vSf(X,t) &= \frac{p^{max}}{\lambda_f(X,t)}\gamma\left(\alpha,\lambda_f(X,t),\d{\lambda_f}{t}(X,t)\right)\va_0(X)\otimes\va_0(X)\\
-	\vPf(X,t) &= \frac{p^{max}}{\lambda_f(X,t)}\gamma\left(\alpha,\lambda_f(X,t),\d{\lambda_f}{t}(X,t)\right)\vF(X,t)\va_0(X)\otimes\va_0(X)
+	\vSf(X,t) &= 2\frac{p^{max}}{\lambda_f(X,t)}\gamma\left(\alpha,\lambda_f(X,t),\d{\lambda_f}{t}(X,t)\right)\va_0(X)\otimes\va_0(X)\\
+	\vPf(X,t) &= 2\frac{p^{max}}{\lambda_f(X,t)}\gamma\left(\alpha,\lambda_f(X,t),\d{\lambda_f}{t}(X,t)\right)\vF(X,t)\va_0(X)\otimes\va_0(X)
 \end{align}
 
 \subsubsection{Overall stress tensor}
@@ -310,9 +310,9 @@ Adding the different parts together as given in \eqref{def:S_split} now gives
 \begin{align}
 	\vS(X,t) &= p\vC^{-1}(X,t) + 2(c_{10} + I_1c_{01})\vI - 2c_{01}\vC(X,t)\\
 			 &\quad+\Biggl[\left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d_1-2}(X,t) - b_1\lambda_f^{-2}(X,t)\right)\nonumber\\
-			 &\quad+\frac{p^{max}}{\lambda_f(X,t)}\gamma\left(\alpha,\lambda_f(X,t),\d{\lambda_f}{t}(X,t)\right)\Biggr]\va_0(X)\otimes\va_0(X)\nonumber\\
+			 &\quad+2\frac{p^{max}}{\lambda_f(X,t)}\gamma\left(\alpha,\lambda_f(X,t),\d{\lambda_f}{t}(X,t)\right)\Biggr]\va_0(X)\otimes\va_0(X)\nonumber\\
 	g(\lambda_f)&:= \left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d_1-2} - b_1\lambda_f^{-2}\right)
-		+\frac{p^{max}}{\lambda_f}\gamma\left(\alpha,\lambda_f,\d{\lambda_f}{t}\right)\label{def:g}\\			 
+		+2\frac{p^{max}}{\lambda_f}\gamma\left(\alpha,\lambda_f,\d{\lambda_f}{t}\right)\label{def:g}\\			 
 	\vP(X,t) &= \vF(X,t)\vS(X,t)\label{def:completeP}\\
 			 &= p\vF^{-T}(X,t) + 2(c_{10} + I_1(\vC(X,t))c_{01})\vF(X,t) - 2c_{01}\vF(X,t)\vC(X,t)\nonumber\\
 			 &\quad+g(\lambda_f(X,t))\vF(X,t)\va_0(X)\otimes\va_0(X)\nonumber

@@ -1,0 +1,264 @@
+Calculation of the determinant:
+\alg{
+  \nabla_{\Bc_m}\left\{\det \BF(X,t)\right\}
+  &=\nabla_{\Bc_m}\left\{\det \left( \sumlim{i=1}{N}{\Bc_i(t) \otimes \nabla \varphi_i(X)} \right) \right\} \nonumber\\
+  &=\nabla_{\Bc_m}\left\{\det \left( \sumlim{i=1}{N}{
+      \begin{bmatrix}
+        c_{i1} \varphi_{i,1}  & c_{i1} \varphi_{i,2}  & c_{i1} \varphi_{i,3} \\
+        c_{i2} \varphi_{i,1}  & c_{i2} \varphi_{i,2}  & c_{i2} \varphi_{i,3} \\
+        c_{i3} \varphi_{i,1}  & c_{i3} \varphi_{i,2}  & c_{i3} \varphi_{i,3}
+      \end{bmatrix}
+    } \right) \right\} \nonumber\\
+  &=\nabla_{\Bc_m}\Bigg\{
+      \left( \sumlim{i=1}{N}{c_{i1}\varphi_{i,1}}\right) \left[
+        \left( \sumlim{i=1}{N}{c_{i2}\varphi_{i,2}}\right) \left( \sumlim{i=1}{N}{c_{i3}\varphi_{i,3}}\right)
+        - \left( \sumlim{i=1}{N}{c_{i2}\varphi_{i,3}}\right) \left( \sumlim{i=1}{N}{c_{i3}\varphi_{i,2}}\right)
+      \right]
+      \nonumber\\
+      &\hspace{11.5mm} -\left( \sumlim{i=1}{N}{c_{i1}\varphi_{i,2}}\right) \left[
+        \left( \sumlim{i=1}{N}{c_{i2}\varphi_{i,1}}\right) \left( \sumlim{i=1}{N}{c_{i3}\varphi_{i,3}}\right)
+        - \left( \sumlim{i=1}{N}{c_{i2}\varphi_{i,3}}\right) \left( \sumlim{i=1}{N}{c_{i3}\varphi_{i,1}}\right)
+      \right]
+      \nonumber\\
+      &\hspace{11.5mm} +\left( \sumlim{i=1}{N}{c_{i1}\varphi_{i,3}}\right) \left[
+        \left( \sumlim{i=1}{N}{c_{i2}\varphi_{i,1}}\right) \left( \sumlim{i=1}{N}{c_{i3}\varphi_{i,2}}\right)
+        - \left( \sumlim{i=1}{N}{c_{i2}\varphi_{i,2}}\right) \left( \sumlim{i=1}{N}{c_{i3}\varphi_{i,1}}\right)
+      \right]
+    \Bigg\}\nonumber\\
+  &=\nabla_{\Bc_m}\Bigg\{
+  \sumlim{i,j,k=1}{N}{c_{i1} \varphi_{i,1} \, c_{j2} \varphi_{j,2} \, c_{k3}\varphi_{k,3}}
+    -\sumlim{i,j,k=1}{N}{c_{i1} \varphi_{i,1} \, c_{j2} \varphi_{j,3} \, c_{k3}\varphi_{k,2}}
+    \nonumber\\
+    &\hspace{11.5mm}-\sumlim{i,j,k=1}{N}{c_{i1} \varphi_{i,2} \, c_{j2} \varphi_{j,1} \, c_{k3}\varphi_{k,3}}
+    +\sumlim{i,j,k=1}{N}{c_{i1} \varphi_{i,2} \, c_{j2} \varphi_{j,3} \, c_{k3}\varphi_{k,1}}
+    \nonumber\\
+    &\hspace{11.5mm}+\sumlim{i,j,k=1}{N}{c_{i1} \varphi_{i,3} \, c_{j2} \varphi_{j,1} \, c_{k3}\varphi_{k,2}}
+    -\sumlim{i,j,k=1}{N}{c_{i1} \varphi_{i,3} \, c_{j2} \varphi_{j,2} \, c_{k3}\varphi_{k,1}} 
+    \Bigg\}\nonumber\\
+  &=\nabla_{\Bc_m}\Bigg\{
+    \sumlim{i,j,k=1}{N}{
+    c_{i1} c_{j2} c_{k3} (
+      \varphi_{i,1} \varphi_{j,2} \varphi_{k,3}-\varphi_{i,1} \varphi_{j,3} \varphi_{k,2}-\varphi_{i,2} \varphi_{j,1} \varphi_{k,3}
+      }\nonumber\\
+      &\hspace{20mm}+\varphi_{i,2} \varphi_{j,3} \varphi_{k,1}+\varphi_{i,3} \varphi_{j,1} \varphi_{k,2}
+      -\varphi_{i,3} \varphi_{j,2} \varphi_{k,1} )
+    \Bigg\}\nonumber\\
+  &=\nabla_{\Bc_m}\Bigg\{
+      \sumlim{i,j,k=1}{N}{
+      c_{i1} c_{j2} c_{k3} 
+      \det  \begin{bmatrix}
+              \varphi_{i,1} & \varphi_{i,2} & \varphi_{i,3} \\
+              \varphi_{j,1} & \varphi_{j,2} & \varphi_{j,3} \\
+              \varphi_{k,1} & \varphi_{k,2} & \varphi_{k,3}
+            \end{bmatrix}
+      }
+    \Bigg\} \nonumber\\
+  &=\nabla_{\Bc_m}\Bigg\{
+      \sumlim{i,j,k=1}{N}{
+      c_{i1}(t) c_{j2}(t) c_{k3}(t)
+      \det \begin{bmatrix}
+              \nabla \varphi_{i}(X) \\
+              \nabla \varphi_{j}(X) \\
+              \nabla \varphi_{k}(X)
+            \end{bmatrix}
+      }
+    \Bigg\}
+}
+%
+%-------
+\newpage
+%-------
+%
+Calculation of the gradient:
+\alg{
+  \nabla_{\Bc_m}\left\{\det \BF(X,t)\right\}
+  &=\nabla_{\Bc_m}\Bigg\{
+      \sumlim{i,j,k=1}{N}{
+      c_{i1}(t) c_{j2}(t) c_{k3}(t)
+      \det \begin{bmatrix}
+              \nabla \varphi_{i}(X) \\
+              \nabla \varphi_{j}(X) \\
+              \nabla \varphi_{k}(X)
+            \end{bmatrix}
+      }
+    \Bigg\} \nonumber\\
+  &=\sumlim{i,j,k=1}{N}{\left(
+      \begin{bmatrix}
+        \delby{c_{i1}}{c_{m1}}c_{j2}c_{k3} + c_{i1} \cancel{\delby{c_{j2}}{c_{m1}}} c_{k3} 
+          + c_{i1}c_{j2}\cancel{\delby{c_{k3}}{c_{m1}}} \\
+        \cancel{\delby{c_{i1}}{c_{m2}}}c_{j2}c_{k3} + c_{i1} \delby{c_{j2}}{c_{m2}} c_{k3} 
+          + c_{i1}c_{j2}\cancel{\delby{c_{k3}}{c_{m2}}} \\
+        \cancel{\delby{c_{i1}}{c_{m3}}}c_{j2}c_{k3} + c_{i1} \cancel{\delby{c_{j2}}{c_{m3}}} c_{k3} 
+        + c_{i1}c_{j2}\delby{c_{k3}}{c_{m3}}
+      \end{bmatrix}
+      \det \begin{bmatrix}
+              \nabla \varphi_{i}(X) \\
+              \nabla \varphi_{j}(X) \\
+              \nabla \varphi_{k}(X)
+            \end{bmatrix}
+      \right)}
+      \nonumber\\
+  &=\sumlim{i,j,k=1}{N}{\left(
+      \begin{bmatrix}
+        \delta_{im}c_{j2}c_{k3}\\
+        c_{i1}\delta_{jm}c_{k3}\\
+        c_{i1}c_{j2}\delta_{km}
+      \end{bmatrix}
+      \det \begin{bmatrix}
+              \nabla \varphi_{i}(X) \\
+              \nabla \varphi_{j}(X) \\
+              \nabla \varphi_{k}(X)
+            \end{bmatrix}
+      \right)}
+      \nonumber\\
+  &=\begin{pmatrix}
+      \sumlim{j,k=1}{N}{
+        c_{j2}c_{k3} \det \begin{bmatrix}
+                            \nabla \varphi_{m}(X) \\
+                            \nabla \varphi_{j}(X) \\
+                            \nabla \varphi_{k}(X)
+                          \end{bmatrix}
+      } \\
+      \sumlim{i,k=1}{N}{
+        c_{i1}c_{k3} \det \begin{bmatrix}
+                            \nabla \varphi_{i}(X) \\
+                            \nabla \varphi_{m}(X) \\
+                            \nabla \varphi_{k}(X)
+                          \end{bmatrix}
+      } \\
+      \sumlim{i,j=1}{N}{
+        c_{i1}c_{j2} \det \begin{bmatrix}
+                            \nabla \varphi_{i}(X) \\
+                            \nabla \varphi_{j}(X) \\
+                            \nabla \varphi_{m}(X)
+                          \end{bmatrix}
+      }            
+    \end{pmatrix}
+    \nonumber\\
+  &=\sumlim{i,j=1}{N}{
+      \begin{pmatrix}
+        c_{i2}c_{j3}\det \begin{bmatrix}
+                            \nabla \varphi_{m}(X) \\
+                            \nabla \varphi_{i}(X) \\
+                            \nabla \varphi_{j}(X)
+                          \end{bmatrix}
+        \\
+        c_{i1}c_{j3}\det \begin{bmatrix}
+                            \nabla \varphi_{i}(X) \\
+                            \nabla \varphi_{m}(X) \\
+                            \nabla \varphi_{j}(X)
+                          \end{bmatrix}
+        \\
+        c_{i1}c_{j2}\det \begin{bmatrix}
+                            \nabla \varphi_{i}(X) \\
+                            \nabla \varphi_{j}(X) \\
+                            \nabla \varphi_{m}(X)
+                          \end{bmatrix}
+      \end{pmatrix}
+    }
+    =:\ \begin{pmatrix}
+          \nabla_{c_{m1}}\left\{\det \BF(X,t)\right\} \\
+          \nabla_{c_{m2}}\left\{\det \BF(X,t)\right\} \\
+          \nabla_{c_{m3}}\left\{\det \BF(X,t)\right\}                  
+        \end{pmatrix}
+}
+%
+%-------
+\newpage
+%-------
+%
+It holds that:
+\beq{}
+  \boxed{
+  \det(\BS+\BU) = \det \BS + \det \BS (\BS^{T-1}:\BU) \,.
+  }
+\eeq
+Furthermore, for the inverse of a matrix/tensor, it holds
+\beq{}
+  \BA^{-1} = (\det \BA)^{-1} \textnormal{adj}\BA
+  \Longrightarrow
+  \BA^{T-1} = (\det \BA)^{-1} \textnormal{cof}\BA \,,
+\eeq
+where
+\beq{}
+  \textnormal{cof}\BA = \textnormal{cof}
+    \begin{pmatrix}
+      A_{11}  & A_{12}  & A_{13} \\
+      A_{21}  & A_{22}  & A_{23} \\
+      A_{31}  & A_{32}  & A_{33}
+    \end{pmatrix}
+    = \begin{pmatrix}
+        A_{22}A_{33}-A_{23}A_{32} & A_{23}A_{31}-A_{21}A_{33} & A_{21}A_{32}-A_{22}A_{31} \\
+        A_{13}A_{32}-A_{12}A_{33} & A_{11}A_{33}-A_{13}A_{31} & A_{12}A_{31}-A_{11}A_{32} \\
+        A_{12}A_{23}-A_{13}A_{22} & A_{13}A_{21}-A_{11}A_{23} & A_{11}A_{22}-A_{12}A_{21}
+      \end{pmatrix} \,.
+\eeq
+"{\bf \underline{Lemma}}": \par
+For $\BS:=\BF$ and $\BU:=\BU^m_l$, $l=1,2,3$, with
+\beq{}
+  \BU^m_1:= \begin{pmatrix}
+            ~   & \nabla \varphi_m  & ~ \\
+            0   & 0                 & 0 \\
+            0   & 0                 & 0
+          \end{pmatrix},\,
+  \BU^m_2:= \begin{pmatrix}
+            0   & 0                 & 0 \\
+            ~   & \nabla \varphi_m  & ~ \\            
+            0   & 0                 & 0
+          \end{pmatrix},\,
+  \BU^m_3:= \begin{pmatrix}
+            0   & 0                 & 0 \\
+            0   & 0                 & 0 \\
+            ~   & \nabla \varphi_m  & ~            
+          \end{pmatrix},          
+\eeq
+it holds that
+\beq{}
+  \boxed{
+  \nabla_{c_{ml}}\left\{\det \BF(X,t)\right\} = \det \BF \left(\BF^{T-1}:\BU^m_l\right) \,.
+  }
+\eeq
+"{\bf \underline{Proof}}": \par
+Setting $l:=1$ yields:
+\alg{
+  \det \BF \left(\BF^{T-1}:\BU^m_1\right)
+  &= \cancel{\det \BF (\det \BF)^{-1}} \textnormal{cof}\BF : \BU^m_1 \nonumber\\
+  &= \textnormal{cof}\BF 
+        \begin{pmatrix}
+           ~   & \nabla \varphi_m  & ~ \\
+           0   & 0                 & 0 \\
+           0   & 0                 & 0
+        \end{pmatrix}
+    \nonumber\\
+  &= \varphi_{m,1} (F_{22}F_{33}-F_{23}F_{32}) +
+      \varphi_{m,2} (F_{23}F_{31}-F_{21}F_{33}) +
+      \varphi_{m,3} (F_{21}F_{32}-F_{22}F_{31})
+    \nonumber\\
+  &= \varphi_{m,1} \left(
+        \sumlim{i,j=1}{N}{c_{i2}\varphi_{i,2}c_{j3}\varphi_{j,3}}
+        - \sumlim{i,j=1}{N}{c_{i2}\varphi_{i,3}c_{j3}\varphi_{j,2}}
+      \right) \nonumber\\
+    &\hspace{6mm}+\varphi_{m,2} \left(
+        \sumlim{i,j=1}{N}{c_{i2}\varphi_{i,3}c_{j3}\varphi_{j,1}}
+        - \sumlim{i,j=1}{N}{c_{i2}\varphi_{i,1}c_{j3}\varphi_{j,3}}
+      \right)\nonumber\\
+    &\hspace{6mm}+\varphi_{m,3} \left(
+        \sumlim{i,j=1}{N}{c_{i2}\varphi_{i,1}c_{j3}\varphi_{j,2}}
+        - \sumlim{i,j=1}{N}{c_{i2}\varphi_{i,2}c_{j3}\varphi_{j,1}}
+      \right) \nonumber\\
+  &= \sumlim{i,j=1}{N}{c_{i2}c_{j3}
+      (
+      \varphi_{m,1}\varphi_{i,2} \varphi_{j,3}-\varphi_{m,1}\varphi_{i,3} \varphi_{j,2}+\varphi_{m,2}\varphi_{i,3} \varphi_{j,1} 
+      }\nonumber\\
+      &\hspace{11mm}-\varphi_{m,2}\varphi_{i,1} \varphi_{j,3}+\varphi_{m,3}\varphi_{i,1} \varphi_{j,2} - \varphi_{m,3}\varphi_{i,2} \varphi_{j,1}
+      ) \nonumber\\
+  &= \sumlim{i,j=1}{N}{c_{i2}c_{j3} 
+      \det \begin{bmatrix}
+              \nabla \varphi_{m} \\
+              \nabla \varphi_{i} \\
+              \nabla \varphi_{j}           
+            \end{bmatrix}
+     }
+  = \nabla_{c_{m1}}\left\{\det \BF(X,t)\right\} \,.
+}
+
