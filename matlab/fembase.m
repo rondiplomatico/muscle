@@ -171,7 +171,7 @@ classdef fembase < handle
                 g = cubegeom(pts, cubes);
                 tl = trilinear(g);
                 tq = triquadratic(g);
-                res = res && norm(tl.elem_detjac-tq.elem_detjac,'inf') < 1e-15;
+                res = res && norm(tl.elem_detjac-tq.elem_detjac,'inf') < 1e-14;
             end
         end
     end

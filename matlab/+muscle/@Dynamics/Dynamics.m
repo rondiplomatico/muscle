@@ -54,7 +54,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                 for gp = 1:ng
                     
                     % TODO evaluate pressure at gp
-                    p = .1;
+                    p = 1;
                     
                     pos = 3*(gp-1)+1:3*gp;
                     dtn = dfe.transgrad(:,pos,m);
@@ -67,6 +67,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                     I1 = sum(sum((c'*c) .* (dtn*dtn')));
                     
                     P = p*inv(F)' + 2*(this.c10 + I1*this.c01)*F;
+                    %P = p*inv(F)';
                     
                     integrand = integrand + g.gaussw(gp) * P * dtn' * dfe.elem_detjac(m,gp);
                     

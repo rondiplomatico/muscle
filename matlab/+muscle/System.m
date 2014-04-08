@@ -60,7 +60,8 @@ classdef System < models.BaseDynSystem
             %% Dirichlet conditions
             dir = false(3,tq.NumNodes);
             idx = randperm(tq.NumNodes);
-            fixed = idx(1:10);
+            numdir = 1;
+            fixed = idx(1:numdir);
             for k = 1:length(fixed)
                 dir(:,fixed(k)) = true;
             end
@@ -147,7 +148,7 @@ classdef System < models.BaseDynSystem
             bc_dir_applies = sum(this.bc_dir,1) >= 1;
             
             h = pm.nextPlot('geo','Output','x','y');
-            for ts = 1:length(t)
+            for ts = 1:5:length(t)
                 % Quit if figure has been closed
                 if ~ishandle(h)
                     break;
@@ -155,9 +156,9 @@ classdef System < models.BaseDynSystem
                 u = reshape(y(1:vstart,ts),3,[]);
                 v = reshape(y(vstart+1:end,ts),3,[]);
                 plot3(h,u(1,:),u(2,:),u(3,:),'k.','MarkerSize',14);
+                hold(h,'on');
                 %quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'k.','MarkerSize',14);
                 quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'MarkerSize',14);
-                hold(h,'on');
                 plot3(h,u(1,bc_dir_applies),u(2,bc_dir_applies),u(3,bc_dir_applies),'bx','MarkerSize',14);
                 for k=1:size(e,1)
                     plot3(h,u(1,[e(k,1) e(k,2)]),u(2,[e(k,1) e(k,2)]),u(3,[e(k,1) e(k,2)]),'r');
@@ -166,7 +167,7 @@ classdef System < models.BaseDynSystem
                 title(h,sprintf('Deformation at t=%g',t(ts)));
                 hold(h,'off');
                 
-                pause(.01);
+                pause(.001);
 %                 pause;
             end
 
