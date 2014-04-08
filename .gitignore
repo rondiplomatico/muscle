@@ -3,6 +3,7 @@
 *.nls
 *.?~
 *.??~
+*.???~
 *.mexw32
 *.mexw64
 *.mexa64
@@ -18,4 +19,7 @@
 *.exe
 *.bat
 *.dll
+*.aux
+*.bbl
+*.blg
 
