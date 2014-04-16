@@ -140,6 +140,7 @@ where $\gamma$ is an arbitrary scalar.
 In order to relate this quantity to a physical quantitiy, we consider the concept of hydrostatic pressure in a small detour.
 
 \paragraph{Relation to hydrostatic pressure}
+In the following we omit the $(X,t)$ (or $(x,t)$) arguments for improved readability.
 The Cauchy stress tensor $\vsig$ can be split into a \e{volumetric} and \e{deviatoric} part via
 \begin{align}
 	\vsig &= \underbrace{\vsig - p\vI}_{=:\vsig'} + p\vI, & p &:= \frac{1}{3}\tr\vsig.
@@ -180,7 +181,7 @@ According to \cite[p. 168]{Bonet2008}, this holds true for a modified $\Psi$ giv
 \end{align}
 Now, we can finally write
 \begin{align}
-	\vS(X,t) = 2\d{\hat\Psi}{\vC}(\vC(X,t)) + pJ(X,t)\vC^{-1}(X,t).\label{def:secondpiola_pressure}
+	\vS(X,t) = 2\d{\hat\Psi}{\vC}(\vC(X,t)) + p(X,t)J(X,t)\vC^{-1}(X,t).\label{def:secondpiola_pressure}
 \end{align}
 Note that in general
 \begin{align*}
@@ -196,7 +197,7 @@ and hence
 For the case of incompressible material we have $\det\vC = 1$.
 Hence $\hat{\Psi} = \Psi$ and we have the final form of $\vS$ for incompressible hyperelastic material:
 \begin{align}
-	\vS(X,t) = 2\d{\Psi}{\vC}(\vC(X,t)) + p\vC^{-1}(X,t).\label{def:incompressible_secondpiola_pressure}
+	\vS(X,t) = 2\d{\Psi}{\vC}(\vC(X,t)) + p(X,t)\vC^{-1}(X,t).\label{def:incompressible_secondpiola_pressure}
 \end{align}
 
 \subsubsection{(Transversely) isotropic material}
@@ -245,7 +246,7 @@ for which we have
 Since we consider incompressible material, $\Psi$ will not depend on the third invariant $I_3 = \det\vC = 1$ as this is already captured in the hydrostatic pressure. 
 In the following, we will specify different $\Psi(I_1,I_2,I_4,I_5)$ depending on different invariants to create an additive split as 
 \begin{align}
-	\vS(X,t) = p\vC^{-1}(X,t) + \vSi(X,t) + \vSa(X,t) + \vSf(X,t)\label{def:S_split}
+	\vS(X,t) = p(X,t)\vC^{-1}(X,t) + \vSi(X,t) + \vSa(X,t) + \vSf(X,t)\label{def:S_split}
 \end{align}
 
 \subsubsection{Isotropic stress tensor $\vSi$}
@@ -274,18 +275,18 @@ with $n=1$ summands, so that
 \end{align}
 with
 \begin{align*}
-		 \d{\Psi}{\lambda_f}(\lambda_f) &= \frac{b_1(d_1-1)}{d_1}\lambda_f^{d_1-1} - b_1\lambda_f^{-1},\\
+		 \d{\Psi}{\lambda_f}(\lambda_f) &= b_1\lambda_f^{d_1-1} - b_1\lambda_f^{-1} = b_1\lambda_f^{-1}(\lambda_f^{d_1} - 1),\\
 		 \d{\lambda_f}{I_4}(I_4) &= \frac{1}{2\sqrt{I_4}} = \frac{1}{2\lambda_f}.
 \end{align*}
 With \eqref{def:dI4} and the above we get
 \begin{align*}
-	2\d{\Psi}{\vC}(\lambda_f) &= 2\left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d_1-1} - b_1\lambda_f^{-1}\right) \frac{1}{2\lambda_f}\va_0\otimes\va_0\\
-	&= \left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d_1-2} - b_1\lambda_f^{-2}\right) \va_0\otimes\va_0,
+	2\d{\Psi}{\vC}(\lambda_f) &= 2\left(b_1\lambda_f^{-1}(\lambda_f^{d_1} - 1)\right) \frac{1}{2\lambda_f}\va_0\otimes\va_0
+	= \frac{b_1}{\lambda_f^2}\left(\lambda_f^{d_1} - 1\right) \va_0\otimes\va_0,
 \end{align*}
 leading to
 \begin{align}
-	\vSa(X,t) &= \left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d_1-2}(X,t) - b_1\lambda_f^{-2}(X,t)\right) \va_0(X)\otimes\va_0(X)\\
-	\vPa(X,t) &= \left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d_1-2}(X,t) - b_1\lambda_f^{-2}(X,t)\right) \vF(X,t)\va_0(X)\otimes\va_0(X)
+	\vSa(X,t) &= \frac{b_1}{\lambda_f^2(X,t)}\left(\lambda_f^{d_1}(X,t) - 1\right) \va_0(X)\otimes\va_0(X)\\
+	\vPa(X,t) &= \frac{b_1}{\lambda_f^2(X,t)}\left(\lambda_f^{d_1}(X,t) - 1\right) \vF(X,t)\va_0(X)\otimes\va_0(X)
 \end{align}
 
 \subsubsection{Active force tensor $\vSf$}
@@ -308,14 +309,31 @@ This gives
 \subsubsection{Overall stress tensor}
 Adding the different parts together as given in \eqref{def:S_split} now gives
 \begin{align}
-	\vS(X,t) &= p\vC^{-1}(X,t) + 2(c_{10} + I_1c_{01})\vI - 2c_{01}\vC(X,t)\\
-			 &\quad+\Biggl[\left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d_1-2}(X,t) - b_1\lambda_f^{-2}(X,t)\right)\nonumber\\
+	\vS(X,t) &= p(X,t)\vC^{-1}(X,t) + 2(c_{10} + I_1c_{01})\vI - 2c_{01}\vC(X,t)\label{def:overallS}\\
+			 &\quad+\Biggl[\frac{b_1}{\lambda_f^2(X,t)}\left(\lambda_f^{d_1}(X,t) - 1\right)\nonumber\\
 			 &\quad+\frac{p^{max}}{\lambda_f(X,t)}\gamma\left(\alpha,\lambda_f(X,t),\d{\lambda_f}{t}(X,t)\right)\Biggr]\va_0(X)\otimes\va_0(X)\nonumber\\
-	g(\lambda_f)&:= \left(\frac{b_1(d_1-1)}{d_1}\lambda_f^{d_1-2} - b_1\lambda_f^{-2}\right)
+	g(\lambda_f)&:= \frac{b_1}{\lambda_f^2}\left(\lambda_f^{d_1} - 1\right)
 		+\frac{p^{max}}{\lambda_f}\gamma\left(\alpha,\lambda_f,\d{\lambda_f}{t}\right)\label{def:g}\\			 
 	\vP(X,t) &= \vF(X,t)\vS(X,t)\label{def:completeP}\\
-			 &= p\vF^{-T}(X,t) + 2(c_{10} + I_1(\vC(X,t))c_{01})\vF(X,t) - 2c_{01}\vF(X,t)\vC(X,t)\nonumber\\
+			 &= p(X,t)\vF^{-T}(X,t) + 2(c_{10} + I_1(\vC(X,t))c_{01})\vF(X,t) - 2c_{01}\vF(X,t)\vC(X,t)\nonumber\\
 			 &\quad+g(\lambda_f(X,t))\vF(X,t)\va_0(X)\otimes\va_0(X)\nonumber
+\end{align}
+
+\subsubsection{Initial conditions}
+The reference configuration is \e{stress-free}, which means that $\vP(X,t) = \vS(X,t) = 0$.
+With the incompressibility conditions we also have
+\begin{align*}
+	\vF &= \vC = \vI_3, & \det(\vF) &= 1\\
+	I_1(\vC) &= \tr(\vI_3) = 3, & I_4(\vC,\va_0) & = \vI_3 : \va_0(X)\otimes\va_0(X)\\
+		&&&	= \tr(\va_0(X)\otimes\va_0(X)) = \no{\va_0}^2 = 1,\\
+		\lambda_f &= 1, & \gamma(\alpha,\lambda_f,\lambda_f) &= 0,
+\end{align*}
+Hence we obtain from \eqref{def:overallS}
+\begin{align}
+	0 &= \vS(X,0) = p(X,0)\vI + 2(c_{10} + 3c_{01})\vI - 2c_{01}\vI\\
+			 &\quad+\left(\frac{b_1}{1}\left(1 - 1\right)+\frac{p^{max}}{1}\gamma\left(0,1,0\right)\right)\va_0(X)\otimes\va_0(X)\nonumber\\
+			 & = (p(X,0) + 2c_{10} + 4c_{01})\vI\\
+			 p(X,0) &= -(2c_{10} + 4c_{01})
 \end{align}
 
 % \subsubsection{Detour}

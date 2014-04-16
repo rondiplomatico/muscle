@@ -29,15 +29,14 @@ classdef Model < models.BaseFullModel
             
             % True timestepping in ODE solver
             %   this.System.MaxTimestep = 1e-5; % [ms]
-            this.dt = 0.0001;
-            this.T = 0.001;
-            this.System.MaxTimestep = 0.0001; % [ms]
-            this.ODESolver = solvers.ExplEuler;
+%             this.dt = 0.01;
+%             this.T = 1;
+%             this.ODESolver = solvers.ExplEuler;
             
-%             this.T = 1; % [ms]
-%             this.dt = .1; % [ms]
-%             this.ODESolver = solvers.MLode15i;
-%             this.System.MaxTimestep = []; %model.dt;
+            this.T = 1; % [ms]
+            this.dt = .1; % [ms]
+            this.ODESolver = solvers.MLode15i;
+            this.System.MaxTimestep = []; %model.dt;
 
             
         end

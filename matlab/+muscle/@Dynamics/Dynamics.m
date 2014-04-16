@@ -16,71 +16,76 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             dfe = sys.DisplFE;
             
             dirvals = length(sys.bc_dir_val);
-            d = dfe.NumNodes * 6 - dirvals;
+            d = dfe.NumNodes * 6 - dirvals + sys.PressureFE.NumNodes;
             this.xDim = d;
             this.fDim = d;
         end
         
-        function duv = evaluateCoreFun(this, uv, t, mu)
+        function duvw = evaluateCoreFun(this, uvwdof, t, ~)
             sys = this.System;
             g = sys.Model.Geometry;
-            dfe = sys.DisplFE;
-            globidx = sys.globidx;
+            fe_displ = sys.DisplFE;
+            fe_press = sys.PressureFE;
+            globidx_disp = sys.globidx_displ;
+            globidx_press = sys.globidx_pressure;
             
-            fielddofs = dfe.NumNodes*3;
+            dofs_displ = fe_displ.NumNodes*3;
             
             % Include dirichlet values to state vector
-            uvall = zeros(2*fielddofs,1);
-            uvall(sys.dof_idx) = uv;
-            uvall(sys.bc_dir_idx) = sys.bc_dir_val;
+            uvwcomplete = zeros(2*dofs_displ + fe_press.NumNodes,1);
+            uvwcomplete(sys.dof_idx) = uvwdof;
+            uvwcomplete(sys.bc_dir_idx) = sys.bc_dir_val;
             
-            % Init dy to yall vector.
-            duv = zeros(size(uvall));
+            % Init duv
+            duvw = zeros(2*dofs_displ + fe_press.NumNodes,1);
             % THIS ALREADY FULFILLS THE u' = v ODE PART!
-            duv(1:fielddofs) = uvall(fielddofs+1:end);
+            duvw(1:dofs_displ) = uvwcomplete(dofs_displ+1:2*dofs_displ);
             
-            if t > 0
-                a  =5 ;
-            end
-            
-            dpe = dfe.DofsPerElement;
-            ng = g.NumGaussp;
-            ne = dfe.NumElems;
-            for m = 1:ne
-                %elem = dfe.elems(m,:);
-                elemidx = globidx(:,:,m);
+            dofsperelem_displ = fe_displ.DofsPerElement;
+            dofsperelem_press = fe_press.DofsPerElement;
+            num_gausspoints = g.NumGaussp;
+            num_elements = fe_displ.NumElems;
+            for m = 1:num_elements
+                elemidx_displ = globidx_disp(:,:,m);
+                elemidx_pressure = globidx_press(:,m);
                 
-                integrand = zeros(3,dpe);
-                for gp = 1:ng
+                integrand_displ = zeros(3,dofsperelem_displ);
+                integrand_press = zeros(dofsperelem_press,1);
+                for gp = 1:num_gausspoints
                     
-                    % TODO evaluate pressure at gp
-                    p = 1;
+                    % Evaluate the pressure at gauss points
+                    w = uvwcomplete(elemidx_pressure);
+                    p = w' * fe_press.Ngp(:,gp,m);
                     
                     pos = 3*(gp-1)+1:3*gp;
-                    dtn = dfe.transgrad(:,pos,m);
+                    dtn = fe_displ.transgrad(:,pos,m);
                     % Get coefficients for nodes of current element
-                    c = uvall(elemidx);
+                    u = uvwcomplete(elemidx_displ);
                     
-                    F = c * dtn;
+                    F = u * dtn;
                     
                     % Invariant I1
-                    I1 = sum(sum((c'*c) .* (dtn*dtn')));
+                    I1 = sum(sum((u'*u) .* (dtn*dtn')));
                     
-                    P = p*inv(F)' + 2*(this.c10 + I1*this.c01)*F;
-                    %P = p*inv(F)';
+                    P = p*inv(F)' + 2*(this.c10 + I1*this.c01)*F - 2*this.c01*F*(F'*F);
                     
-                    integrand = integrand + g.gaussw(gp) * P * dtn' * dfe.elem_detjac(m,gp);
+                    weight = g.gaussw(gp) * fe_displ.elem_detjac(m,gp);
                     
+                    integrand_displ = integrand_displ + weight * P * dtn';
+                    
+                    integrand_press = integrand_press + weight * (det(F)-1) * fe_press.Ngp(:,gp,m);
                 end
                 % We have v' + K(u) = 0, so the values of K(u) must be
                 % written at the according locations of v'; those are the
                 % same but +fielddofs later each
-                outidx = elemidx + fielddofs;
-                duv(outidx) = duv(outidx) + integrand;
+                outidx = elemidx_displ + dofs_displ;
+                duvw(outidx) = duvw(outidx) + integrand_displ;
+                
+                % Update pressure value at according positions
+                duvw(elemidx_pressure) = duvw(elemidx_pressure) + integrand_press;
             end
             % Remove values at dirichlet nodes
-            %dy(sys.bc_dir_idx)
-            duv(sys.bc_dir_idx) = [];
+            duvw(sys.bc_dir_idx) = [];
         end
         
 %         function dy = evaluateCoreFun(this, y, t, mu)%#ok

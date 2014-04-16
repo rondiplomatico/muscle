@@ -7,6 +7,9 @@ classdef fembase < handle
         
         N;
         
+        % Values of basis functions on gauss points
+        Ngp;
+        
         gradN;
         
         % The mass matrix
@@ -65,12 +68,14 @@ classdef fembase < handle
             nel = size(el,1);
             % nodes per Element
             eldofs = size(el,2);
+            
+            % Basis function evaluation on Gauss points
+            Ngpval = zeros(eldofs,ngp,nel);
             % Jacobian of element deformation at gauss points
             eljac = zeros(nel,ngp);
             % transformed basis function gradients, stored in eldofs x gp*3
             % x element matrix (accessible in 20x3-chunks for each gauss point and element)
             tg = zeros(eldofs,ngp*3,nel);
-            %tg = zeros(eldofs,ngp*3,nel);
             % Iterate all volumes
             for m = 1:nel
                 bval = zeros(eldofs,eldofs);
@@ -79,9 +84,15 @@ classdef fembase < handle
                 for gi = 1:ngp
                     % gauss point \xi
                     xi = gp(:,gi);
+                    
+                    %% N on gauss points
+                    Ngpval(:,gi,m) = this.N(xi);
+                    
+                    %% Jacobian related
                     dNxi = this.gradN(xi);
                     % Jacobian of isogeometric mapping
                     Jac = this.nodes(:,elem)*dNxi;
+                    
                     %% Mass matrix related
                     % Jacobian at gauss point: get coordinates of nodes (8
                     % for trilinear, 20 for triquadratic) and multiply with
@@ -101,6 +112,7 @@ classdef fembase < handle
                     Mass(elem(j),elem(j:end)) = Mass(elem(j),elem(j:end)) + bval(j,j:end);
                 end
             end
+            this.Ngp = Ngpval;
             this.transgrad = tg;
             this.M = sparse(Mass + Mass');
             this.elem_detjac = eljac;
