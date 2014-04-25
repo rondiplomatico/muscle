@@ -2,7 +2,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     
     
     properties
-       System;
        
        c10 = 6.352e-10;
        c01 = 3.627;
@@ -10,8 +9,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     
     methods
         function this = Dynamics(sys)
-            this.System = sys;
-            this.MultiArgumentEvaluations = false;
+            this = this@dscomponents.ACompEvalCoreFun(sys);
             
             dfe = sys.DisplFE;
             
@@ -21,7 +19,11 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             this.fDim = d;
         end
         
-        function duvw = evaluateCoreFun(this, uvwdof, t, ~)
+        function evaluateCoreFun(varargin)
+            error('Custom projection is implemented and evaluate overridden directly');
+        end
+        
+        function duvw = evaluate(this, uvwdof, ~)
             sys = this.System;
             g = sys.Model.Geometry;
             fe_displ = sys.DisplFE;
@@ -34,12 +36,15 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % Include dirichlet values to state vector
             uvwcomplete = zeros(2*dofs_displ + fe_press.NumNodes,1);
             uvwcomplete(sys.dof_idx) = uvwdof;
-            uvwcomplete(sys.bc_dir_idx) = sys.bc_dir_val;
+            uvwcomplete(sys.bc_dir_idx) = sys.bc_dir_val;%*(1+t/100);
             
             % Init duv
             duvw = zeros(2*dofs_displ + fe_press.NumNodes,1);
             % THIS ALREADY FULFILLS THE u' = v ODE PART!
             duvw(1:dofs_displ) = uvwcomplete(dofs_displ+1:2*dofs_displ);
+            % Test: Set a nonzero velocity to points on left face
+            velo_dir = sys.bc_dir_velo_idx;
+            duvw(velo_dir) = -.01;
             
             dofsperelem_displ = fe_displ.DofsPerElement;
             dofsperelem_press = fe_press.DofsPerElement;
@@ -59,9 +64,10 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                     
                     pos = 3*(gp-1)+1:3*gp;
                     dtn = fe_displ.transgrad(:,pos,m);
+                    
                     % Get coefficients for nodes of current element
                     u = uvwcomplete(elemidx_displ);
-                    
+                    % Deformation gradient
                     F = u * dtn;
                     
                     % Invariant I1
@@ -88,10 +94,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             duvw(sys.bc_dir_idx) = [];
         end
         
-%         function dy = evaluateCoreFun(this, y, t, mu)%#ok
-%             error('evaluate is overridden directly.');
-%         end
-        
 %         function J = getStateJacobian(this, y, t, mu)
 %             
 %         end
@@ -111,7 +113,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     end
     
     methods(Access=protected)
-        function fx = evaluateComponents(this, pts, ends, ~, ~, x, ~, mu)
+        function fx = evaluateComponents(this, pts, ends, ~, ~, x, ~)
             % This is the template method that actually evaluates the components at given points
             % and values.
             %
@@ -145,7 +147,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
            
         end
         
-        function dfx = evaluateComponentPartialDerivatives(this, pts, ends, idx, deriv, self, x, t, mu, dfxsel)%#ok
+        function dfx = evaluateComponentPartialDerivatives(this, pts, ends, idx, deriv, self, x, t, dfxsel)%#ok
             % Computes specified partial derivatives of `f` of the components given by pts and
             % the selected partial derivatives by dfxsel.
             %

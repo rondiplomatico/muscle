@@ -24,7 +24,8 @@ classdef Model < models.BaseFullModel
             this.Data = data.ModelData(this);
             %this.Data.useFileTrajectoryData;
             
-            this.Geometry = cubegeom;
+            [pts, cubes] = cubegeom.DemoCubeGrid(-1:1,-1:2,-1:1);
+            this.Geometry = cubegeom(pts, cubes);
             this.System = muscle.System(this);
             
             % True timestepping in ODE solver

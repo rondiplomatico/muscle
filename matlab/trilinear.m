@@ -27,6 +27,7 @@ classdef trilinear < fembase
             
             this = this@fembase(geo);
             
+            this.EdgeIndices = 1:8;
             this.init;
         end
         

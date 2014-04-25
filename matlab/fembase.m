@@ -34,6 +34,11 @@ classdef fembase < handle
         DofsPerElement;
     end
     
+    properties(SetAccess=protected)
+        % The indices of edges
+        EdgeIndices = [1 3 6 8 13 15 18 20];
+    end
+    
     methods
         function this = fembase(geo)
             if nargin < 1
@@ -105,7 +110,7 @@ classdef fembase < handle
                     bval = bval + g.gaussw(gi)*(Nxi*Nxi')*eljac(m,gi);
                     
                     %% Transformed Basis function gradients at xi
-                    tg(:,3*(gi-1)+1:3*gi,m) = dNxi / Jac';
+                    tg(:,3*(gi-1)+1:3*gi,m) = dNxi / Jac;
                 end
                 % Build up upper right part of symmetric mass matrix
                 for j=1:eldofs
@@ -124,7 +129,7 @@ classdef fembase < handle
         
         function plot(this, pm)
             if nargin < 2
-                pm = PlotManager(false,1,2);
+                pm = PlotManager;%(false,1,2);
                 pm.LeaveOpen = true;
             end
             this.geo.plot(pm);
@@ -132,12 +137,35 @@ classdef fembase < handle
             p = this.nodes;
             h = pm.nextPlot('nodes','Grid nodes','x','y');
             plot3(h,p(1,:),p(2,:),p(3,:),'k.','MarkerSize',14);
+            for k = 1:this.NumElems
+                el = this.elems(k,:);
+                center = sum(p(:,el),2)/this.DofsPerElement;
+                text(center(1),center(2),center(3),sprintf('#%d',k),'Parent',h,'Color','m');
+                % Plot local numbering for first element
+                if k == 1
+                    off = .04;
+                    for i = 1:this.DofsPerElement
+                        text(off+p(1,el(i)),off+p(2,el(i)),off+p(3,el(i)),sprintf('%d',i),'Parent',h,'Color','r');
+                    end
+                    eg = this.edges;
+                    hold(h,'on');
+                    for i = 1:size(eg,1)
+                        if any(el == eg(i,1)) && any(el == eg(i,2))
+                            plot3(h,[p(1,eg(i,1)) p(1,eg(i,2))],[p(2,eg(i,1)) p(2,eg(i,1))],[p(3,eg(i,1)) p(3,eg(i,2))],'r');
+                        end
+                    end
+                end
+            end
+            for k = 1:this.NumNodes
+                text(p(1,k),p(2,k),p(3,k),sprintf('%d',k),'Parent',h,'Color','k');
+            end
+            view(h,[52 30]);
             
-            h = pm.nextPlot('mass','Mass matrix','node','node');
-            mesh(h,full(this.M));
-            
-            pm.nextPlot('mass_pattern','Mass matrix pattern','dof','dof');
-            spy(this.M);
+%             h = pm.nextPlot('mass','Mass matrix','node','node');
+%             mesh(h,full(this.M));
+%             
+%             pm.nextPlot('mass_pattern','Mass matrix pattern','dof','dof');
+%             spy(this.M);
             
             if nargin < 2
                 pm.done;

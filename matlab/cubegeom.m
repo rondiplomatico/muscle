@@ -1,46 +1,6 @@
 classdef cubegeom < handle
 %
 
-
-%% Cube indexing for triquadratic:
-%       /       /
-%      /       /
-%     7---8---9
-%     |   /    |
-%     5 10     6 /
-%     |/      |/
-%     1---2---3
-%     -1    -1    -1
-%      0    -1    -1
-%      1    -1    -1
-%     -1     0    -1
-%     % 0     0    -1
-%      1     0    -1
-%     -1     1    -1
-%      0     1    -1
-%      1     1    -1
-%     -1    -1     0
-%     % 0    -1     0
-%      1    -1     0
-%     %-1     0     0
-%     % 0     0     0
-%     % 1     0     0
-%     -1     1     0
-%     % 0     1     0
-%      1     1     0
-%     -1    -1     1
-%      0    -1     1
-%      1    -1     1
-%     -1     0     1
-%     % 0     0     1
-%      1     0     1
-%     -1     1     1
-%      0     1     1
-%      1     1     1
-%
-% without combinations 5,11,13,14,15,17 and 23 (they are neither on a
-% corner or an edge due to 2 zero entries)
-    
     properties
         % n x 3 position vector of nodes
         pts;

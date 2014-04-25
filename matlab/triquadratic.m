@@ -1,28 +1,55 @@
 classdef triquadratic < fembase
-    %TRILINEAR Summary of this class goes here
-    %   Detailed explanation goes here
+    % Triquatratic: Quadratic ansatz functions on cube with 20 nodes per
+    % cube
+    %
+    %% Cube indexing for triquadratic:
+    %
+    %           18---19---20 
+    %          / |       / |
+    %        /   |     /   |        Y+
+    %       /    16   /    17       |     Z+
+    %      6----7+---8     |        |    /
+    %      |     |   |     |        |   /
+    %      |     13--+14---15       |  /
+    %      |    /    |    /         | / 
+    %      4   9     5  10          |/
+    %      | /       | /            +---------X+
+    %      |/        |/
+    %      1----2----3 
+    %
+    % Corner indices: 1 3 6 8 13 15 18 20
     %
     %% Cube node positions:
     % C1     -1    -1    -1
     % E2      0    -1    -1
     % C3      1    -1    -1
     % E4     -1     0    -1
+    %       % 0     0    -1
     % E5      1     0    -1
     % C6     -1     1    -1
     % E7      0     1    -1
     % C8      1     1    -1
     % E9     -1    -1     0 
+    %       % 0    -1     0
     % E10     1    -1     0
+    %       %-1     0     0
+    %       % 0     0     0
+    %       % 1     0     0
     % E11    -1     1     0
+    %       % 0     1     0
     % E12     1     1     0
     % C13    -1    -1     1
     % E14     0    -1     1
     % C15     1    -1     1
     % E16    -1     0     1
+    %       % 0     0     1
     % E17     1     0     1
     % C18    -1     1     1
     % E19     0     1     1
     % C20     1     1     1
+    %
+    % without combinations 5,11,13,14,15,17 and 23 (they are neither on a
+    % corner or an edge due to 2 zero entries)
     
     properties
         % cell array of dim n containing indices of all cubes that are
@@ -37,6 +64,7 @@ classdef triquadratic < fembase
             end
             this = this@fembase(geo);
             
+            this.EdgeIndices = [1 3 6 8 13 15 18 20];
             this.init;
         end
         
@@ -57,9 +85,8 @@ classdef triquadratic < fembase
                 (1-x(1,:)).*(1+x(2,:)).*(1-x(3,:)).*(-x(1,:)+x(2,:)-x(3,:)-2)/8;... % C6
                 (1-x(1,:).^2).*(1+x(2,:)).*(1-x(3,:))/4;... % E7
                 (1+x(1,:)).*(1+x(2,:)).*(1-x(3,:)).*(x(1,:)+x(2,:)-x(3,:)-2)/8;... % C8
-                (1-x(3,:).^2).*(1-x(1,:)).*(1-x(2,:))/4;... % E9
+                (1-x(3,:).^2).*(1-x(1,:)).*(1-x(2,:))/4;... % E9    
                 (1-x(3,:).^2).*(1+x(1,:)).*(1-x(2,:))/4;... % E10
-                
                 (1-x(3,:).^2).*(1-x(1,:)).*(1+x(2,:))/4;... % E11
                 (1-x(3,:).^2).*(1+x(1,:)).*(1+x(2,:))/4;... % E12
                 (1-x(1,:)).*(1-x(2,:)).*(1+x(3,:)).*(-x(1,:)-x(2,:)+x(3,:)-2)/8;... % C13

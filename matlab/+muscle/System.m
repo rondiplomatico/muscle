@@ -44,6 +44,9 @@ classdef System < models.BaseDynSystem
        DisplFE;
        PressureFE;
        pressure_to_displ_nodes;
+       
+       bc_dir_velo_idx;
+       bc_dir_velo;
     end
     
     methods
@@ -65,18 +68,29 @@ classdef System < models.BaseDynSystem
             % nodes geometry (used for plotting)
             this.pressure_to_displ_nodes = Utils.findVecInMatrix(tq.nodes,tl.nodes);
             
-            %% Dirichlet conditions (fix random cube edges)
+            %% Dirichlet conditions: Position (fix one side)
             displ_dir = false(3,tq.NumNodes);
-            idx = randperm(tq.NumNodes);
-            numdir = 1;
-            fixed = idx(1:numdir);
-            for k = 1:length(fixed)
-                displ_dir(:,fixed(k)) = true;
+            % Fix the front of the first four cubes
+            for k = [5 6 11 12]
+                displ_dir(:,tq.elems(k,[6:8 11 12 18:20])) = true;
             end
-            % Hydrostatic Pressure
+            
+            %% Hydrostatic Pressure Dirichlet conditions
 %             press_dir = false(1,tl.NumNodes);
 %             press_dir(1) = true;
 %             this.bc_dir = [displ_dir; press_dir];
+
+            %% Dirichlet conditions: Velocity (fix one side)
+            % Compile indices of velocity DOFS that will be increased over
+            % time as BC
+            velo_dir = false(3,tq.NumNodes);
+            for k = [1 2 7 8]
+                % Only z direction
+                velo_dir(3,tq.elems(k,[1:3 9 10 13:15])) = true;
+            end
+            this.bc_dir_velo = velo_dir;
+            this.bc_dir_velo_idx = find(velo_dir(:));
+
             this.bc_dir = displ_dir;
             
             % Position of position entries in global state space vector
@@ -166,10 +180,11 @@ classdef System < models.BaseDynSystem
             uvw = yall;
             
             bc_dir_applies = sum(this.bc_dir,1) >= 1;
+            bc_dir_velo_applies = sum(this.bc_dir_velo,1) >= 1;
             
             %% Loop over time
             h = pm.nextPlot('geo','Output','x','y');
-            for ts = 1:10:length(t)
+            for ts = 1:1:length(t)
                 % Quit if figure has been closed
                 if ~ishandle(h)
                     break;
@@ -185,10 +200,18 @@ classdef System < models.BaseDynSystem
                 quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'MarkerSize',14);
                 
                 %% Dirichlet conditions
-                plot3(h,u(1,bc_dir_applies),u(2,bc_dir_applies),u(3,bc_dir_applies),'bx','MarkerSize',14);
+                % Displacement
+                plot3(h,u(1,bc_dir_applies),u(2,bc_dir_applies),u(3,bc_dir_applies),'k.','MarkerSize',20);
                 for k=1:size(e,1)
                     plot3(h,u(1,[e(k,1) e(k,2)]),u(2,[e(k,1) e(k,2)]),u(3,[e(k,1) e(k,2)]),'r');
                 end
+                
+                % Velocity
+                plot3(h,u(1,bc_dir_velo_applies),u(2,bc_dir_velo_applies),u(3,bc_dir_velo_applies),'g.','MarkerSize',20);
+                quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'MarkerSize',14);
+%                 for k=1:size(e,1)
+%                     plot3(h,u(1,[e(k,1) e(k,2)]),u(2,[e(k,1) e(k,2)]),u(3,[e(k,1) e(k,2)]),'r');
+%                 end
                 
                 %% Pressure
                 p = uvw(pstart:end,ts);
@@ -205,10 +228,11 @@ classdef System < models.BaseDynSystem
                 
                 %% Misc
                 axis(h,'tight');
+                view(h, [46 30]);
                 title(h,sprintf('Deformation at t=%g',t(ts)));
                 hold(h,'off');
                 
-                pause(.1);
+                pause(1);
 %                 pause;
             end
 
