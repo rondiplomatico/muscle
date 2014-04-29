@@ -119,7 +119,8 @@ classdef fembase < handle
             end
             this.Ngp = Ngpval;
             this.transgrad = tg;
-            this.M = sparse(Mass + Mass');
+            this.M = sparse(Mass + Mass' - diag(diag(Mass)));
+            %this.M = sparse(Mass + Mass');
             this.elem_detjac = eljac;
         end
         
@@ -161,11 +162,11 @@ classdef fembase < handle
             end
             view(h,[52 30]);
             
-%             h = pm.nextPlot('mass','Mass matrix','node','node');
-%             mesh(h,full(this.M));
-%             
-%             pm.nextPlot('mass_pattern','Mass matrix pattern','dof','dof');
-%             spy(this.M);
+            h = pm.nextPlot('mass','Mass matrix','node','node');
+            mesh(h,full(this.M));
+            
+            pm.nextPlot('mass_pattern','Mass matrix pattern','dof','dof');
+            spy(this.M);
             
             if nargin < 2
                 pm.done;

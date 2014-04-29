@@ -17,27 +17,6 @@ classdef System < models.BaseDynSystem
     properties
        globidx_displ;
        globidx_pressure;
-       
-       % Boundary conditions: 3 times numnodes logical matrix telling
-       % which degree of freedom of which (position) node is fixed
-       %     n1   n2   n3 ...
-       % x | 1    0    0       |
-       % y | 1    1    0 ...   |
-       % z | 1    0    0       |
-       bc_dir;
-       
-       % The dirichlet values (linear array)
-       bc_dir_val;
-       
-       % The positions of the dirichlet values within the GLOBAL node/xyz
-       % state space vector
-       bc_dir_idx;
-       
-       % A helper array containing the indices of the actual degrees of
-       % freedom in the global dof indexing.
-       %
-       % Used to join dofs with dirichlet values
-       dof_idx;
     end
     
     properties(SetAccess=private)
@@ -45,8 +24,36 @@ classdef System < models.BaseDynSystem
        PressureFE;
        pressure_to_displ_nodes;
        
-       bc_dir_velo_idx;
+       % The overall values of dirichlet conditions
+       % 
+       % Collected from bc_dir_displ_val, bc_dir_velo_val
+       bc_dir_val;
+       
+       % The positions of the dirichlet values within the GLOBAL node/xyz
+       % state space vector
+       %
+       % Collected from bc_dir_displ_idx, bc_dir_velo_idx
+       bc_dir_idx;
+       
+       % Boundary conditions: 3 times numnodes logical matrix telling
+       % which degree of freedom of which (position) node is fixed
+       %     n1   n2   n3 ...
+       % x | 1    0    0       |
+       % y | 1    1    0 ...   |
+       % z | 1    0    0       |
+       bc_dir_displ;
+       bc_dir_displ_idx;
+       bc_dir_displ_val;
+       
        bc_dir_velo;
+       bc_dir_velo_idx;
+       bc_dir_velo_val;
+       
+       % A helper array containing the indices of the actual degrees of
+       % freedom in the global dof indexing.
+       %
+       % Used to join dofs with dirichlet values
+       dof_idx;
     end
     
     methods
@@ -58,7 +65,8 @@ classdef System < models.BaseDynSystem
             this = this@models.BaseDynSystem(model);
             
             geo = model.Geometry;
-            tq = triquadratic(geo);
+            %tq = triquadratic(geo);
+            tq = trilinear(geo);
             tl = trilinear(geo);
     
             % Save for Dynamics
@@ -70,44 +78,33 @@ classdef System < models.BaseDynSystem
             
             %% Dirichlet conditions: Position (fix one side)
             displ_dir = false(3,tq.NumNodes);
+            %% Normal config
             % Fix the front of the first four cubes
-            for k = [5 6 11 12]
-                displ_dir(:,tq.elems(k,[6:8 11 12 18:20])) = true;
+%             for k = [5 6 11 12]
+            for k = 1
+                % Quadratic
+                %displ_dir(:,tq.elems(k,[6:8 11 12 18:20])) = true;
+                % Linear
+                displ_dir(:,tq.elems(k,5:8)) = true;
             end
-            
-            %% Hydrostatic Pressure Dirichlet conditions
-%             press_dir = false(1,tl.NumNodes);
-%             press_dir(1) = true;
-%             this.bc_dir = [displ_dir; press_dir];
 
             %% Dirichlet conditions: Velocity (fix one side)
             % Compile indices of velocity DOFS that will be increased over
             % time as BC
             velo_dir = false(3,tq.NumNodes);
-            for k = [1 2 7 8]
+            velo_dir_val = zeros(3,tq.NumNodes);
+%             for k = [1 2 7 8]
+            for k = 1
                 % Only z direction
-                velo_dir(3,tq.elems(k,[1:3 9 10 13:15])) = true;
+                % Quadratic
+%                 velo_dir(3,tq.elems(k,[1:3 9 10 13:15])) = true;
+                % Linear
+                velo_dir(3,tq.elems(k,1:4)) = true;
             end
-            this.bc_dir_velo = velo_dir;
-            this.bc_dir_velo_idx = find(velo_dir(:));
-
-            this.bc_dir = displ_dir;
+            velo_dir_val(velo_dir) = .005;
             
-            % Position of position entries in global state space vector
-            velocitydofs_start_global = tq.NumNodes * 3;
-            
-            % The according velocities are all zero for dirichlet points
-            this.bc_dir_val = [tq.nodes(displ_dir); zeros(size(tq.nodes(displ_dir)))];
-            
-            % Collect indices of dirichlet values per 3-set of x,y,z values
-            bc_dir_relpos = find(displ_dir(:));
-            % Same positions for points and velocity
-            this.bc_dir_idx = [bc_dir_relpos; bc_dir_relpos + velocitydofs_start_global];
-            
-            % Compute dof positions in global state space vector
-            pos = 1:(tq.NumNodes * 6 + tl.NumNodes);
-            pos(this.bc_dir_idx) = [];
-            this.dof_idx = pos;
+            % Call subroutine for boundary condition index crunching
+            this.computeBC(displ_dir, velo_dir, velo_dir_val);
             
             % Construct global indices in uvw from element nodes. Each dof in
             % an element is used three times for x,y,z displacement. The
@@ -138,18 +135,16 @@ classdef System < models.BaseDynSystem
             I = [3*(i'-1)+1; 3*(i'-1)+2; 3*(i'-1)+3];
             J = [3*(j'-1)+1; 3*(j'-1)+2; 3*(j'-1)+3];
             S = repmat(1:length(s),3,1);
-            M3 = sparse(I(:),J(:),s(S(:)),3*nd,3*nd);
+            MM = sparse(I(:),J(:),s(S(:)),3*nd,3*nd);
+            % Insert identity for velocity and zeros for pressure
+            MM = blkdiag(speye(size(MM)),...
+                MM,sparse(tl.NumNodes,tl.NumNodes));
             
-            % Strip out the entries of dirichlet nodes:
-            % This is done before adding the eye-copy for the velocities,
-            % as they are reduced by the same amount of dofs.
-            M3(bc_dir_relpos,:) = [];
-            M3(:,bc_dir_relpos) = [];
+            % Strip out the entries of dirichlet nodes
+            MM(this.bc_dir_idx,:) = [];
+            MM(:,this.bc_dir_idx) = [];
             
-            % Hence, the mass matrix is for the v' part, whereas the x'
-            % part has simple identity
-            this.M = dscomponents.ConstMassMatrix(blkdiag(speye(size(M3)),...
-                M3,sparse(tl.NumNodes,tl.NumNodes)));
+            this.M = dscomponents.ConstMassMatrix(MM);
             
             %% Set system components
             % Core nonlinearity
@@ -179,7 +174,7 @@ classdef System < models.BaseDynSystem
             end
             uvw = yall;
             
-            bc_dir_applies = sum(this.bc_dir,1) >= 1;
+            bc_dir_displ_applies = sum(this.bc_dir_displ,1) >= 1;
             bc_dir_velo_applies = sum(this.bc_dir_velo,1) >= 1;
             
             %% Loop over time
@@ -201,7 +196,7 @@ classdef System < models.BaseDynSystem
                 
                 %% Dirichlet conditions
                 % Displacement
-                plot3(h,u(1,bc_dir_applies),u(2,bc_dir_applies),u(3,bc_dir_applies),'k.','MarkerSize',20);
+                plot3(h,u(1,bc_dir_displ_applies),u(2,bc_dir_displ_applies),u(3,bc_dir_displ_applies),'k.','MarkerSize',20);
                 for k=1:size(e,1)
                     plot3(h,u(1,[e(k,1) e(k,2)]),u(2,[e(k,1) e(k,2)]),u(3,[e(k,1) e(k,2)]),'r');
                 end
@@ -232,8 +227,8 @@ classdef System < models.BaseDynSystem
                 title(h,sprintf('Deformation at t=%g',t(ts)));
                 hold(h,'off');
                 
-                pause(1);
-%                 pause;
+%                 pause(1);
+                pause;
             end
 
             if nargin < 4
@@ -265,6 +260,48 @@ classdef System < models.BaseDynSystem
             x0(this.bc_dir_idx) = [];
             
             x0 = dscomponents.ConstInitialValue(x0);
+        end
+        
+        function computeBC(this, displ_dir, velo_dir, velo_dir_val)
+            
+            if any(any(displ_dir & velo_dir))
+                error('Cannot impose displacement and velocity dirichlet conditions on same DoF');
+            end
+            fe_displ = this.DisplFE;
+            fe_press = this.PressureFE;
+            
+            % Position of position entries in global state space vector
+            velocitydofs_start_global = fe_displ.NumNodes * 3;
+            
+            %% Displacement
+            this.bc_dir_displ = displ_dir;
+            % Set values to node positions
+            this.bc_dir_displ_val = fe_displ.nodes(displ_dir);
+            % Add zeros for respective velocities
+            this.bc_dir_displ_val = [this.bc_dir_displ_val; zeros(size(this.bc_dir_displ_val))];
+            % Collect indices of dirichlet values per 3-set of x,y,z values
+            relpos = find(displ_dir(:));
+            % Same positions for points and velocity
+            this.bc_dir_displ_idx = [relpos; relpos + velocitydofs_start_global];
+            
+            %% Velocity
+            this.bc_dir_velo = velo_dir;
+            this.bc_dir_velo_val = velo_dir_val(velo_dir);
+            this.bc_dir_velo_idx = velocitydofs_start_global + find(velo_dir(:));
+            
+            %% Hydrostatic Pressure Dirichlet conditions
+%             press_dir = false(1,tl.NumNodes);
+%             press_dir(1) = true;
+%             this.bc_dir = [displ_dir; press_dir];
+
+            % The according velocities are all zero for dirichlet points
+            this.bc_dir_val = [this.bc_dir_displ_val; this.bc_dir_velo_val];
+            this.bc_dir_idx = [this.bc_dir_displ_idx; this.bc_dir_velo_idx];
+            
+            % Compute dof positions in global state space vector
+            pos = 1:(fe_displ.NumNodes * 6 + fe_press.NumNodes);
+            pos(this.bc_dir_idx) = [];
+            this.dof_idx = pos;
         end
     end
     

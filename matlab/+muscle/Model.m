@@ -24,7 +24,15 @@ classdef Model < models.BaseFullModel
             this.Data = data.ModelData(this);
             %this.Data.useFileTrajectoryData;
             
-            [pts, cubes] = cubegeom.DemoCubeGrid(-1:1,-1:2,-1:1);
+            %% Normal setup
+            %[pts, cubes] = cubegeom.DemoCubeGrid(-1:1,-1:2,-1:1);
+            
+            %% Debug geometry
+            % Single cube with same config as reference element
+            [pts, cubes] = cubegeom.DemoCubeGrid(0:1,0:1,0:1);
+            pts(pts == 0) = -1;
+            
+            %% Rest
             this.Geometry = cubegeom(pts, cubes);
             this.System = muscle.System(this);
             
@@ -38,8 +46,6 @@ classdef Model < models.BaseFullModel
             this.dt = .1; % [ms]
             this.ODESolver = solvers.MLode15i;
             this.System.MaxTimestep = []; %model.dt;
-
-            
         end
         
         function varargout = plot(this, varargin)

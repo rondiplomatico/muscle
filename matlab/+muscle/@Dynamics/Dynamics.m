@@ -23,7 +23,10 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             error('Custom projection is implemented and evaluate overridden directly');
         end
         
-        function duvw = evaluate(this, uvwdof, ~)
+        function duvw = evaluate(this, uvwdof, t)
+            if any(isnan(uvwdof(:)))
+                keyboard;
+            end
             sys = this.System;
             g = sys.Model.Geometry;
             fe_displ = sys.DisplFE;
@@ -36,15 +39,12 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % Include dirichlet values to state vector
             uvwcomplete = zeros(2*dofs_displ + fe_press.NumNodes,1);
             uvwcomplete(sys.dof_idx) = uvwdof;
-            uvwcomplete(sys.bc_dir_idx) = sys.bc_dir_val;%*(1+t/100);
+            uvwcomplete(sys.bc_dir_idx) = sys.bc_dir_val;
             
             % Init duv
-            duvw = zeros(2*dofs_displ + fe_press.NumNodes,1);
+            duvw = zeros(size(uvwcomplete));
             % THIS ALREADY FULFILLS THE u' = v ODE PART!
             duvw(1:dofs_displ) = uvwcomplete(dofs_displ+1:2*dofs_displ);
-            % Test: Set a nonzero velocity to points on left face
-            velo_dir = sys.bc_dir_velo_idx;
-            duvw(velo_dir) = -.01;
             
             dofsperelem_displ = fe_displ.DofsPerElement;
             dofsperelem_press = fe_press.DofsPerElement;
@@ -73,7 +73,14 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                     % Invariant I1
                     I1 = sum(sum((u'*u) .* (dtn*dtn')));
                     
-                    P = p*inv(F)' + 2*(this.c10 + I1*this.c01)*F - 2*this.c01*F*(F'*F);
+%                     if any(any(isnan(inv(F))))
+%                         keyboard;
+%                     end
+                    
+                    P = p*inv(F)' + 2*(this.c10 + I1*this.c01)*F - 2*this.c01*(F*F')*F;
+%                     if norm(P) > 1e-5
+%                         keyboard;
+%                     end
                     
                     weight = g.gaussw(gp) * fe_displ.elem_detjac(m,gp);
                     
@@ -92,11 +99,11 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             end
             % Remove values at dirichlet nodes
             duvw(sys.bc_dir_idx) = [];
+            
+            if any(isnan(duvw(:)))
+                keyboard;
+            end
         end
-        
-%         function J = getStateJacobian(this, y, t, mu)
-%             
-%         end
         
         function copy = clone(this)
             % Create new instance

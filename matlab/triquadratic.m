@@ -130,15 +130,14 @@ classdef triquadratic < fembase
             s = [1 .5 .5 1 .5 .5 .5 .5 1 .5 .5 1 .5 .5 .5 .5 .5 .5 .5 .5 1  .5 .5 1  .5 .5 .5 .5 1  .5 .5 1];
             T = sparse(i,j,s,20,8);
             nodes = zeros(3,nc*20);
-            elems = zeros(nc,20);
+            
             % Iterate all cubes and collect nodes
             for cidx = 1:nc
                 cube = c(cidx,:);
                 pos = 20*(cidx-1)+1:20*cidx;
                 nodes(:,pos) = p(:,cube)*T';
-                elems(cidx,:) = pos;
             end
-            [nodes, ~, elems] = unique(nodes','rows');
+            [nodes, ~, elems] = unique(nodes','rows','stable');
             this.nodes = nodes';
             this.elems = reshape(elems,20,[])';
             
