@@ -24,7 +24,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         end
         
         function duvw = evaluate(this, uvwdof, t)
-            if any(isnan(uvwdof(:)))
+            if any(isnan(uvwdof(:))) || t < 0
                 keyboard;
             end
             sys = this.System;
@@ -103,6 +103,10 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             if any(isnan(duvw(:)))
                 keyboard;
             end
+        end
+        
+        function J = getStateJacobian(this, x, t)
+            
         end
         
         function copy = clone(this)
