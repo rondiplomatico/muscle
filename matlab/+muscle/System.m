@@ -65,7 +65,7 @@ classdef System < models.BaseDynSystem
             this = this@models.BaseDynSystem(model);
             
             geo = model.Geometry;
-            %tq = triquadratic(geo);
+%             tq = triquadratic(geo);
             tq = trilinear(geo);
             tl = trilinear(geo);
     
@@ -83,9 +83,9 @@ classdef System < models.BaseDynSystem
 %             for k = [5 6 11 12]
             for k = 1
                 % Quadratic
-                %displ_dir(:,tq.elems(k,[6:8 11 12 18:20])) = true;
+%                 displ_dir(:,tq.elems(k,[6:8 11 12 18:20])) = true;
                 % Linear
-             %   displ_dir(:,tq.elems(k,5:8)) = true;
+%                displ_dir(:,tq.elems(k,5:8)) = true;
             end
 
             %% Dirichlet conditions: Velocity (fix one side)
@@ -99,9 +99,9 @@ classdef System < models.BaseDynSystem
                 % Quadratic
 %                 velo_dir(3,tq.elems(k,[1:3 9 10 13:15])) = true;
                 % Linear
-                %velo_dir(3,tq.elems(k,1:4)) = true;
+%                 velo_dir(3,tq.elems(k,1:4)) = true;
             end
-            %velo_dir_val(velo_dir) = .005;
+%             velo_dir_val(velo_dir) = .005;
             
             % Call subroutine for boundary condition index crunching
             this.computeBC(displ_dir, velo_dir, velo_dir_val);

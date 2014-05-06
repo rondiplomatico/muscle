@@ -41,21 +41,38 @@ Here we have the jacobian
 \begin{align}
 	 \nabla \vf([\vu; \vv; \vw]) &:= \m{\frac{1}{\Delta t} \vI & -\vI & \vnull & \Bigl\rbrace3N\\
 	 									\nabla_{\vu}\vK(\vu,\vw) & \frac{1}{\Delta t}\vM & \nabla_{\vw}\vK(\vu,\vw) & \Bigl\rbrace3N\\
-	 									\underbrace{\nabla_{\vu}\vg(\vu)}_{3N} & \underbrace{\vnull}_{3N} & \underbrace{\vnull}_{N} & \Bigl\rbrace N}.
+	 									\underbrace{\nabla_{\vu}\vg(\vu)}_{3N} & \underbrace{\vnull}_{3N} & \underbrace{\vnull}_{M} & \Bigl\rbrace M}.
 \end{align}
 
-Here are some important formulas for matrix derivatives etc.:
+Here are some important formulas for matrix derivatives. We first define
 \begin{align}
-	%\Rightarrow \d{}{\vU}\vS^{-1} &= \lim_{h\to 0}\frac{(\vS+h\vU)^{-1}-\vS^{-1}}{h} = \lim_{h\to 0}\frac{\vS^{-1} - \vS^{-1}h\vU\vS^{-1}-\vS^{-1}}{h}\nonumber\\
-	%	&= -\vS^{-1}\vU\vS^{-1}\nonumber\\
+    \vU^j_i(X) & := \m{\ve_i\otimes\dpj}, i=1\ldots3, &
+	\vU^j_1(X) &= \m{
+            ~   & \dpj  & ~ \\
+            0   & 0                 & 0 \\
+            0   & 0                 & 0
+          },\\
+  \vU^j_2(X) &= \m{
+            0   & 0                 & 0 \\
+            ~   & \dpj  & ~ \\            
+            0   & 0                 & 0
+          },& 
+  \vU^j_3(X) & = \m{
+            0   & 0                 & 0 \\
+            0   & 0                 & 0 \\
+            ~   & \dpj  & ~            
+          }.
+\end{align}
+\begin{align}
 	\vF(X,\vu + h\ve[j]_i) &= \vF(X,\vu) + \m{\vnull \\ h\dpj^T\\ \vnull}\leftarrow i\nonumber\\
-	&= \vF(X,\vu) + h\ve_i\otimes\dpj,\qquad i=1\ldots3,\ve_i\in\R^3 \text{ unit vec}\nonumber\\
-	\Rightarrow \d{}{u[j]_i}\vF(X,\vu) &= \ve_i\otimes\dpj,\qquad i=1\ldots3\nonumber\\
+	&= \vF(X,\vu) + h\ve_i\otimes\dpj\\
+	&= \vF(X,\vu) + h\vU^j_i(X),\qquad i=1\ldots3,\ve_i\in\R^3 \text{ unit vec}\nonumber\\
+	\Rightarrow \d{}{u[j]_i}\vF(X,\vu) &= \vU^j_i(X),\qquad i=1\ldots3\nonumber\\
 	(\vS+\Delta\vU)^{-1} &= \vS^{-1} - \vS^{-1}\Delta\vU\vS^{-1} + \O{|\Delta U|^2}\qquad\cite[p.57]{Bonet2008}\label{eq:matrixinversederivative}\\
-	\vF(X,\vu + h\ve[j]_i)^{-1} &= \left(\vF(X,\vu) + h\ve_i\otimes\dpj\right)^{-1}\nonumber\\
-		&\re{eq:matrixinversederivative}\vF(X,\vu)^{-1} - h\vF(X,\vu)^{-1}(\ve_i\otimes\dpj)\vF(X,\vu)^{-1} + \O{h^2}\nonumber\\
-	\Rightarrow\d{}{u[j]_i}\vF^{-1}(X,\vu) &= -\vF(X,\vu)^{-1}(\ve_i\otimes\dpj)\vF(X,\vu)^{-1}\nonumber\\
-	\Rightarrow\d{}{u[j]_i}\vF^{-T}(X,\vu) &= -\vF(X,\vu)^{-T}(\dpj\otimes\ve_i)\vF(X,\vu)^{-T}\nonumber
+	\vF(X,\vu + h\ve[j]_i)^{-1} &= \left(\vF(X,\vu) + h\vU^j_i(X)\right)^{-1}\nonumber\\
+		&\re{eq:matrixinversederivative}\vF(X,\vu)^{-1} - h\vF(X,\vu)^{-1}\vU^j_i(X)\vF(X,\vu)^{-1} + \O{h^2}\nonumber\\
+	\Rightarrow\d{}{u[j]_i}\vF^{-1}(X,\vu) &= -\vF(X,\vu)^{-1}\vU^j_i(X)\vF(X,\vu)^{-1}\nonumber\\
+	\Rightarrow\d{}{u[j]_i}\vF^{-T}(X,\vu) &= -\vF(X,\vu)^{-T}(\vU^j_i(X))^{T}\vF(X,\vu)^{-T}\nonumber
 \end{align}
 
 In detail, we have
@@ -87,13 +104,13 @@ we consider the single summands of $\vP$ to derive $\d{\vP}{\vu[j]_i}(X,\vu,\vw)
 \end{align*}
 \begin{align*}
 	\nabla_{\vu[j]}I_1(\vC(X,\vu)) &\re{eq:I1_basis} \nabla_{\vu[j]}\suml{i,l}{N} (\vu[i] \cdot \vu[l])(\dpi \cdot \divergence\varphi_l(X))\\
-	&= \suml{i}{N} \vu[i](\dpi \cdot \dpj) \in\R^3
+	&= 2\suml{i}{N} \vu[i](\dpi \cdot \dpj) \in\R^3
 \end{align*}
 \begin{align*}	 
 	 &\d{}{\vu[j]_i}2(c_{10} + I_1(\vC(X,\vu))c_{01})\vF(X,\vu)\\
 	 =& 2(c_{10} + \d{}{\vu[j]_i}I_1(\vC(X,\vu))c_{01})\vF(X,\vu) + 2(c_{10} + I_1(\vC(X,\vu))c_{01})\d{}{\vu[j]_i}\vF(X,\vu)\\
 	 =& 2(c_{10} + c_{01}\suml{l}{N} \vu[l]_i(\divergence\varphi_l(X) \cdot \dpj))\vF(X,\vu)\\
-	 &+ 2(c_{10} + I_1(\vC(X,\vu))c_{01})\ve_i\otimes\dpj\in\R^{3\times 3}
+	 &+ 2(c_{10} + I_1(\vC(X,\vu))c_{01})\vU^j_i(X)\in\R^{3\times 3}
 \end{align*}
 \begin{align*}
 	\d{}{\vu[j]_i}\vC(X,\vu) &= \d{}{\vu[j]_i}\suml{m,l}{N} (\vu[m] \cdot \vu[l])(\divergence\varphi_m(X) \otimes \divergence\varphi_l(X))\\
@@ -102,7 +119,7 @@ we consider the single summands of $\vP$ to derive $\d{\vP}{\vu[j]_i}(X,\vu,\vw)
 \begin{align*}
 	&\d{}{\vu[j]_i}2c_{01}\vF(X,\vu)\vC(X,\vu)\\
 	=& 2c_{01}\left(\left(\d{}{\vu[j]_i}\vF(X,\vu)\right)\vC(X,\vu) + \vF(X,\vu)\d{}{\vu[j]_i}\vC(X,\vu)\right)\\
-	=& 2c_{01}\left(\left(\ve_i\otimes\dpj\right)\vC(X,\vu)
+	=& 2c_{01}\left(\left(\vU^j_i(X)\right)\vC(X,\vu)
 	+ \vF(X,\vu)\suml{l}{N} \vu[l]_i(\dpj \otimes \divergence\varphi_l(X))\right)\in\R^{3\times 3}
 \end{align*}
 \begin{align*}
@@ -126,3 +143,18 @@ we consider the single summands of $\vP$ to derive $\d{\vP}{\vu[j]_i}(X,\vu,\vw)
 		&=  \intor \psi_i(X)\vF^{-T}(X,\vu)\dpk dX\\
 		&= \sumvk\sumgp w_p \psi_i(\pmp)\vF^{-T}(\pmp,\vu) \dNkmp\jmp\in\R^3
 \end{align*}
+
+\subsubsection{Derivation of $\nabla_{\vu}\vg(\vu)$}
+\begin{align*}
+	\nabla_{\vu}\vg(\vu) &= \m{\nabla_{\vu}\vg_1(\vu)\\ \vdots \\ \nabla_{\vu}\vg_M(\vu)}
+	 = \m{\d{\vg_1}{\vu[1]}(\vu) & \ldots & \d{\vg_1}{\vu[N]}(\vu)\\
+	 	\vdots & \ddots & \vdots\\
+	   \d{\vg_M}{\vu[1]}(\vu) & \ldots & \d{\vg_M}{\vu[N]}(\vu)} \in\R^{M \times 3N}\\
+	\nabla_{\vu[j]}\vg_k(\vu) &= \nabla_{\vu[j]}\intor (\det\vF(X,\vu)-1)\psi_k(X)dX\qquad\in\R^{1\times 3}\\
+		&\re{eq:weak_incomp_condition}  \sumvk\sumgp w_p \nabla_{\vu[j]}\det\vF(\pmp,\vu)\bPkmp\jmp\\
+		&= \sumvk\sumgp w_p \det\vF(\pmp,\vu)\m{\vF(\pmp,\vu)^{-T}:\vU(\pmp)^j_1\\\vF(\pmp,\vu)^{-T}:\vU(\pmp)^j_2\\\vF(\pmp,\vu)^{-T}:\vU(\pmp)^j_3}^T\bPkmp\jmp\\
+		&= \sumvk\sumgp w_p \det\vF(\pmp,\vu)\m{\tr(\vF(\pmp,\vu)^{-1}\vU(\pmp)^j_1)\\\tr(\vF(\pmp,\vu)^{-1}\vU(\pmp)^j_2)\\\tr(\vF(\pmp,\vu)^{-1}\vU(\pmp)^j_3)}^T\bPkmp\jmp\in\R^{1\times 3}
+\end{align*}
+
+
+

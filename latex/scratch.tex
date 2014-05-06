@@ -82,16 +82,16 @@
 \newcommand{\pmp}{X^m_p}%\Phi_m(X_p)
 \usepackage{mathtools}
 \DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
-%\newcommand{\sm}[1]{\ensuremath{\left(\begin{smallmatrix}#1\end{smallmatrix}\right)}}
 \newcommand{\Dp}[1]{\nabla\varphi_{#1}(X)}
 \newcommand{\dpk}{\Dp{k}}
 \newcommand{\dpi}{\Dp{i}}
 \newcommand{\dpj}{\Dp{j}}
-% \newcommand{\dpg}[1]{\nabla\varphi_{#1}(\pmp)}
-% \newcommand{\dpgk}{\dpg{k}}
-% \newcommand{\dpgi}{\dpg{i}}
-% \newcommand{\dpgj}{\dpg{j}}
-\newcommand{\dNkmp}{N^\nabla_{l(k,m)}(X_p)}
+% Displacement basis ansatz functions
+\newcommand{\bD}{N}
+% Pressure basis ansatz functions
+\newcommand{\bP}{\tilde{N}}
+\newcommand{\dNkmp}{\bD^\nabla_{l(k,m)}(X_p)}
+\newcommand{\bPkmp}{\bP_{l(k,m)}(X_p)}
 
 \allowdisplaybreaks
 \begin{document}

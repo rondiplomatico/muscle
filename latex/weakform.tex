@@ -185,8 +185,8 @@ In detail we have
     	%&= \suml{i\in E_m}{} (\vc_i(t)\otimes \va_0(\pmp))(\nabla N_{l(i,m)}(X_p)\cdot\va_0(\pmp))\nonumber
 \end{align*}
 By the same arguments, condition/equation \eqref{def:weakform_nb} now reads as
-\begin{align*}
-	\intor (J(X,t)-1)\psi_k(X)dX &= \sumvk\sumgp w_p (\det\vF(\pmp,t)-1) N_{l(k,m)}(X_p)\jmp\\
-	&= \sumvk\sumgp w_p \left(\det\left(\sumi \vc_i(t)\otimes \divergence\varphi_i(\pmp)\right)-1\right) N_{l(k,m)}(X_p)\jmp\\
-	&= \sumvk\sumgp w_p \left(\det\left(\sum_{i\in E_m} \vc_i(t)\otimes \divergence\varphi_i(\pmp)\right)-1\right) N_{l(k,m)}(X_p)\jmp.\\
-\end{align*}
+\begin{align}
+	\intor (J(X,t)-1)\psi_k(X)dX &= \sumvk\sumgp w_p (\det\vF(\pmp,t)-1) \bPkmp\jmp\label{eq:weak_incomp_condition}\\
+	&= \sumvk\sumgp w_p \left(\det\left(\sumi \vc_i(t)\otimes \divergence\varphi_i(\pmp)\right)-1\right) \bPkmp\jmp\nonumber\\
+	&= \sumvk\sumgp w_p \left(\det\left(\sum_{i\in E_m} \vc_i(t)\otimes \divergence\varphi_i(\pmp)\right)-1\right) \bPkmp\jmp.\nonumber\\
+\end{align}

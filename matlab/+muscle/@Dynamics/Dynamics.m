@@ -74,14 +74,12 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                     I1 = sum(sum((u'*u) .* (dtn*dtn')));
                     
                     P = p*inv(F)' + 2*(this.c10 + I1*this.c01)*F - 2*this.c01*F*(F'*F);
-%                     P = p*inv(F)' - 2*this.c01*F*(F'*F);
-%                     P = 2*(this.c10 + I1*this.c01)*F;
                     
                     weight = g.gaussw(gp) * fe_displ.elem_detjac(m,gp);
                     
                     integrand_displ = integrand_displ + weight * P * dtn';
                     
-%                     integrand_press = integrand_press + weight * (det(F)-1) * fe_press.Ngp(:,gp,m);
+                    integrand_press = integrand_press + weight * (det(F)-1) * fe_press.Ngp(:,gp,m);
                 end
                 % We have v' + K(u) = 0, so the values of K(u) must be
                 % written at the according locations of v'; those are the
@@ -126,7 +124,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             uvwcomplete(sys.bc_dir_idx) = sys.bc_dir_val;
             
             dofsperelem_displ = fe_displ.DofsPerElement;
-%             dofsperelem_press = fe_press.DofsPerElement;
+            dofsperelem_press = fe_press.DofsPerElement;
             num_gausspoints = g.NumGaussp;
             num_elements = fe_displ.NumElems;
             for m = 1:num_elements
@@ -148,6 +146,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                     %detF = det(F);
                     Finv = inv(F);
                     C = F'*F;
+                    detF = det(F);
                     
                     % Evaluate the pressure at gauss points
                     w = uvwcomplete(elemidx_pressure);
@@ -167,6 +166,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                         fac1 = 2*(this.c10 + dI1duk*this.c01);
                         fac2 = 2*(this.c10 + I1*this.c01);
                         
+                        %% Grad_u K(u,v,w)
                         % xdim
                         dFtF1 = e1_dyad_dPhik'*F + F'*e1_dyad_dPhik;
                         dPx = -p * (Finv * e1_dyad_dPhik * Finv)'...
@@ -195,6 +195,28 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                         i = [i; inew]; 
                         j = [j; one*elemidx_displ(3,k)]; 
                         snew = weight * dPz * dtn';
+                        s = [s; snew(:)];
+                        
+                        %% grad u g(u)
+                        % dx
+                        i = [i; elemidx_pressure(:)];
+                        j = [j; ones(dofsperelem_press,1)*elemidx_displ(1,k)]; 
+                        s = [s; weight * detF * trace(Finv*e1_dyad_dPhik) * fe_press.Ngp(:,gp,m)];
+                        % dy
+                        i = [i; elemidx_pressure(:)];
+                        j = [j; ones(dofsperelem_press,1)*elemidx_displ(2,k)]; 
+                        s = [s; weight * detF * trace(Finv*e2_dyad_dPhik) * fe_press.Ngp(:,gp,m)];
+                        %dz
+                        i = [i; elemidx_pressure(:)];
+                        j = [j; ones(dofsperelem_press,1)*elemidx_displ(3,k)]; 
+                        s = [s; weight * detF * trace(Finv*e3_dyad_dPhik) * fe_press.Ngp(:,gp,m)];
+                    end
+                    %% Grad_w K(u,v,w)
+                    inew = elemidx_velo(:);
+                    for k = 1:dofsperelem_press
+                        i = [i; inew];
+                        j = [j; ones(3*dofsperelem_displ,1)*elemidx_pressure(k)]; 
+                        snew = weight * fe_press.Ngp(k,gp,m) * Finv' * dtn';
                         s = [s; snew(:)];
                     end
                 end
