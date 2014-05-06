@@ -22,13 +22,13 @@ Hence, after the FEM discretization we obtain the constrained ODE / differential
 \end{align}
 which can be transformed to a first-order system with the substitution $\vv(t) := \vu'(t)$:
 \begin{align}
-	\m{\vI & \vnull\\ \vnull & \vM}\m{\vu'(t)\\ \vv'(t)} + \m{-\vv(t) \\ \vK(\vu(t),\vw(t))} &= \vnull,\\
+	\m{\vI & \vnull\\ \vnull & \vM}\m{\vu'(t)\\ \vv'(t)} &= \m{\vv(t) \\ -\vK(\vu(t),\vw(t))},\\
 	\vg(\vu(t))		&= \vnull.
 \end{align}
 For the time-discretization we use the notation $\vu_i := \vu(t_i), t_i := i\Delta t, i=0\ldots N_t\in\N, \Delta t > 0$, similarly for $\vv,\vw$.
 Using the standard backward-Euler scheme results in the implicit system
 \begin{align}
-	\frac{1}{\Delta t}\m{\vI & \vnull\\ \vnull & \vM}\m{\vu_{i+1}-\vu_i\\\vv_{i+1}-\vv_i} + \m{- \vv_{i+1}\\\vK(\vu_{i+1},\vw_{i+1})} &= \vnull,\\
+	\frac{1}{\Delta t}\m{\vI & \vnull\\ \vnull & \vM}\m{\vu_{i+1}-\vu_i\\\vv_{i+1}-\vv_i} &= \m{\vv_{i+1}\\-\vK(\vu_{i+1},\vw_{i+1})},\\
 	\vg(\vu_{i+1})		&= \vnull.
 \end{align}
 Writing the overall system as $\vf([\vu; \vv; \vw]) = \vnull$ (with $\vu_i$ const, $\vu_{i+1}=\vu$ variable), we apply the standard Newton-Iteration

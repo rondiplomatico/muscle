@@ -17,7 +17,7 @@ classdef Model < models.BaseFullModel
     methods
         function this = Model
             % Creates a new muscle model
-            
+            this = this@models.BaseFullModel;
             this.Name = sprintf('FEM Muscle model%s','');
             
             this.SaveTag = sprintf('musclemodel_%s','');
@@ -42,10 +42,22 @@ classdef Model < models.BaseFullModel
 %             this.T = 1;
 %             this.ODESolver = solvers.ExplEuler;
             
-            this.T = 1; % [ms]
-            this.dt = .1; % [ms]
-            this.ODESolver = solvers.MLode15i;
+            this.T = 10; % [ms]
+            this.dt = .01; % [ms]
+            s = solvers.MLode15i;
+            s.RelTol = 1e-2;
+            s.AbsTol = 1e-2;
+            this.ODESolver = s;
             this.System.MaxTimestep = []; %model.dt;
+            
+            %% Health tests
+%             this.System.f.test_Jacobian;
+%             chk = this.System.DisplFE.test_JacobiansDefaultGeo;
+% %             chk = chk && this.System.DisplFE.test_QuadraticBasisFun;
+%             chk = chk && this.System.PressureFE.test_JacobiansDefaultGeo;
+%             if ~chk
+%                 error('Health tests failed!');
+%             end
         end
         
         function varargout = plot(this, varargin)

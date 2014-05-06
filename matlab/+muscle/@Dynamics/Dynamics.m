@@ -2,7 +2,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     
     
     properties
-       
        c10 = 6.352e-10;
        c01 = 3.627;
     end
@@ -17,6 +16,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             d = dfe.NumNodes * 6 - dirvals + sys.PressureFE.NumNodes;
             this.xDim = d;
             this.fDim = d;
+            this.computeSparsityPattern;
         end
         
         function evaluateCoreFun(varargin)
@@ -24,9 +24,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         end
         
         function duvw = evaluate(this, uvwdof, t)
-            if any(isnan(uvwdof(:))) || t < 0
-                keyboard;
-            end
             sys = this.System;
             g = sys.Model.Geometry;
             fe_displ = sys.DisplFE;
@@ -38,7 +35,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             
             % Include dirichlet values to state vector
             uvwcomplete = zeros(2*dofs_displ + fe_press.NumNodes,1);
-            uvwcomplete(sys.dof_idx) = uvwdof;
+            uvwcomplete(sys.dof_idx_global) = uvwdof;
             uvwcomplete(sys.bc_dir_idx) = sys.bc_dir_val;
             
             % Init duv
@@ -85,7 +82,9 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                 % written at the according locations of v'; those are the
                 % same but +fielddofs later each
                 outidx = elemidx_displ + dofs_displ;
-                duvw(outidx) = duvw(outidx) + integrand_displ;
+                % Have MINUS here as the equation satisfies Mu'' + K(u,w) =
+                % 0, but KerMor implements Mu'' = -K(u,w)
+                duvw(outidx) = duvw(outidx) - integrand_displ;
                 
                 % Update pressure value at according positions
                 duvw(elemidx_pressure) = duvw(elemidx_pressure) + integrand_press;
@@ -93,9 +92,79 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % Remove values at dirichlet nodes
             duvw(sys.bc_dir_idx) = [];
             
-            if any(isnan(duvw(:)))
-                keyboard;
+            if sys.UseDirectMassInversion
+                duvw(sys.dof_idx_velo) = sys.Minv * duvw(sys.dof_idx_velo);
             end
+        end
+        
+        function computeSparsityPattern(this)
+            sys = this.System;
+            g = sys.Model.Geometry;
+            fe_displ = sys.DisplFE;
+            fe_press = sys.PressureFE;
+            
+            N = fe_displ.NumNodes;
+            M = fe_press.NumNodes;
+            
+            %% -I part in u'(t) = -v(t)
+            i = (1:3*N)';
+            j = ((1:3*N)+3*N)';
+            
+            globidx_disp = sys.globidx_displ;
+            globidx_press = sys.globidx_pressure;
+            
+            dofs_displ = N*3;
+            
+            dofsperelem_displ = fe_displ.DofsPerElement;
+            dofsperelem_press = fe_press.DofsPerElement;
+            num_gausspoints = g.NumGaussp;
+            num_elements = fe_displ.NumElems;
+            for m = 1:num_elements
+                elemidx_displ = globidx_disp(:,:,m);
+                elemidx_velo = elemidx_displ + dofs_displ;
+                elemidx_pressure = globidx_press(:,m);
+                inew = elemidx_velo(:);
+                one = ones(size(inew));
+                for gp = 1:num_gausspoints
+                    for k = 1:dofsperelem_displ
+                        %% Grad_u K(u,v,w)
+                        % xdim
+                        i = [i; inew]; %#ok<*AGROW>
+                        j = [j; one*elemidx_displ(1,k)];
+                        
+                        % ydim
+                        i = [i; inew]; 
+                        j = [j; one*elemidx_displ(2,k)]; 
+                        
+                        % zdim
+                        i = [i; inew]; 
+                        j = [j; one*elemidx_displ(3,k)]; 
+                        
+                        %% grad u g(u)
+                        % dx
+                        i = [i; elemidx_pressure(:)];
+                        j = [j; ones(dofsperelem_press,1)*elemidx_displ(1,k)]; 
+                        % dy
+                        i = [i; elemidx_pressure(:)];
+                        j = [j; ones(dofsperelem_press,1)*elemidx_displ(2,k)]; 
+                        %dz
+                        i = [i; elemidx_pressure(:)];
+                        j = [j; ones(dofsperelem_press,1)*elemidx_displ(3,k)]; 
+                    end
+                    %% Grad_w K(u,v,w)
+                    inew = elemidx_velo(:);
+                    for k = 1:dofsperelem_press
+                        i = [i; inew];
+                        j = [j; ones(3*dofsperelem_displ,1)*elemidx_pressure(k)]; 
+                    end
+                end
+            end
+            J = sparse(i,j,ones(size(i)),6*N+M,6*N+M);
+            % Remove values at dirichlet nodes
+            J(:,sys.bc_dir_idx) = [];
+            J(sys.bc_dir_idx,:) = [];
+            
+            this.JSparsityPattern = logical(J);
         end
         
         function J = getStateJacobian(this, uvwdof, ~)
@@ -120,7 +189,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             
             % Include dirichlet values to state vector
             uvwcomplete = zeros(2*dofs_displ + fe_press.NumNodes,1);
-            uvwcomplete(sys.dof_idx) = uvwdof;
+            uvwcomplete(sys.dof_idx_global) = uvwdof;
             uvwcomplete(sys.bc_dir_idx) = sys.bc_dir_val;
             
             dofsperelem_displ = fe_displ.DofsPerElement;
@@ -167,6 +236,9 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                         fac2 = 2*(this.c10 + I1*this.c01);
                         
                         %% Grad_u K(u,v,w)
+                        % Recall: gradients from nabla K_{u,w} are
+                        % negative, as KerMor implements Mu'' = -K(u,v,w)
+                        % instead of Mu'' + K(u,v,w) = 0
                         % xdim
                         dFtF1 = e1_dyad_dPhik'*F + F'*e1_dyad_dPhik;
                         dPx = -p * (Finv * e1_dyad_dPhik * Finv)'...
@@ -174,7 +246,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                               -2*this.c01 * (e1_dyad_dPhik * C + F*dFtF1);  %#ok<*MINV>
                         i = [i; inew]; %#ok<*AGROW>
                         j = [j; one*elemidx_displ(1,k)];
-                        snew = weight * dPx * dtn';
+                        snew = -weight * dPx * dtn';
                         s = [s; snew(:)];
                         
                         % ydim
@@ -184,7 +256,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                                 -2*this.c01 * (e2_dyad_dPhik * C + F*dFtF2);
                         i = [i; inew]; 
                         j = [j; one*elemidx_displ(2,k)]; 
-                        snew = weight * dPy * dtn';
+                        snew = -weight * dPy * dtn';
                         s = [s; snew(:)];
                         
                         % zdim
@@ -194,7 +266,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                             - 2*this.c01 * (e3_dyad_dPhik * C + F*dFtF3);
                         i = [i; inew]; 
                         j = [j; one*elemidx_displ(3,k)]; 
-                        snew = weight * dPz * dtn';
+                        snew = -weight * dPz * dtn';
                         s = [s; snew(:)];
                         
                         %% grad u g(u)
@@ -216,7 +288,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                     for k = 1:dofsperelem_press
                         i = [i; inew];
                         j = [j; ones(3*dofsperelem_displ,1)*elemidx_pressure(k)]; 
-                        snew = weight * fe_press.Ngp(k,gp,m) * Finv' * dtn';
+                        snew = -weight * fe_press.Ngp(k,gp,m) * Finv' * dtn';
                         s = [s; snew(:)];
                     end
                 end
@@ -225,6 +297,11 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % Remove values at dirichlet nodes
             J(:,sys.bc_dir_idx) = [];
             J(sys.bc_dir_idx,:) = [];
+            
+            if sys.UseDirectMassInversion
+                % Multiply with inverse of Mass matrix!
+                J(sys.dof_idx_velo,:) = sys.Minv*J(sys.dof_idx_velo,:);
+            end
    
             % legacy speed test for quick eval in jacobian
 %             tic;
@@ -238,6 +315,26 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
 %                 dFtF12 = dFtF12+dFtF12';
 %             end
 %             toc;
+        end
+        
+        function res = test_Jacobian(this, varargin)
+            % Overrides the random argument jacobian test as restrictions
+            % on the possible x values (detF = 1) hold.
+            
+            %res = test_Jacobian@dscomponents.ACoreFun(this, varargin{:});
+            x0 = this.System.x0.evaluate([]);
+            res = test_Jacobian@dscomponents.ACoreFun(this, x0);
+            
+            % Check if sparsity pattern and jacobian matrices match
+            Jp = this.JSparsityPattern;
+            Jeff = Jp;
+            Jeff(:) = false;
+            J = this.getStateJacobian(x0);
+            Jeff(logical(J)) = true;
+            check = (Jp | Jeff) & ~Jp;
+            if any(check(:))
+                error('boo');
+            end
         end
         
         function copy = clone(this)

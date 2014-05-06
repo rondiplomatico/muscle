@@ -120,7 +120,7 @@ classdef fembase < handle
             this.Ngp = Ngpval;
             this.transgrad = tg;
             this.M = sparse(Mass + Mass' - diag(diag(Mass)));
-            %this.M = sparse(Mass + Mass');
+%             this.M = sparse(Mass + Mass');
             this.elem_detjac = eljac;
         end
         
