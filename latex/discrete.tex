@@ -130,6 +130,24 @@ we consider the single summands of $\vP$ to derive $\d{\vP}{\vu[j]_i}(X,\vu,\vw)
 	  & \d{}{\vu[j]_i} g(\lambda_f(X,\vu))\vF(X,\vu)\va_0(X)\otimes\va_0(X)\\
 	 =& \left( \d{g}{\lambda_f}(\lambda_f(X,\vu))\d{}{\vu[j]_i}\lambda_f(X,\vu)\vF(X,\vu) + g(\lambda_f(X,\vu))\ve_i\otimes\dpj\right)\va_0(X)\otimes\va_0(X) 
 \end{align*}
+\begin{align*}
+	  f_l'(\lambda) &\re{def:fl} \begin{cases}
+		\frac{12.5}{\lfo}\left(1-\frac{\lambda_f}{\lfo}\right) & 0.6 \leq \frac{\lambda_f}{\lfo} \leq 1.4\\ 
+		0 & \text{else}
+	\end{cases}\\	
+	   \d{g}{\lambda_f} &\re{def:g} \d{}{\lambda_f}\left(\frac{b_1}{\lambda_f^2}\left(\lambda_f^{d_1} - 1\right)
+		+\frac{p^{max}}{\lambda_f}f_l(\lambda_f)\gamma\left(\alpha,\d{\lambda_f}{t}\right)\right)\\
+		&= -\frac{b_1}{\lambda_f^3}\left(\lambda_f^{d_1} - 1\right) + \frac{b_1}{\lambda_f^2}(d_1-1)\lambda_f^{d_1-1}
+		+p^{max}\gamma\left(\alpha,\d{\lambda_f}{t}\right) \left(-\frac{1}{\lambda_f^2}f_l(\lambda_f) + \frac{1}{\lambda_f}f_l'(\lambda_f)\right)\\
+		&= \frac{b_1}{\lambda_f^3}\left((d_1-1)\lambda_f^{d_1} - (\lambda_f^{d_1} - 1)\right)
+		+p^{max}\gamma\left(\alpha,\d{\lambda_f}{t}\right) \left(-\frac{1}{\lambda_f^2}f_l(\lambda_f) + \frac{1}{\lambda_f}f_l'(\lambda_f)\right)\\
+		&= \frac{b_1}{\lambda_f^3}\left((d_1-2)\lambda_f^{d_1} + 2\right)
+		+p^{max}\gamma\left(\alpha,\d{\lambda_f}{t}\right) \left(-\frac{1}{\lambda_f^2}f_l(\lambda_f) 
+		+ \underbrace{\frac{12.5}{\lambda_f\lfo}\left(1-\frac{\lambda_f}{\lfo}\right)}_{\neq 0\text{ if }0.6 \leq \frac{\lambda_f}{\lfo} \leq 1.4}\right)\\
+		&= \frac{b_1}{\lambda_f^3}\left((d_1-2)\lambda_f^{d_1} + 2\right)
+		+ \frac{p^{max}}{\lambda_f^2}\gamma\left(\alpha,\d{\lambda_f}{t}\right) \left( 
+		\underbrace{12.5\frac{\lambda_f}{\lfo}\left(1-\frac{\lambda_f}{\lfo}\right)}_{\neq 0\text{ if }0.6 \leq \frac{\lambda_f}{\lfo} \leq 1.4}-f_l(\lambda_f)\right)
+\end{align*}
 
 \subsubsection{Derivation of $\nabla_{\vw}\vK(\vu,\vw)$}
 \begin{align*}

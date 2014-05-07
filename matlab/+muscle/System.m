@@ -17,6 +17,8 @@ classdef System < models.BaseDynSystem
     properties
        globidx_displ;
        globidx_pressure;
+       
+       Plota0 = true;
     end
     
     properties(SetAccess=private)
@@ -71,8 +73,13 @@ classdef System < models.BaseDynSystem
        % open to see how well reduced modeling will work with that scheme.
        %
        % @type logical @default false
-       UseDirectMassInversion = true;
+       UseDirectMassInversion = false;
        Minv;
+       
+       a0;
+       dtna0;
+       a0oa0;
+       dNa0;
     end
     
     methods
@@ -91,42 +98,18 @@ classdef System < models.BaseDynSystem
             % Save for Dynamics
             this.DisplFE = tq;
             this.PressureFE = tl;
-            % Find the indices of the pressure nodes in the displacement
-            % nodes geometry (used for plotting)
+            
+%             % Find the indices of the pressure nodes in the displacement
+%             % nodes geometry (used for plotting)
             this.pressure_to_displ_nodes = Utils.findVecInMatrix(tq.nodes,tl.nodes);
             
-            %% Dirichlet conditions: Position (fix one side)
-            displ_dir = false(3,tq.NumNodes);
-            %% Normal config
-            % Fix the front of the first four cubes
-%             for k = [5 6 11 12]
-            for k = 1
-                % Quadratic
-%                 displ_dir(:,tq.elems(k,[6:8 11 12 18:20])) = true;
-                displ_dir(:,tq.elems(k,[6 11 18])) = true;
-                % Linear
-%                displ_dir(:,tq.elems(k,5:8)) = true;
-            end
-
-            %% Dirichlet conditions: Velocity (fix one side)
-            % Compile indices of velocity DOFS that will be increased over
-            % time as BC
-            velo_dir = false(3,tq.NumNodes);
-            velo_dir_val = zeros(3,tq.NumNodes);
-%             for k = [1 2 7 8]
-            for k = 1
-                % Only z direction
-                % Quadratic
-%                 velo_dir(2,tq.elems(k,[1:3 9 10 13:15])) = true;
-                %velo_dir(3,tq.elems(k,[1:3 9 10 13:15])) = true;
-%                 velo_dir(1,tq.elems(k,[3 10 15])) = true;
-                % Linear
-%                 velo_dir(3,tq.elems(k,1:4)) = true;
-            end
-%             velo_dir_val(velo_dir) = .05;
+            [displ_dir, velo_dir, velo_dir_val] = this.getBC(tq);
             
             % Call subroutine for boundary condition index crunching
             this.computeBC(displ_dir, velo_dir, velo_dir_val);
+            
+            % Init fibre directions and precomputable values
+            this.inita0;
             
             % Construct global indices in uvw from element nodes. Each dof in
             % an element is used three times for x,y,z displacement. The
@@ -186,11 +169,18 @@ classdef System < models.BaseDynSystem
             this.x0 = this.assembleX0;
         end
         
-        function pm = plot(this, t, uvw, pm)
-            if nargin < 4
+        function pm = plot(this, t, uvw, withvelo, pm, vid)
+            if nargin < 6
+                vid = false;
+                if nargin < 4
+                    withvelo = true;
+                end
+            end
+            if nargin < 5 || isempty(pm)
                 pm = PlotManager;
                 pm.LeaveOpen = true;
-            end
+
+            end            
             
             dfem = this.DisplFE;
             pfem = this.PressureFE;
@@ -209,8 +199,21 @@ classdef System < models.BaseDynSystem
             bc_dir_displ_applies = sum(this.bc_dir_displ,1) >= 1;
             bc_dir_velo_applies = sum(this.bc_dir_velo,1) >= 1;
             
+            if vid
+                avifile = fullfile(pwd,'output.avi');
+                vw = VideoWriter(avifile);
+                vw.FrameRate = 30;
+                vw.open;
+            end
+            
             %% Loop over time
             h = pm.nextPlot('geo','Output','x','y');
+            box2 = dfem.geo.getBoundingBox(1.1);
+            
+            xpos = 1:3:dfem.NumNodes*3;
+            box = [min(min(uvw(xpos,:))) max(max(uvw(xpos,:)))...
+                min(min(uvw(xpos+1,:))) max(max(uvw(xpos+1,:)))...
+                min(min(uvw(xpos+2,:))) max(max(uvw(xpos+2,:)))];
             for ts = 1:1:length(t)
                 % Quit if figure has been closed
                 if ~ishandle(h)
@@ -223,9 +226,11 @@ classdef System < models.BaseDynSystem
                 hold(h,'on');
                 
                 % Velocities
-                %quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'k.','MarkerSize',14);
-                quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),0,'r','MarkerSize',10);
-%                 quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'b.', 'MarkerSize',14);
+                if withvelo
+                    %quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'k.','MarkerSize',14);
+%                     quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),0,'r','MarkerSize',10);
+                    quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'b.', 'MarkerSize',14);
+                end
                 
                 %% Dirichlet conditions
                 % Displacement
@@ -249,15 +254,42 @@ classdef System < models.BaseDynSystem
                     scatter3(h,u(1,pn(~pneg)),u(2,pn(~pneg)),u(3,pn(~pneg)),p(~pneg),'b');
                 end
                 
+                %% a0 fibres
+                Ngp = dfem.N(dfem.geo.gaussp);
+                if this.Plota0
+                    for m = 1:dfem.NumElems
+                        u = uvw(1:vstart-1,ts);
+                        u = u(this.globidx_displ(:,:,m));
+                        gps = u*Ngp;
+                        anull = u*this.dNa0(:,:,m);
+%                         % Jacobian of isogeometric mapping
+%                         Jac = u*dNxi;
+%                         for k=1:dfem.geo.NumGaussp
+%                             pos = [0 27 54]+k;
+%                             anull(:,k) = Jac(:,pos)*anull(:,k);
+%                         end
+                        quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'g');
+                    end
+                end
+                
                 %% Misc
                 %axis(h,'tight');
-                axis(h,[-1.3 1.3 -1.3 1.3 -1.3 1.3]);
+                %axis(h,[-1.3 1.3 -1.3 1.3 -1.3 1.3]);
+                axis(h,box);
                 view(h, [46 30]);
                 title(h,sprintf('Deformation at t=%g',t(ts)));
                 hold(h,'off');
                 
-%                 pause(1);
-                pause;
+                if vid
+                    vw.writeVideo(getframe(gcf));
+                else
+                    pause(.05);
+    %                 pause;
+                end
+            end
+            
+            if vid
+                vw.close;
             end
 
             if nargin < 4
@@ -285,17 +317,65 @@ classdef System < models.BaseDynSystem
             % Initial conditions for pressure (s.t. S(X,0) = 0)
             x0(tq.NumNodes * 6+1:end) = -2*this.f.c10-4*this.f.c01;
             
-            velo_dir = false(3,tq.NumNodes);  
-            % Quadratic
-            velo_dir(1,tq.elems(1,[1:3 9 10 13:15])) = true;
-%             velo_dir(3,tq.elems(1,[1:3 9 10 13:15])) = true;
-%             velo_dir(1,tq.elems(1,[3 10 15])) = true;
-            x0(find(velo_dir)+tq.NumNodes * 3) = .5;
+%             velo_dir = false(3,tq.NumNodes);  
+%             for k = [1 2 7 8]
+%                 % Quadratic
+%                 velo_dir(1,tq.elems(k,[1:3 9 10 13:15])) = true;
+%                 %velo_dir(3,tq.elems(1,[1:3 9 10 13:15])) = true;
+%     %             velo_dir(1,tq.elems(1,[3 10 15])) = true;
+%             end
+%             x0(find(velo_dir)+tq.NumNodes * 3) = .5;
             
             % Remove dirichlet values
             x0(this.bc_dir_idx) = [];
             
             x0 = dscomponents.ConstInitialValue(x0);
+        end
+        
+        function [displ_dir, velo_dir, velo_dir_val] = getBC(this, tq)
+            %% Dirichlet conditions: Position (fix one side)
+            displ_dir = false(3,tq.NumNodes);
+            %% Normal config
+            % Fix the front of the first four cubes
+%             for k = [5 6 11 12]
+            for k = 1
+                % Quadratic
+                displ_dir(:,tq.elems(k,[6:8 11 12 18:20])) = true;
+%                 displ_dir(:,tq.elems(k,[6 11 18])) = true;
+                % Linear
+%                displ_dir(:,tq.elems(k,5:8)) = true;
+            end
+%             for k = [7 8]
+                % Quadratic
+%                 displ_dir(:,tq.elems(k,[1:3 9 10 13:15])) = true;
+                % Linear
+%                 displ_dir(:,tq.elems(k,1:4)) = true;
+%             end
+
+            %% Dirichlet conditions: Velocity (fix one side)
+            % Compile indices of velocity DOFS that will be increased over
+            % time as BC
+            velo_dir = false(3,tq.NumNodes);
+            velo_dir_val = zeros(3,tq.NumNodes);
+            for k = [1 2 7 8]
+%             for k = 1
+                % Quadratic
+%                 velo_dir(1,tq.elems(k,[1:3 9 10 13:15])) = true;                
+%                 velo_dir(1,tq.elems(k,[3 10 15])) = true;
+                
+                % Linear
+%                 velo_dir(3,tq.elems(k,1:4)) = true;
+            end
+%             velo_dir_val(velo_dir) = -.1;
+
+%             velo_dir(1,tq.elems(1,[1 2 9 13 14])) = true;
+%             velo_dir(1,tq.elems(2,[1 2 9 13 14])) = true;
+%             velo_dir(1,tq.elems(7,[2 3 10 14 15])) = true;
+%             velo_dir(1,tq.elems(8,[2 3 10 14 15])) = true;
+%             velo_dir_val(1,tq.elems(1,[1 2 9 13 14])) = .1;
+%             velo_dir_val(1,tq.elems(2,[1 2 9 13 14])) = .1;
+%             velo_dir_val(2,tq.elems(7,[2 3 10 14 15])) = .1;
+%             velo_dir_val(2,tq.elems(8,[2 3 10 14 15])) = .1;
         end
         
         function computeBC(this, displ_dir, velo_dir, velo_dir_val)
@@ -348,6 +428,43 @@ classdef System < models.BaseDynSystem
             idx = 1:(fe_displ.NumNodes * 6 + fe_press.NumNodes);
             idx(this.bc_dir_idx) = [];
             this.dof_idx_global = idx;
+        end
+        
+        function inita0(this)
+            geo = this.Model.Geometry;
+            fe = this.DisplFE;
+            
+            % Set discrete a0 values at all gauss points
+            anull = zeros(3,geo.NumGaussp,fe.NumElems);
+            % Direction is x
+            anull(2,:) = 1;
+            this.a0 = anull;
+            
+            % Precomputations
+            dNgp = fe.gradN(geo.gaussp);
+            anulldyadanull = zeros(3,3,geo.NumGaussp*fe.NumElems);
+            dtnanull = zeros(fe.DofsPerElement,geo.NumGaussp,fe.NumElems);
+            dNanull = zeros(fe.DofsPerElement,geo.NumGaussp,fe.NumElems);
+            for m = 1 : fe.NumElems
+                for gp = 1 : geo.NumGaussp
+                    % a0 dyad a0
+                    pos = (m-1)*fe.NumElems+gp;
+                    anulldyadanull(:,:,pos) = anull(:,gp,m)*anull(:,gp,m)';
+                    
+                    % <grad phi_k, a0> scalar products
+                    pos = 3*(gp-1)+1:3*gp;
+                    dtn = fe.transgrad(:,pos,m);
+                    dtnanull(:,gp,m) = dtn*anull(:,gp,m);
+                    
+                    % forward transformation of a0 at gauss points
+                    % (plotting only so far)
+                    pos = [0 27 54]+gp;
+                    dNanull(:,gp,m) = dNgp(:,pos) * this.a0(:,gp,m);
+                end
+            end
+            this.dtna0 = dtnanull;
+            this.a0oa0 = anulldyadanull;
+            this.dNa0 = dNanull;
         end
     end
     

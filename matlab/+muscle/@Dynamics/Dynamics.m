@@ -2,8 +2,13 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     
     
     properties
-       c10 = 6.352e-10;
-       c01 = 3.627;
+       c10 = 6.352e-10; % [kPa]
+       c01 = 3.627; % [kPa]
+       b1 = 2.756e-5; % [kPa]
+       d1 = 43.373; % [-]
+       Pmax = 7.3; % N/cm²
+       lambdafopt = 1.2; % [-]
+       alpha = .1;
     end
     
     methods
@@ -21,80 +26,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         
         function evaluateCoreFun(varargin)
             error('Custom projection is implemented and evaluate overridden directly');
-        end
-        
-        function duvw = evaluate(this, uvwdof, t)
-            sys = this.System;
-            g = sys.Model.Geometry;
-            fe_displ = sys.DisplFE;
-            fe_press = sys.PressureFE;
-            globidx_disp = sys.globidx_displ;
-            globidx_press = sys.globidx_pressure;
-            
-            dofs_displ = fe_displ.NumNodes*3;
-            
-            % Include dirichlet values to state vector
-            uvwcomplete = zeros(2*dofs_displ + fe_press.NumNodes,1);
-            uvwcomplete(sys.dof_idx_global) = uvwdof;
-            uvwcomplete(sys.bc_dir_idx) = sys.bc_dir_val;
-            
-            % Init duv
-            duvw = zeros(size(uvwcomplete));
-            % THIS ALREADY FULFILLS THE u' = v ODE PART!
-            duvw(1:dofs_displ) = uvwcomplete(dofs_displ+1:2*dofs_displ);
-            
-            dofsperelem_displ = fe_displ.DofsPerElement;
-            dofsperelem_press = fe_press.DofsPerElement;
-            num_gausspoints = g.NumGaussp;
-            num_elements = fe_displ.NumElems;
-            for m = 1:num_elements
-                elemidx_displ = globidx_disp(:,:,m);
-                elemidx_pressure = globidx_press(:,m);
-                
-                integrand_displ = zeros(3,dofsperelem_displ);
-                integrand_press = zeros(dofsperelem_press,1);
-                for gp = 1:num_gausspoints
-                    
-                    % Evaluate the pressure at gauss points
-                    w = uvwcomplete(elemidx_pressure);
-                    p = w' * fe_press.Ngp(:,gp,m);
-                    
-                    pos = 3*(gp-1)+1:3*gp;
-                    dtn = fe_displ.transgrad(:,pos,m);
-                    
-                    % Get coefficients for nodes of current element
-                    u = uvwcomplete(elemidx_displ);
-                    % Deformation gradient
-                    F = u * dtn;
-                    
-                    % Invariant I1
-                    I1 = sum(sum((u'*u) .* (dtn*dtn')));
-                    
-                    P = p*inv(F)' + 2*(this.c10 + I1*this.c01)*F - 2*this.c01*F*(F'*F);
-                    
-                    weight = g.gaussw(gp) * fe_displ.elem_detjac(m,gp);
-                    
-                    integrand_displ = integrand_displ + weight * P * dtn';
-                    
-                    integrand_press = integrand_press + weight * (det(F)-1) * fe_press.Ngp(:,gp,m);
-                end
-                % We have v' + K(u) = 0, so the values of K(u) must be
-                % written at the according locations of v'; those are the
-                % same but +fielddofs later each
-                outidx = elemidx_displ + dofs_displ;
-                % Have MINUS here as the equation satisfies Mu'' + K(u,w) =
-                % 0, but KerMor implements Mu'' = -K(u,w)
-                duvw(outidx) = duvw(outidx) - integrand_displ;
-                
-                % Update pressure value at according positions
-                duvw(elemidx_pressure) = duvw(elemidx_pressure) + integrand_press;
-            end
-            % Remove values at dirichlet nodes
-            duvw(sys.bc_dir_idx) = [];
-            
-            if sys.UseDirectMassInversion
-                duvw(sys.dof_idx_velo) = sys.Minv * duvw(sys.dof_idx_velo);
-            end
         end
         
         function computeSparsityPattern(this)
@@ -167,156 +98,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             this.JSparsityPattern = logical(J);
         end
         
-        function J = getStateJacobian(this, uvwdof, ~)
-            
-            sys = this.System;
-            g = sys.Model.Geometry;
-            fe_displ = sys.DisplFE;
-            fe_press = sys.PressureFE;
-            
-            N = fe_displ.NumNodes;
-            M = fe_press.NumNodes;
-            
-            %% -I part in u'(t) = -v(t)
-            i = (1:3*N)';
-            j = ((1:3*N)+3*N)';
-            s = ones(size(j));
-            
-            globidx_disp = sys.globidx_displ;
-            globidx_press = sys.globidx_pressure;
-            
-            dofs_displ = N*3;
-            
-            % Include dirichlet values to state vector
-            uvwcomplete = zeros(2*dofs_displ + fe_press.NumNodes,1);
-            uvwcomplete(sys.dof_idx_global) = uvwdof;
-            uvwcomplete(sys.bc_dir_idx) = sys.bc_dir_val;
-            
-            dofsperelem_displ = fe_displ.DofsPerElement;
-            dofsperelem_press = fe_press.DofsPerElement;
-            num_gausspoints = g.NumGaussp;
-            num_elements = fe_displ.NumElems;
-            for m = 1:num_elements
-                elemidx_displ = globidx_disp(:,:,m);
-                elemidx_velo = elemidx_displ + dofs_displ;
-                elemidx_pressure = globidx_press(:,m);
-                inew = elemidx_velo(:);
-                one = ones(size(inew));
-                
-%                 integrand_displ = zeros(3,dofsperelem_displ);
-%                 integrand_press = zeros(dofsperelem_press,1);
-                for gp = 1:num_gausspoints
-                    pos = 3*(gp-1)+1:3*gp;
-                    dtn = fe_displ.transgrad(:,pos,m);
-                    u = uvwcomplete(elemidx_displ);
-                    % Deformation gradient
-                    F = u * dtn;
-                    
-                    %detF = det(F);
-                    Finv = inv(F);
-                    C = F'*F;
-                    detF = det(F);
-                    
-                    % Evaluate the pressure at gauss points
-                    w = uvwcomplete(elemidx_pressure);
-                    p = w' * fe_press.Ngp(:,gp,m);
-                    
-                    % Invariant I1
-                    I1 = sum(sum((u'*u) .* (dtn*dtn')));
-                    
-                    weight = g.gaussw(gp) * fe_displ.elem_detjac(m, gp);
-                    
-                    for k = 1:dofsperelem_displ
-                        e1_dyad_dPhik = [dtn(k,:); 0 0 0; 0 0 0];
-                        e2_dyad_dPhik = [0 0 0; dtn(k,:); 0 0 0];
-                        e3_dyad_dPhik = [0 0 0; 0 0 0; dtn(k,:)];
-                        
-                        dI1duk = 2*sum([1; 1; 1] * (dtn(k,:) * dtn') .* u, 2);
-                        fac1 = 2*(this.c10 + dI1duk*this.c01);
-                        fac2 = 2*(this.c10 + I1*this.c01);
-                        
-                        %% Grad_u K(u,v,w)
-                        % Recall: gradients from nabla K_{u,w} are
-                        % negative, as KerMor implements Mu'' = -K(u,v,w)
-                        % instead of Mu'' + K(u,v,w) = 0
-                        % xdim
-                        dFtF1 = e1_dyad_dPhik'*F + F'*e1_dyad_dPhik;
-                        dPx = -p * (Finv * e1_dyad_dPhik * Finv)'...
-                              + fac1(1)*F + fac2*e1_dyad_dPhik...
-                              -2*this.c01 * (e1_dyad_dPhik * C + F*dFtF1);  %#ok<*MINV>
-                        i = [i; inew]; %#ok<*AGROW>
-                        j = [j; one*elemidx_displ(1,k)];
-                        snew = -weight * dPx * dtn';
-                        s = [s; snew(:)];
-                        
-                        % ydim
-                        dFtF2 = e2_dyad_dPhik'*F + F'*e2_dyad_dPhik;
-                        dPy = -p * (Finv * e2_dyad_dPhik * Finv)'...
-                                +fac1(2)*F + fac2*e2_dyad_dPhik...
-                                -2*this.c01 * (e2_dyad_dPhik * C + F*dFtF2);
-                        i = [i; inew]; 
-                        j = [j; one*elemidx_displ(2,k)]; 
-                        snew = -weight * dPy * dtn';
-                        s = [s; snew(:)];
-                        
-                        % zdim
-                        dFtF3 = e3_dyad_dPhik'*F + F'*e3_dyad_dPhik;
-                        dPz = -p * (Finv * e3_dyad_dPhik * Finv)'...
-                            +fac1(3)*F + fac2*e3_dyad_dPhik ...
-                            - 2*this.c01 * (e3_dyad_dPhik * C + F*dFtF3);
-                        i = [i; inew]; 
-                        j = [j; one*elemidx_displ(3,k)]; 
-                        snew = -weight * dPz * dtn';
-                        s = [s; snew(:)];
-                        
-                        %% grad u g(u)
-                        % dx
-                        i = [i; elemidx_pressure(:)];
-                        j = [j; ones(dofsperelem_press,1)*elemidx_displ(1,k)]; 
-                        s = [s; weight * detF * trace(Finv*e1_dyad_dPhik) * fe_press.Ngp(:,gp,m)];
-                        % dy
-                        i = [i; elemidx_pressure(:)];
-                        j = [j; ones(dofsperelem_press,1)*elemidx_displ(2,k)]; 
-                        s = [s; weight * detF * trace(Finv*e2_dyad_dPhik) * fe_press.Ngp(:,gp,m)];
-                        %dz
-                        i = [i; elemidx_pressure(:)];
-                        j = [j; ones(dofsperelem_press,1)*elemidx_displ(3,k)]; 
-                        s = [s; weight * detF * trace(Finv*e3_dyad_dPhik) * fe_press.Ngp(:,gp,m)];
-                    end
-                    %% Grad_w K(u,v,w)
-                    inew = elemidx_velo(:);
-                    for k = 1:dofsperelem_press
-                        i = [i; inew];
-                        j = [j; ones(3*dofsperelem_displ,1)*elemidx_pressure(k)]; 
-                        snew = -weight * fe_press.Ngp(k,gp,m) * Finv' * dtn';
-                        s = [s; snew(:)];
-                    end
-                end
-            end
-            J = sparse(i,j,s,6*N+M,6*N+M);
-            % Remove values at dirichlet nodes
-            J(:,sys.bc_dir_idx) = [];
-            J(sys.bc_dir_idx,:) = [];
-            
-            if sys.UseDirectMassInversion
-                % Multiply with inverse of Mass matrix!
-                J(sys.dof_idx_velo,:) = sys.Minv*J(sys.dof_idx_velo,:);
-            end
-   
-            % legacy speed test for quick eval in jacobian
-%             tic;
-%             for k2=1:1000
-%                 dFtF1 = e1_dyad_dPhik'*F + F'*e1_dyad_dPhik;
-%             end
-%             toc;
-%             tic;
-%             for k2=1:1000
-%                 dFtF12 = sum(([1;1;1] * u(1,:)) .* dtn',2) * dtn(k,:);
-%                 dFtF12 = dFtF12+dFtF12';
-%             end
-%             toc;
-        end
-        
         function res = test_Jacobian(this, varargin)
             % Overrides the random argument jacobian test as restrictions
             % on the possible x values (detF = 1) hold.
@@ -351,6 +132,17 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
 
     end
     
+%     methods(Access=private)
+%         function gv = g(this, lambdafsq)
+%             alpha = .1;
+%             lambdaf = sqrt(lambdafsq);
+%             gv = (this.b1/lambdafsq)*(lambdaf^this.d1-1);
+%             ratio = lambdaf/this.lambdafopt;
+%             fl = (-6.25*ratio*ratio + 12.5*ratio - 5.25) * (ratio >= .6) * (ratio < 1.4);
+%             gv = gv + (this.Pmax/lambdaf)*fl*alpha;
+%         end
+%     end
+ 
     methods(Access=protected)
         function fx = evaluateComponents(this, pts, ends, ~, ~, x, ~)
             % This is the template method that actually evaluates the components at given points

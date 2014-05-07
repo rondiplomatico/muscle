@@ -291,19 +291,23 @@ leading to
 
 \subsubsection{Active force tensor $\vSf$}
 Here we define
-\begin{align*}
-	\Psi(\lambda_f) &:= \intl{0}{\lambda_f} p^{act}(s)ds,\\
-	p^{act}(\lambda_f) &:= p^{max}\gamma(\alpha,\lambda_f,\lambda_f'),
-\end{align*}
+\begin{align}
+	\Psi(\lambda_f) &:= \intl{0}{\lambda_f} p^{act}(s)ds,\nonumber\\
+	p^{act}(\lambda_f) &:= p^{max}f_l(\lambda_f)\gamma(\alpha,\lambda_f'),\nonumber\\
+	f_l(\lambda_f) &:= \begin{cases}
+		-\frac{25}{4}\left(\frac{\lambda_f}{\lfo}\right)^2 + \frac{25}{2}\frac{\lambda_f}{\lfo} - 5.25 & 0.6 \leq \frac{\lambda_f}{\lfo} \leq 1.4\\ 
+		0 & \text{else}
+	\end{cases} \label{def:fl},
+\end{align}
 with suitable constant $p^{max}$ and function $\gamma$.
 Similar to \eqref{eq:dpsidC} we obtain
 \begin{align}
-	\d{\Psi}{\vC}(\lambda_f) &= \frac{p^{max}}{2\lambda_f}\gamma(\alpha,\lambda_f,\lambda_f')\va_0\otimes\va_0
+	\d{\Psi}{\vC}(\lambda_f) &= \frac{p^{max}}{2\lambda_f}f_l(\lambda_f)\gamma(\alpha,\lambda_f')\va_0\otimes\va_0
 \end{align}
 This gives
 \begin{align}
-	\vSf(X,t) &= \frac{p^{max}}{\lambda_f(X,t)}\gamma\left(\alpha,\lambda_f(X,t),\d{\lambda_f}{t}(X,t)\right)\va_0(X)\otimes\va_0(X)\\
-	\vPf(X,t) &= \frac{p^{max}}{\lambda_f(X,t)}\gamma\left(\alpha,\lambda_f(X,t),\d{\lambda_f}{t}(X,t)\right)\vF(X,t)\va_0(X)\otimes\va_0(X)
+	\vSf(X,t) &= \frac{p^{max}}{\lambda_f(X,t)}f_l(\lambda_f(X,t))\gamma\left(\alpha,\d{\lambda_f}{t}(X,t)\right)\va_0(X)\otimes\va_0(X)\\
+	\vPf(X,t) &= \frac{p^{max}}{\lambda_f(X,t)}f_l(\lambda_f(X,t))\gamma\left(\alpha,\d{\lambda_f}{t}(X,t)\right)\vF(X,t)\va_0(X)\otimes\va_0(X)
 \end{align}
 
 \subsubsection{Overall stress tensor}
@@ -311,9 +315,9 @@ Adding the different parts together as given in \eqref{def:S_split} now gives
 \begin{align}
 	\vS(X,t) &= p(X,t)\vC^{-1}(X,t) + 2(c_{10} + I_1c_{01})\vI - 2c_{01}\vC(X,t)\label{def:overallS}\\
 			 &\quad+\Biggl[\frac{b_1}{\lambda_f^2(X,t)}\left(\lambda_f^{d_1}(X,t) - 1\right)\nonumber\\
-			 &\quad+\frac{p^{max}}{\lambda_f(X,t)}\gamma\left(\alpha,\lambda_f(X,t),\d{\lambda_f}{t}(X,t)\right)\Biggr]\va_0(X)\otimes\va_0(X)\nonumber\\
-	g(\lambda_f)&:= \frac{b_1}{\lambda_f^2}\left(\lambda_f^{d_1} - 1\right)
-		+\frac{p^{max}}{\lambda_f}\gamma\left(\alpha,\lambda_f,\d{\lambda_f}{t}\right)\label{def:g}\\			 
+			 &\quad+\frac{p^{max}}{\lambda_f(X,t)}f_l(\lambda_f(X,t))\gamma\left(\alpha,\d{\lambda_f}{t}(X,t)\right)\Biggr]\va_0(X)\otimes\va_0(X)\nonumber\\
+	g(\lambda)&:= \frac{b_1}{\lambda^2}\left(\lambda^{d_1} - 1\right)
+		+\frac{p^{max}}{\lambda}f_l(\lambda)\gamma\left(\alpha,\d{}{t}\lambda\right)\label{def:g}\\			 
 	\vP(X,t) &= \vF(X,t)\vS(X,t)\label{def:completeP}\\
 			 &= p(X,t)\vF^{-T}(X,t) + 2(c_{10} + I_1(\vC(X,t))c_{01})\vF(X,t) - 2c_{01}\vF(X,t)\vC(X,t)\nonumber\\
 			 &\quad+g(\lambda_f(X,t))\vF(X,t)\va_0(X)\otimes\va_0(X)\nonumber
@@ -326,12 +330,12 @@ With the incompressibility conditions we also have
 	\vF &= \vC = \vI_3, & \det(\vF) &= 1\\
 	I_1(\vC) &= \tr(\vI_3) = 3, & I_4(\vC,\va_0) & = \vI_3 : \va_0(X)\otimes\va_0(X)\\
 		&&&	= \tr(\va_0(X)\otimes\va_0(X)) = \no{\va_0}^2 = 1,\\
-		\lambda_f &= 1, & \gamma(\alpha,\lambda_f,\lambda_f) &= 0,
+		\lambda_f &= 1,\quad f_l(1) = 1, & \gamma(\alpha,\d{}{t}\lambda_f) &= 0,
 \end{align*}
 Hence we obtain from \eqref{def:overallS}
 \begin{align}
 	0 &= \vS(X,0) = p(X,0)\vI + 2(c_{10} + 3c_{01})\vI - 2c_{01}\vI\\
-			 &\quad+\left(\frac{b_1}{1}\left(1 - 1\right)+\frac{p^{max}}{1}\gamma\left(0,1,0\right)\right)\va_0(X)\otimes\va_0(X)\nonumber\\
+			 &\quad+\left(\frac{b_1}{1}\left(1 - 1\right)+\frac{p^{max}}{1}1\gamma\left(0,0\right)\right)\va_0(X)\otimes\va_0(X)\nonumber\\
 			 & = (p(X,0) + 2c_{10} + 4c_{01})\vI\\
 			 p(X,0) &= -(2c_{10} + 4c_{01})
 \end{align}

@@ -40,7 +40,6 @@ classdef cubegeom < handle
             end
             this.pts = pts;
             this.cubes = cubes;
-            s = RandStream('mt19937ar','Seed',1);
 
             % Init 27 Gauss points for 3-rule
             g = [-sqrt(3/5) 0 sqrt(3/5)];
@@ -77,6 +76,15 @@ classdef cubegeom < handle
             if nargin < 2
                 pm.done;
             end
+        end
+        
+        function bounds = getBoundingBox(this, marginfac)
+            if nargin < 2
+                marginfac = 1;
+            end
+            m = min(this.pts,[],2)*marginfac;
+            M = max(this.pts,[],2)*marginfac;
+            bounds = [m(1) M(1) m(2) M(2) m(3) M(3)];
         end
     end
     
@@ -124,7 +132,7 @@ classdef cubegeom < handle
             
             % Slightly deviate the grid
 %             s = RandStream('mt19937ar','Seed',1);
-%             pts = pts + s.rand(size(pts))*.2;
+%             pts = pts + s.rand(size(pts))*.05;
         end
     end
     

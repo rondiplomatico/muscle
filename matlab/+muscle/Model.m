@@ -25,7 +25,7 @@ classdef Model < models.BaseFullModel
             %this.Data.useFileTrajectoryData;
             
             %% Normal setup
-            %[pts, cubes] = cubegeom.DemoCubeGrid(-1:1,-1:2,-1:1);
+%             [pts, cubes] = cubegeom.DemoCubeGrid(-1:1,-1:2,-1:1);
             
             %% Debug geometry
             % Single cube with same config as reference element
