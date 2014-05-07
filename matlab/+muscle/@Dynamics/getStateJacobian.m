@@ -13,6 +13,7 @@ function J = getStateJacobian(this, uvwdof, ~)
     lfopt = this.lambdafopt;
     Pmax = this.Pmax;
     alpha = this.alpha;
+    havefibres = sys.HasFibres;
 
     %% -I part in u'(t) = -v(t)
     i = (1:3*N)';
@@ -61,22 +62,23 @@ function J = getStateJacobian(this, uvwdof, ~)
             % Invariant I1
             I1 = sum(sum((u'*u) .* (dtn*dtn')));
 
+            if havefibres
+                %% Anisotropic part
+                dtna0 = sys.dtna0(:,gp,m);
+                lambdafsq = sum(sum((u'*u) .* (dtna0*dtna0')));
+                lambdaf = sqrt(lambdafsq);
 
-            %% Anisotropic part
-            dtna0 = sys.dtna0(:,gp,m);
-            lambdafsq = sum(sum((u'*u) .* (dtna0*dtna0')));
-            lambdaf = sqrt(lambdafsq);
-
-            ratio = lambdaf/lfopt;
-            fl = 0; dfl = 0;
-            if (ratio >= .6) || (ratio <= 1.4)
-                fl = (-6.25*ratio*ratio + 12.5*ratio - 5.25);
-                dfl = 12.5*ratio*(1-ratio);
+                ratio = lambdaf/lfopt;
+                fl = 0; dfl = 0;
+                if (ratio >= .6) || (ratio <= 1.4)
+                    fl = (-6.25*ratio*ratio + 12.5*ratio - 5.25);
+                    dfl = 12.5*ratio*(1-ratio);
+                end
+                gval = (b1/lambdafsq)*(lambdaf^d1-1) + (Pmax/lambdaf)*fl*alpha;            
+                dgdlam = (b1/lambdaf^3)*((d1-2)*lambdaf^d1 + 2)...
+                    + (Pmax/lambdafsq)*alpha*(dfl - fl);
+                a0 = sys.a0oa0(:,:,(m-1)*num_gausspoints + gp);
             end
-            gval = (b1/lambdafsq)*(lambdaf^d1-1) + (Pmax/lambdaf)*fl*alpha;            
-            dgdlam = (b1/lambdaf^3)*((d1-2)*lambdaf^d1 + 2)...
-                + (Pmax/lambdafsq)*alpha*(dfl - fl);
-            a0 = sys.a0oa0(:,:,(m-1)*num_gausspoints + gp);
 
             %% Main node loop
             % Precompute weight
@@ -92,7 +94,9 @@ function J = getStateJacobian(this, uvwdof, ~)
                 fac2 = 2*(this.c10 + I1*this.c01);
 
                 % correct! :-)
-                dlambdaf = (1/lambdaf)*dtna0(k)*sum(([1; 1; 1] * dtna0') .* u, 2);
+                if havefibres
+                    dlambdaf = (1/lambdaf)*dtna0(k)*sum(([1; 1; 1] * dtna0') .* u, 2);
+                end
 
                 %% Grad_u K(u,v,w)
                 % Recall: gradients from nabla K_{u,w} are
@@ -102,8 +106,10 @@ function J = getStateJacobian(this, uvwdof, ~)
                 dFtF1 = e1_dyad_dPhik'*F + F'*e1_dyad_dPhik;
                 dPx = -p * (Finv * e1_dyad_dPhik * Finv)'...
                     + fac1(1)*F + fac2*e1_dyad_dPhik...
-                    -2*this.c01 * (e1_dyad_dPhik * C + F*dFtF1)...
-                    +(dgdlam*dlambdaf(1)*F + gval*e1_dyad_dPhik)*a0;  %#ok<*MINV>
+                    -2*this.c01 * (e1_dyad_dPhik * C + F*dFtF1);%#ok<*MINV>
+                if havefibres
+                    dPx = dPx + (dgdlam*dlambdaf(1)*F + gval*e1_dyad_dPhik)*a0;
+                end
                 i = [i; inew]; %#ok<*AGROW>
                 j = [j; one*elemidx_displ(1,k)];
                 snew = -weight * dPx * dtn';
@@ -113,8 +119,10 @@ function J = getStateJacobian(this, uvwdof, ~)
                 dFtF2 = e2_dyad_dPhik'*F + F'*e2_dyad_dPhik;
                 dPy = -p * (Finv * e2_dyad_dPhik * Finv)'...
                     +fac1(2)*F + fac2*e2_dyad_dPhik...
-                    -2*this.c01 * (e2_dyad_dPhik * C + F*dFtF2)...
-                    +(dgdlam*dlambdaf(2)*F + gval*e2_dyad_dPhik)*a0;
+                    -2*this.c01 * (e2_dyad_dPhik * C + F*dFtF2);
+                if havefibres
+                    dPy = dPy + (dgdlam*dlambdaf(2)*F + gval*e2_dyad_dPhik)*a0;
+                end
                 i = [i; inew];
                 j = [j; one*elemidx_displ(2,k)];
                 snew = -weight * dPy * dtn';
@@ -124,8 +132,10 @@ function J = getStateJacobian(this, uvwdof, ~)
                 dFtF3 = e3_dyad_dPhik'*F + F'*e3_dyad_dPhik;
                 dPz = -p * (Finv * e3_dyad_dPhik * Finv)'...
                     +fac1(3)*F + fac2*e3_dyad_dPhik ...
-                    - 2*this.c01 * (e3_dyad_dPhik * C + F*dFtF3)...
-                    +(dgdlam*dlambdaf(3)*F + gval*e3_dyad_dPhik)*a0;
+                    - 2*this.c01 * (e3_dyad_dPhik * C + F*dFtF3);
+                if havefibres
+                    dPz = dPz + (dgdlam*dlambdaf(3)*F + gval*e3_dyad_dPhik)*a0;
+                end
                 i = [i; inew];
                 j = [j; one*elemidx_displ(3,k)];
                 snew = -weight * dPz * dtn';

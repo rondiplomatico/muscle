@@ -14,6 +14,7 @@ function duvw = evaluate(this, uvwdof, t)
     lfopt = this.lambdafopt;
     Pmax = this.Pmax;
     alpha = this.alpha; %#ok<*PROP>
+    havefibres = sys.HasFibres;
 
     % Include dirichlet values to state vector
     uvwcomplete = zeros(2*dofs_displ + fe_press.NumNodes,1);
@@ -51,24 +52,27 @@ function duvw = evaluate(this, uvwdof, t)
 
             %% Isotropic part (Invariant I1 related)
             I1 = sum(sum((u'*u) .* (dtn*dtn')));
-
-            %% Anisotropic part (Invariant I4 related)
-            dtna0 = sys.dtna0(:,gp,m);
-            lambdafsq = sum(sum((u'*u) .* (dtna0*dtna0')));
-            lambdaf = sqrt(lambdafsq);
-
-            % Evaluate g function
-            % Using a subfunction is 20% slower!
-            % So: direct implementation here
-            ratio = lambdaf/lfopt;
-            fl = (-6.25*ratio*ratio + 12.5*ratio - 5.25) * (ratio >= .6) * (ratio <= 1.4);
-            gval = (b1/lambdafsq)*(lambdaf^d1-1) + (Pmax/lambdaf)*fl*alpha;
-            a0 = sys.a0oa0(:,:,(m-1)*num_gausspoints + gp);
-
+            
             %% Compile tensor
             P = p*inv(F)' + 2*(this.c10 + I1*this.c01)*F ...
-                - 2*this.c01*F*(F'*F) + gval*F*a0;
+                - 2*this.c01*F*(F'*F);
 
+            %% Anisotropic part (Invariant I4 related)
+            if havefibres
+                dtna0 = sys.dtna0(:,gp,m);
+                lambdafsq = sum(sum((u'*u) .* (dtna0*dtna0')));
+                lambdaf = sqrt(lambdafsq);
+
+                % Evaluate g function
+                % Using a subfunction is 20% slower!
+                % So: direct implementation here
+                ratio = lambdaf/lfopt;
+                fl = (-6.25*ratio*ratio + 12.5*ratio - 5.25) * (ratio >= .6) * (ratio <= 1.4);
+                gval = (b1/lambdafsq)*(lambdaf^d1-1) + (Pmax/lambdaf)*fl*alpha;
+                a0 = sys.a0oa0(:,:,(m-1)*num_gausspoints + gp);
+                P = P + gval*F*a0;
+            end
+            
             weight = g.gaussw(gp) * fe_displ.elem_detjac(m,gp);
 
             integrand_displ = integrand_displ + weight * P * dtn';

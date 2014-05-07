@@ -76,6 +76,8 @@ classdef System < models.BaseDynSystem
        UseDirectMassInversion = false;
        Minv;
        
+       % Fibre stuff
+       HasFibres = false;
        a0;
        dtna0;
        a0oa0;
@@ -255,20 +257,16 @@ classdef System < models.BaseDynSystem
                 end
                 
                 %% a0 fibres
-                Ngp = dfem.N(dfem.geo.gaussp);
-                if this.Plota0
-                    for m = 1:dfem.NumElems
-                        u = uvw(1:vstart-1,ts);
-                        u = u(this.globidx_displ(:,:,m));
-                        gps = u*Ngp;
-                        anull = u*this.dNa0(:,:,m);
-%                         % Jacobian of isogeometric mapping
-%                         Jac = u*dNxi;
-%                         for k=1:dfem.geo.NumGaussp
-%                             pos = [0 27 54]+k;
-%                             anull(:,k) = Jac(:,pos)*anull(:,k);
-%                         end
-                        quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'g');
+                if this.HasFibres
+                    Ngp = dfem.N(dfem.geo.gaussp);
+                    if this.Plota0
+                        for m = 1:dfem.NumElems
+                            u = uvw(1:vstart-1,ts);
+                            u = u(this.globidx_displ(:,:,m));
+                            gps = u*Ngp;
+                            anull = u*this.dNa0(:,:,m);
+                            quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'g');
+                        end
                     end
                 end
                 
@@ -319,6 +317,7 @@ classdef System < models.BaseDynSystem
             
 %             velo_dir = false(3,tq.NumNodes);  
 %             for k = [1 2 7 8]
+%             for k = 1
 %                 % Quadratic
 %                 velo_dir(1,tq.elems(k,[1:3 9 10 13:15])) = true;
 %                 %velo_dir(3,tq.elems(1,[1:3 9 10 13:15])) = true;
@@ -348,8 +347,6 @@ classdef System < models.BaseDynSystem
 %             for k = [7 8]
                 % Quadratic
 %                 displ_dir(:,tq.elems(k,[1:3 9 10 13:15])) = true;
-                % Linear
-%                 displ_dir(:,tq.elems(k,1:4)) = true;
 %             end
 
             %% Dirichlet conditions: Velocity (fix one side)
@@ -357,25 +354,22 @@ classdef System < models.BaseDynSystem
             % time as BC
             velo_dir = false(3,tq.NumNodes);
             velo_dir_val = zeros(3,tq.NumNodes);
-            for k = [1 2 7 8]
-%             for k = 1
+%             for k = [1 2 7 8]
+            for k = 1
                 % Quadratic
-%                 velo_dir(1,tq.elems(k,[1:3 9 10 13:15])) = true;                
+                velo_dir(1,tq.elems(k,[1:3 9 10 13:15])) = true;
 %                 velo_dir(1,tq.elems(k,[3 10 15])) = true;
-                
-                % Linear
-%                 velo_dir(3,tq.elems(k,1:4)) = true;
             end
-%             velo_dir_val(velo_dir) = -.1;
+            velo_dir_val(velo_dir) = .01;
 
 %             velo_dir(1,tq.elems(1,[1 2 9 13 14])) = true;
 %             velo_dir(1,tq.elems(2,[1 2 9 13 14])) = true;
 %             velo_dir(1,tq.elems(7,[2 3 10 14 15])) = true;
 %             velo_dir(1,tq.elems(8,[2 3 10 14 15])) = true;
-%             velo_dir_val(1,tq.elems(1,[1 2 9 13 14])) = .1;
-%             velo_dir_val(1,tq.elems(2,[1 2 9 13 14])) = .1;
-%             velo_dir_val(2,tq.elems(7,[2 3 10 14 15])) = .1;
-%             velo_dir_val(2,tq.elems(8,[2 3 10 14 15])) = .1;
+%             velo_dir_val(1,tq.elems(1,[1 2 9 13 14])) = -.01;
+%             velo_dir_val(1,tq.elems(2,[1 2 9 13 14])) = -.01;
+%             velo_dir_val(2,tq.elems(7,[2 3 10 14 15])) = .01;
+%             velo_dir_val(2,tq.elems(8,[2 3 10 14 15])) = .01;
         end
         
         function computeBC(this, displ_dir, velo_dir, velo_dir_val)
@@ -437,34 +431,42 @@ classdef System < models.BaseDynSystem
             % Set discrete a0 values at all gauss points
             anull = zeros(3,geo.NumGaussp,fe.NumElems);
             % Direction is x
-            anull(2,:) = 1;
-            this.a0 = anull;
+%             anull(1,:) = -1;
+%             anull(1,:) = 1;
+            this.HasFibres = false;
             
-            % Precomputations
-            dNgp = fe.gradN(geo.gaussp);
-            anulldyadanull = zeros(3,3,geo.NumGaussp*fe.NumElems);
-            dtnanull = zeros(fe.DofsPerElement,geo.NumGaussp,fe.NumElems);
-            dNanull = zeros(fe.DofsPerElement,geo.NumGaussp,fe.NumElems);
-            for m = 1 : fe.NumElems
-                for gp = 1 : geo.NumGaussp
-                    % a0 dyad a0
-                    pos = (m-1)*fe.NumElems+gp;
-                    anulldyadanull(:,:,pos) = anull(:,gp,m)*anull(:,gp,m)';
-                    
-                    % <grad phi_k, a0> scalar products
-                    pos = 3*(gp-1)+1:3*gp;
-                    dtn = fe.transgrad(:,pos,m);
-                    dtnanull(:,gp,m) = dtn*anull(:,gp,m);
-                    
-                    % forward transformation of a0 at gauss points
-                    % (plotting only so far)
-                    pos = [0 27 54]+gp;
-                    dNanull(:,gp,m) = dNgp(:,pos) * this.a0(:,gp,m);
+            if any(anull(:))
+                this.HasFibres = true;
+            
+                anull = anull ./ ([1;1;1]*Norm.L2(anull));
+                this.a0 = anull;
+
+                % Precomputations
+                dNgp = fe.gradN(geo.gaussp);
+                anulldyadanull = zeros(3,3,geo.NumGaussp*fe.NumElems);
+                dtnanull = zeros(fe.DofsPerElement,geo.NumGaussp,fe.NumElems);
+                dNanull = zeros(fe.DofsPerElement,geo.NumGaussp,fe.NumElems);
+                for m = 1 : fe.NumElems
+                    for gp = 1 : geo.NumGaussp
+                        % a0 dyad a0
+                        pos = (m-1)*fe.NumElems+gp;
+                        anulldyadanull(:,:,pos) = anull(:,gp,m)*anull(:,gp,m)';
+
+                        % <grad phi_k, a0> scalar products
+                        pos = 3*(gp-1)+1:3*gp;
+                        dtn = fe.transgrad(:,pos,m);
+                        dtnanull(:,gp,m) = dtn*anull(:,gp,m);
+
+                        % forward transformation of a0 at gauss points
+                        % (plotting only so far)
+                        pos = [0 27 54]+gp;
+                        dNanull(:,gp,m) = dNgp(:,pos) * this.a0(:,gp,m);
+                    end
                 end
+                this.dtna0 = dtnanull;
+                this.a0oa0 = anulldyadanull;
+                this.dNa0 = dNanull;
             end
-            this.dtna0 = dtnanull;
-            this.a0oa0 = anulldyadanull;
-            this.dNa0 = dNanull;
         end
     end
     

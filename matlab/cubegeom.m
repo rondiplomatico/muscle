@@ -10,14 +10,6 @@ classdef cubegeom < handle
         
         % 2 x k index vector for edges between two points
         edges;
-        
-        % m x g The determinants of the deformation jacobians at the gauss
-        % points
-%         cube_detjac;
-        
-        % n x 1 cell array containing the indices of the neighboring points
-        % of the n-th point
-%         neighbors;
     end
     
     properties(Dependent)
@@ -49,14 +41,6 @@ classdef cubegeom < handle
             W = WX.*WY.*WZ;
             this.gaussp = [GX(:) GY(:) GZ(:)]';
             this.gaussw = W(:);
-            
-            %% Compute neighbors
-            %             n = cell(np,1);
-            %             for i=1:np
-            %                 n{i} = unique([e(e(:,1) == i,2); e(e(:,2) == i,1)])';
-            %             end
-            %             this.neighbors = n;
-            
         end
         
         function plot(this, pm)
