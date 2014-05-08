@@ -1,12 +1,13 @@
 function duvw = evaluate(this, uvwdof, t)
     sys = this.System;
-    g = sys.Model.Geometry;
-    fe_displ = sys.DisplFE;
-    fe_press = sys.PressureFE;
+    mc = sys.Model.Config;
+    g = mc.Geometry;
+    fe_pos = mc.PosFE;
+    fe_press = mc.PressFE;
     globidx_disp = sys.globidx_displ;
     globidx_press = sys.globidx_pressure;
 
-    dofs_displ = fe_displ.NumNodes*3;
+    dofs_displ = fe_pos.NumNodes*3;
 
     % Cache variables instead of accessing them via this. in loops
     b1 = this.b1;
@@ -26,10 +27,10 @@ function duvw = evaluate(this, uvwdof, t)
     % THIS ALREADY FULFILLS THE u' = v ODE PART!
     duvw(1:dofs_displ) = uvwcomplete(dofs_displ+1:2*dofs_displ);
 
-    dofsperelem_displ = fe_displ.DofsPerElement;
+    dofsperelem_displ = fe_pos.DofsPerElement;
     dofsperelem_press = fe_press.DofsPerElement;
     num_gausspoints = g.NumGaussp;
-    num_elements = fe_displ.NumElems;
+    num_elements = fe_pos.NumElems;
     for m = 1:num_elements
         elemidx_displ = globidx_disp(:,:,m);
         elemidx_pressure = globidx_press(:,m);
@@ -43,7 +44,7 @@ function duvw = evaluate(this, uvwdof, t)
             p = w' * fe_press.Ngp(:,gp,m);
 
             pos = 3*(gp-1)+1:3*gp;
-            dtn = fe_displ.transgrad(:,pos,m);
+            dtn = fe_pos.transgrad(:,pos,m);
 
             % Get coefficients for nodes of current element
             u = uvwcomplete(elemidx_displ);
@@ -73,7 +74,7 @@ function duvw = evaluate(this, uvwdof, t)
                 P = P + gval*F*a0;
             end
             
-            weight = g.gaussw(gp) * fe_displ.elem_detjac(m,gp);
+            weight = g.gaussw(gp) * fe_pos.elem_detjac(m,gp);
 
             integrand_displ = integrand_displ + weight * P * dtn';
 

@@ -120,14 +120,9 @@ classdef fembase < handle
             this.Ngp = Ngpval;
             this.transgrad = tg;
             this.M = sparse(Mass + Mass' - diag(diag(Mass)));
-%             this.M = sparse(Mass + Mass');
             this.elem_detjac = eljac;
         end
-        
-%         function J = getJacobian(this, elem, xi)
-%             J = this.nodes(:,elem)*this.gradN(xi);
-%         end
-        
+                
         function plot(this, pm)
             if nargin < 2
                 pm = PlotManager;%(false,1,2);

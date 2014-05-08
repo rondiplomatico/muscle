@@ -1,6 +1,5 @@
 classdef Dynamics < dscomponents.ACompEvalCoreFun
     
-    
     properties
        c10 = 6.352e-10; % [kPa]
        c01 = 3.627; % [kPa]
@@ -15,10 +14,11 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         function this = Dynamics(sys)
             this = this@dscomponents.ACompEvalCoreFun(sys);
             
-            dfe = sys.DisplFE;
+            mc = sys.Model.Config;
+            dfe = mc.PosFE;
             
             dirvals = length(sys.bc_dir_val);
-            d = dfe.NumNodes * 6 - dirvals + sys.PressureFE.NumNodes;
+            d = dfe.NumNodes * 6 - dirvals + mc.PressFE.NumNodes;
             this.xDim = d;
             this.fDim = d;
             this.computeSparsityPattern;
@@ -30,11 +30,12 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         
         function computeSparsityPattern(this)
             sys = this.System;
-            g = sys.Model.Geometry;
-            fe_displ = sys.DisplFE;
-            fe_press = sys.PressureFE;
+            mc = sys.Model.Config;
+            g = mc.Geometry;
+            fe_pos = mc.PosFE;
+            fe_press = mc.PressFE;
             
-            N = fe_displ.NumNodes;
+            N = fe_pos.NumNodes;
             M = fe_press.NumNodes;
             
             %% -I part in u'(t) = -v(t)
@@ -46,10 +47,10 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             
             dofs_displ = N*3;
             
-            dofsperelem_displ = fe_displ.DofsPerElement;
+            dofsperelem_displ = fe_pos.DofsPerElement;
             dofsperelem_press = fe_press.DofsPerElement;
             num_gausspoints = g.NumGaussp;
-            num_elements = fe_displ.NumElems;
+            num_elements = fe_pos.NumElems;
             for m = 1:num_elements
                 elemidx_displ = globidx_disp(:,:,m);
                 elemidx_velo = elemidx_displ + dofs_displ;

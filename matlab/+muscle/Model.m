@@ -11,7 +11,7 @@ classdef Model < models.BaseFullModel
         % @type int @default 1
         RandSeed = 1;
         
-        Geometry;
+        Config;
     end
     
     methods
@@ -24,16 +24,8 @@ classdef Model < models.BaseFullModel
             this.Data = data.ModelData(this);
             %this.Data.useFileTrajectoryData;
             
-            %% Normal setup
-%             [pts, cubes] = cubegeom.DemoCubeGrid(-1:1,-1:2,-1:1);
-            
-            %% Debug geometry
-            % Single cube with same config as reference element
-            [pts, cubes] = cubegeom.DemoCubeGrid(0:1,0:1,0:1);
-            pts(pts == 0) = -1;
-            
-            %% Rest
-            this.Geometry = cubegeom(pts, cubes);
+            this.Config = muscle.DebugConfig;
+ 
             this.System = muscle.System(this);
             
             % True timestepping in ODE solver
@@ -47,16 +39,16 @@ classdef Model < models.BaseFullModel
             s = solvers.MLode15i;
             % Use relatively coarse precision settings. This skips fine
             % oscillations but yields the correct long time results.
-            s.RelTol = 1e-1;
-            s.AbsTol = 1e-1;
+            s.RelTol = 1e-2;
+            s.AbsTol = 1e-2;
             this.ODESolver = s;
             this.System.MaxTimestep = []; %model.dt;
             
             %% Health tests
 %             this.System.f.test_Jacobian;
-%             chk = this.System.DisplFE.test_JacobiansDefaultGeo;
-% %             chk = chk && this.System.DisplFE.test_QuadraticBasisFun;
-%             chk = chk && this.System.PressureFE.test_JacobiansDefaultGeo;
+%             chk = this.Config.PosFE.test_JacobiansDefaultGeo;
+% %             chk = chk && this.Config.PosFE.test_QuadraticBasisFun;
+%             chk = chk && this.Config.PressFE.test_JacobiansDefaultGeo;
 %             if ~chk
 %                 error('Health tests failed!');
 %             end

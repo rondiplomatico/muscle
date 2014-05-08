@@ -4,15 +4,7 @@ classdef System < models.BaseDynSystem
 % Contains the FibreDynamics, Linear Diffusion and InputConv components as well as a
 % ConstInitialValue.
 %
-% @author Daniel Wirtz @date 2012-11-22
-%
-% @new{0,7,dw,2012-11-22} Added this class.
-%
-% This class is part of the framework
-% KerMor - Model Order Reduction using Kernels:
-% - \c Homepage http://www.agh.ians.uni-stuttgart.de/research/software/kermor.html
-% - \c Documentation http://www.agh.ians.uni-stuttgart.de/documentation/kermor/
-% - \c License @ref licensing
+% @author Daniel Wirtz @date 2014-01-20
 
     properties
        globidx_displ;
@@ -23,8 +15,6 @@ classdef System < models.BaseDynSystem
     end
     
     properties(SetAccess=private)
-       DisplFE;
-       PressureFE;
        pressure_to_displ_nodes;
        
        % The overall values of dirichlet conditions
@@ -92,21 +82,15 @@ classdef System < models.BaseDynSystem
             
             % Call superclass constructor
             this = this@models.BaseDynSystem(model);
-            
-            geo = model.Geometry;
-            tq = triquadratic(geo);
-%             tq = trilinear(geo);
-            tl = trilinear(geo);
-    
-            % Save for Dynamics
-            this.DisplFE = tq;
-            this.PressureFE = tl;
-            
+            mc = model.Config;
+            tq = mc.PosFE;
+            tl = mc.PressFE;
+                
 %             % Find the indices of the pressure nodes in the displacement
 %             % nodes geometry (used for plotting)
             this.pressure_to_displ_nodes = Utils.findVecInMatrix(tq.nodes,tl.nodes);
             
-            [displ_dir, velo_dir, velo_dir_val] = this.getBC(tq);
+            [displ_dir, velo_dir, velo_dir_val] = model.Config.getBC;
             
             % Call subroutine for boundary condition index crunching
             this.computeBC(displ_dir, velo_dir, velo_dir_val);
@@ -185,8 +169,8 @@ classdef System < models.BaseDynSystem
 
             end            
             
-            dfem = this.DisplFE;
-            pfem = this.PressureFE;
+            dfem = this.Model.Config.PosFE;
+            pfem = this.Model.Config.PressFE;
             vstart = dfem.NumNodes * 3+1;
             pstart = dfem.NumNodes * 6+1;
             e = dfem.edges;
@@ -211,6 +195,8 @@ classdef System < models.BaseDynSystem
             
             %% Loop over time
             h = pm.nextPlot('geo','Output','x','y');
+            view(h, [46 30]);
+            hold(h,'on');
             box2 = dfem.geo.getBoundingBox(1.1);
             
             xpos = 1:3:dfem.NumNodes*3;
@@ -224,9 +210,8 @@ classdef System < models.BaseDynSystem
                 end
                 u = reshape(uvw(1:vstart-1,ts),3,[]);
                 v = reshape(uvw(vstart:pstart-1,ts),3,[]);
-                
+                cla(h);
                 plot3(h,u(1,:),u(2,:),u(3,:),'k.','MarkerSize',14);
-                hold(h,'on');
                 
                 % Velocities
                 if withvelo
@@ -275,9 +260,9 @@ classdef System < models.BaseDynSystem
                 %axis(h,'tight');
                 %axis(h,[-1.3 1.3 -1.3 1.3 -1.3 1.3]);
                 axis(h,box);
-                view(h, [46 30]);
+%                view(h, [46 30]);
                 title(h,sprintf('Deformation at t=%g',t(ts)));
-                hold(h,'off');
+%                 hold(h,'off');
                 
                 if vid
                     vw.writeVideo(getframe(gcf));
@@ -300,8 +285,8 @@ classdef System < models.BaseDynSystem
     methods(Access=private)
         function x0 = assembleX0(this)
             % Constant initial values as current node positions
-            tq = this.DisplFE;
-            tl = this.PressureFE;
+            tq = this.Model.Config.PosFE;
+            tl = this.Model.Config.PressFE;
             % All zero, especially the first tq.NumNodes * 3 velocity
             % entries and pressure
             x0 = zeros(tq.NumNodes * 6 + tl.NumNodes,1);
@@ -332,54 +317,13 @@ classdef System < models.BaseDynSystem
             x0 = dscomponents.ConstInitialValue(x0);
         end
         
-        function [displ_dir, velo_dir, velo_dir_val] = getBC(this, tq)
-            %% Dirichlet conditions: Position (fix one side)
-            displ_dir = false(3,tq.NumNodes);
-            %% Normal config
-            % Fix the front of the first four cubes
-%             for k = [5 6 11 12]
-            for k = 1
-                % Quadratic
-                displ_dir(:,tq.elems(k,[6:8 11 12 18:20])) = true;
-%                 displ_dir(:,tq.elems(k,[6 11 18])) = true;
-                % Linear
-%                displ_dir(:,tq.elems(k,5:8)) = true;
-            end
-%             for k = [7 8]
-                % Quadratic
-%                 displ_dir(:,tq.elems(k,[1:3 9 10 13:15])) = true;
-%             end
-
-            %% Dirichlet conditions: Velocity (fix one side)
-            % Compile indices of velocity DOFS that will be increased over
-            % time as BC
-            velo_dir = false(3,tq.NumNodes);
-            velo_dir_val = zeros(3,tq.NumNodes);
-%             for k = [1 2 7 8]
-            for k = 1
-                % Quadratic
-%                 velo_dir(1,tq.elems(k,[1:3 9 10 13:15])) = true;
-%                 velo_dir(1,tq.elems(k,[3 10 15])) = true;
-            end
-%             velo_dir_val(velo_dir) = .01;
-
-%             velo_dir(1,tq.elems(1,[1 2 9 13 14])) = true;
-%             velo_dir(1,tq.elems(2,[1 2 9 13 14])) = true;
-%             velo_dir(1,tq.elems(7,[2 3 10 14 15])) = true;
-%             velo_dir(1,tq.elems(8,[2 3 10 14 15])) = true;
-%             velo_dir_val(1,tq.elems(1,[1 2 9 13 14])) = -.01;
-%             velo_dir_val(1,tq.elems(2,[1 2 9 13 14])) = -.01;
-%             velo_dir_val(2,tq.elems(7,[2 3 10 14 15])) = .01;
-%             velo_dir_val(2,tq.elems(8,[2 3 10 14 15])) = .01;
-        end
-        
         function computeBC(this, displ_dir, velo_dir, velo_dir_val)
             
             if any(any(displ_dir & velo_dir))
                 error('Cannot impose displacement and velocity dirichlet conditions on same DoF');
             end
-            fe_displ = this.DisplFE;
-            fe_press = this.PressureFE;
+            fe_displ = this.Model.Config.PosFE;
+            fe_press = this.Model.Config.PressFE;
             
             % Position of position entries in global state space vector
             num_displacement_dofs = fe_displ.NumNodes * 3;
@@ -426,14 +370,11 @@ classdef System < models.BaseDynSystem
         end
         
         function inita0(this)
-            geo = this.Model.Geometry;
-            fe = this.DisplFE;
+            mc = this.Model.Config;
+            geo = mc.Geometry;
+            fe = mc.PosFE;
             
-            % Set discrete a0 values at all gauss points
-            anull = zeros(3,geo.NumGaussp,fe.NumElems);
-            % Direction is x
-            anull(2,:,:) = -1;
-            anull(1,:,:) = 1;
+            anull = this.Model.Config.geta0;
             this.HasFibres = false;
             
             if any(anull(:))

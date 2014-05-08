@@ -1,10 +1,11 @@
 function J = getStateJacobian(this, uvwdof, ~)
     sys = this.System;
-    g = sys.Model.Geometry;
-    fe_displ = sys.DisplFE;
-    fe_press = sys.PressureFE;
+    mc = sys.Model.Config;
+    g = mc.Geometry;
+    fe_pos = mc.PosFE;
+    fe_press = mc.PressFE;
 
-    N = fe_displ.NumNodes;
+    N = fe_pos.NumNodes;
     M = fe_press.NumNodes;
 
     % Cache variables instead of accessing them via this. in loops
@@ -30,10 +31,10 @@ function J = getStateJacobian(this, uvwdof, ~)
     uvwcomplete(sys.dof_idx_global) = uvwdof;
     uvwcomplete(sys.bc_dir_idx) = sys.bc_dir_val;
 
-    dofsperelem_displ = fe_displ.DofsPerElement;
+    dofsperelem_displ = fe_pos.DofsPerElement;
     dofsperelem_press = fe_press.DofsPerElement;
     num_gausspoints = g.NumGaussp;
-    num_elements = fe_displ.NumElems;
+    num_elements = fe_pos.NumElems;
     for m = 1:num_elements
         elemidx_displ = globidx_disp(:,:,m);
         elemidx_velo = elemidx_displ + dofs_displ;
@@ -45,7 +46,7 @@ function J = getStateJacobian(this, uvwdof, ~)
         %                 integrand_press = zeros(dofsperelem_press,1);
         for gp = 1:num_gausspoints
             pos = 3*(gp-1)+1:3*gp;
-            dtn = fe_displ.transgrad(:,pos,m);
+            dtn = fe_pos.transgrad(:,pos,m);
             u = uvwcomplete(elemidx_displ);
             % Deformation gradient
             F = u * dtn;
@@ -82,7 +83,7 @@ function J = getStateJacobian(this, uvwdof, ~)
 
             %% Main node loop
             % Precompute weight
-            weight = g.gaussw(gp) * fe_displ.elem_detjac(m, gp);
+            weight = g.gaussw(gp) * fe_pos.elem_detjac(m, gp);
 
             for k = 1:dofsperelem_displ
                 e1_dyad_dPhik = [dtn(k,:); 0 0 0; 0 0 0];
