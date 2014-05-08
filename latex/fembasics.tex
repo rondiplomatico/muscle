@@ -67,7 +67,7 @@ which amounts to triquadratic functions equal to one in each corner and edge-mid
 \subsubsection{Domain decomposition}
 Let $\Or$ be our domain of interest, decomposed into $\Or = \Omega_1\cup \ldots \cup \Omega_M$, where
 $\Omega_m = [\vx^m_1,\ldots,\vx^m_{n_b}]$ is a deformed cube specified by the $n_b$ points $\vx_i^m\in\R^3$.
-Let $\Ns &:= \{\vx_1,\ldots\vx_N\}$ denote the set of $N$ distinct nodes in
+Let $\Ns := \{\vx_1,\ldots\vx_N\}$ denote the set of $N$ distinct nodes in
 $\{\vx_1^1, \ldots, \vx_{n_b}^1, \vx_1^2, \ldots, \vx_{n_b}^{M-1}, \vx_1^M, \ldots, \vx_{n_b}^M\}$, numbered by first occurrence.
 
 Using the notation
@@ -123,7 +123,7 @@ We define the shorthands
 With the above, and the transformation theorem and the local support of the basis function $\varphi_k$ we now have for any integrable $f(X,t)$ that
 \begin{align}
    \intl{\Or}{}f(X,t)\varphi_k(X)dX &= \suml{m=1}{M}\intl{\Omega_m}{}f(X,t)\varphi_k(X)dX = \sumvk\intl{\Omega_m}{}f(X,t)\varphi_k(X)dX\nonumber\\
-    &= \sumvk\intl{\Phi_m(\Omega)}{}f(X,t)\varphi_k(X)dX\label{eq:fphidx}\nonumber\\
+    &= \sumvk\intl{\Phi_m(\Omega)}{}f(X,t)\varphi_k(X)dX\nonumber\\
 	&= \sumvk\intl{\Om}{}f(\Phi_m(X),t)\varphi_k(\Phi_m(X))|\det J\Phi_m(X)|dX\nonumber\\
 	& \re{def:gaussintapprox} \sumvk\sumgp w_pf(\pmp,t)\varphi_k(\pmp)|\det J\Phi_m(X_p)|\nonumber\\
 	& \re{def:referencebasisfun} \sumvk\sumgp w_pf(\pmp,t)N_{l(k,m)}(\Phi_m^{-1}(\pmp))|\det J\Phi_m(X_p)|\nonumber\\
