@@ -117,7 +117,7 @@ We define the shorthands
 \begin{align}
 	\pmp &:= \Phi_m(X_p)\\
 	\jmp &:= |\det J\Phi_m(X_p)| = |\det \vX^m\nabla\vN(X_p)|.\label{def:jacshorthand}\\
-	\dNkmp &:= \nabla\varphi_k(\pmp) \re{eq:gradvarphi} \left(J\Phi_m(X_p)\right)^{-T}\nabla N_{l(k,m)}(X_p))\in\R^3\label{}
+	\dNkmp &:= \nabla\varphi_k(\pmp) \re{eq:gradvarphi} \left(J\Phi_m(X_p)\right)^{-T}\nabla \Nkmp)\in\R^3\label{}
 \end{align}
 
 With the above, and the transformation theorem and the local support of the basis function $\varphi_k$ we now have for any integrable $f(X,t)$ that
@@ -127,7 +127,7 @@ With the above, and the transformation theorem and the local support of the basi
 	&= \sumvk\intl{\Om}{}f(\Phi_m(X),t)\varphi_k(\Phi_m(X))|\det J\Phi_m(X)|dX\nonumber\\
 	& \re{def:gaussintapprox} \sumvk\sumgp w_pf(\pmp,t)\varphi_k(\pmp)|\det J\Phi_m(X_p)|\nonumber\\
 	& \re{def:referencebasisfun} \sumvk\sumgp w_pf(\pmp,t)N_{l(k,m)}(\Phi_m^{-1}(\pmp))|\det J\Phi_m(X_p)|\nonumber\\
-	& \re{def:jacshorthand} \sumvk\sumgp w_pf(\pmp,t)N_{l(k,m)}(X_p)\jmp\label{eq:fphidx}
+	& \re{def:jacshorthand} \sumvk\sumgp w_pf(\pmp,t)\Nkmp\jmp\label{eq:fphidx}
 \end{align}
 
 Similarly we obtain for the gradient that

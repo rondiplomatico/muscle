@@ -91,7 +91,7 @@
 \newcommand{\dNkmp}{N^\nabla_{k,m}(X_p)}
 \newcommand{\dNimp}{N^\nabla_{i,m}(X_p)}
 \newcommand{\dNjmp}{N^\nabla_{j,m}(X_p)}
-\newcommand{\bPkmp}{\bP_{l(k,m)}(X_p)}
+\newcommand{\Nkmp}{N_{l(k,m)}(X_p)}
 \newcommand{\lfo}{\lambda_f^{opt}}
 
 \allowdisplaybreaks
@@ -125,15 +125,14 @@ We define the quantities
 \input{derivation}
 
 \section{FEM discretization}
-
 \subsection{Domain decomposition, basis functions and master reference volume}
 \input{fembasics}
 
 \subsection{Weak form and linear ansatz}
 \input{weakform}
 
-\subsection{Formulation as system of ODEs}
-\input{discrete}
+\section{Formulation as System of ODEs}
+\input{odeform}
 
 \newpage
 \section{Appendix, additional derivations}

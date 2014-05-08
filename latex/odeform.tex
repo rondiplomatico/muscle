@@ -13,40 +13,56 @@ for the $x,y,z$ components of the $i$-th coefficient and hence identify
 	\vF(X,t) = \sumi \vc_i(t)\otimes \nabla\varphi_i(X) = \sumi \vu[i](t)\otimes \nabla\varphi_i(X) =: \vF(X,\vu(t)).
 \]
 also carrying the arguments through to $\vP(X,t) = \vP(X,\vu(t),\vw(t))$.
-This allows us to define operators $\vK: \R^{3N\times N}\to\R^{3N}, \vg:\R^{3N}\to\R^N$ as
+This allows us to define operators $\vK: \R^{3N\times N_P}\to\R^{3N}, \vg:\R^{3N}\to\R^{N_P}$ (by components) as
 \begin{align}
-	\vK[k](\vu(t),\vw(t)) &:= \intor\vP(X,\vu(t),\vw(t))\dpk dX, && k=1\ldots N\\
-	\vg_k(\vu(t)) &:= \intor (\det\vF(X,\vu(t))-1)\psi_k(X)dX, && k=1\ldots N
+	\vK[k](\vu(t),\vw(t)) &:= \intor\vP(X,\vu(t),\vw(t))\dpk dX\\
+	&\re{def:discretePgradphidX} \sumvk\sumgp w_p\vP(\pmp,\vu(t),\vw(t))\dNkmp\jmp\in\R^3, && k=1\ldots N,\\
+	\vg_k(\vu(t)) &:= \intor (\det\vF(X,\vu(t))-1)\psi_k(X)dX\\
+	&\re{eq:weak_incomp_condition}\sumvk\sumgp w_p (\det\vF(\pmp,\vu(t))-1) \Nkmp\jmp, && k=1\ldots N_P.
 \end{align}
-Hence, after the FEM discretization we obtain the constrained ODE / differential-algebraic equation (DAE)
+Furthermore, from \eqref{def:discreteVphidX} we obtain a mass matrix $\vM\in\R^{3N\times 3N}$ via
+\begin{align*}
+	\vM\bigl[[i],[k]\bigr] &:= \m{1&0&0\\0&1&0\\0&0&1} \sumvk\sumgp w_p \rho_0(\pmp)N_{l(i,m)}(X_p) \Nkmp\jmp, && i,k=1\ldots N.
+\end{align*}
+
+Altogether, the system of equations \eqref{def:weakform},\eqref{def:weakform_nb} yields the constrained second order differential equation
+or differential-algebraic equation (DAE)
 \begin{align}
 	\vM\vu''(t) + \vK(\vu(t),\vw(t)) &= \vnull,\\
-		\text{s.t.}\quad \vg(\vu(t))		&= \vnull,
+		\text{s.t.}\quad \vg(\vu(t)) &= \vnull,
 \end{align}
 which can be transformed to a first-order system with the substitution $\vv(t) := \vu'(t)$:
 \begin{align}
 	\m{\vI & \vnull\\ \vnull & \vM}\m{\vu'(t)\\ \vv'(t)} &= \m{\vv(t) \\ -\vK(\vu(t),\vw(t))},\\
-	\vg(\vu(t))		&= \vnull.
+	\text{s.t.}\quad \vg(\vu(t))		&= \vnull.
 \end{align}
+
+\subsection{Time-discretization}
 For the time-discretization we use the notation $\vu_i := \vu(t_i), t_i := i\Delta t, i=0\ldots N_t\in\N, \Delta t > 0$, similarly for $\vv,\vw$.
 Using the standard backward-Euler scheme results in the implicit system
 \begin{align}
 	\frac{1}{\Delta t}\m{\vI & \vnull\\ \vnull & \vM}\m{\vu_{i+1}-\vu_i\\\vv_{i+1}-\vv_i} &= \m{\vv_{i+1}\\-\vK(\vu_{i+1},\vw_{i+1})},\\
 	\vg(\vu_{i+1})		&= \vnull.
 \end{align}
-Writing the overall system as $\vf([\vu; \vv; \vw]) = \vnull$ (with $\vu_i$ const, $\vu_{i+1}=\vu$ variable), we apply the standard Newton-Iteration
+Writing the overall system as 
+\begin{align}
+	\vf([\vu; \vv; \vw]) &:= \m{\frac{1}{\Delta t}\m{\vI & \vnull\\ \vnull & \vM}\m{\vu-\vu_i\\\vv-\vv_i} + \m{-\vv\\\vK(\vu,\vw)}\\
+		\vg(\vu)},
+\end{align}
+we apply the standard Newton-Iteration
 \begin{align}
 	[\vu; \vv; \vw]^1 &:= [\vu_i; \vv_i; \vw_i],\\
-	[\vu; \vv; \vw]^{n+1} &:= [\vu; \vv; \vw]^{n} - \nabla \vf([\vu; \vv; \vw])^{-1}\vf([\vu; \vv; \vw]), 
+	[\vu; \vv; \vw]^{n+1} &:= [\vu; \vv; \vw]^{n} - \nabla \vf([\vu; \vv; \vw]^n)^{-1}\vf([\vu; \vv; \vw]^n), 
 \end{align}
 to find $\vu_{i+1}$ etc.
-Here we have the jacobian
+Here we have the Jacobian
 \begin{align}
 	 \nabla \vf([\vu; \vv; \vw]) &:= \m{\frac{1}{\Delta t} \vI & -\vI & \vnull & \Bigl\rbrace3N\\
 	 									\nabla_{\vu}\vK(\vu,\vw) & \frac{1}{\Delta t}\vM & \nabla_{\vw}\vK(\vu,\vw) & \Bigl\rbrace3N\\
-	 									\underbrace{\nabla_{\vu}\vg(\vu)}_{3N} & \underbrace{\vnull}_{3N} & \underbrace{\vnull}_{M} & \Bigl\rbrace M}.
+	 									\underbrace{\nabla_{\vu}\vg(\vu)}_{3N} & \underbrace{\vnull}_{3N} & \underbrace{\vnull}_{N_P} & \Bigl\rbrace N_P}.
 \end{align}
 
+\subsection{Derivation of nonlinearity Jacobian}
 Here are some important formulas for matrix derivatives. We first define
 \begin{align}
     \vU^j_i(X) & := \m{\ve_i\otimes\dpj}, i=1\ldots3, &
@@ -172,9 +188,9 @@ we consider the single summands of $\vP$ to derive $\d{\vP}{\vu[j]_i}(X,\vu,\vw)
 	 	\vdots & \ddots & \vdots\\
 	   \d{\vg_M}{\vu[1]}(\vu) & \ldots & \d{\vg_M}{\vu[N]}(\vu)} \in\R^{M \times 3N}\\
 	\nabla_{\vu[j]}\vg_k(\vu) &= \nabla_{\vu[j]}\intor (\det\vF(X,\vu)-1)\psi_k(X)dX\qquad\in\R^{1\times 3}\\
-		&\re{eq:weak_incomp_condition}  \sumvk\sumgp w_p \nabla_{\vu[j]}\det\vF(\pmp,\vu)\bPkmp\jmp\\
-		&= \sumvk\sumgp w_p \det\vF(\pmp,\vu)\m{\vF(\pmp,\vu)^{-T}:\vU(\pmp)^j_1\\\vF(\pmp,\vu)^{-T}:\vU(\pmp)^j_2\\\vF(\pmp,\vu)^{-T}:\vU(\pmp)^j_3}^T\bPkmp\jmp\\
-		&= \sumvk\sumgp w_p \det\vF(\pmp,\vu)\m{\tr(\vF(\pmp,\vu)^{-1}\vU(\pmp)^j_1)\\\tr(\vF(\pmp,\vu)^{-1}\vU(\pmp)^j_2)\\\tr(\vF(\pmp,\vu)^{-1}\vU(\pmp)^j_3)}^T\bPkmp\jmp\in\R^{1\times 3}
+		&\re{eq:weak_incomp_condition}  \sumvk\sumgp w_p \nabla_{\vu[j]}\det\vF(\pmp,\vu)\Nkmp\jmp\\
+		&= \sumvk\sumgp w_p \det\vF(\pmp,\vu)\m{\vF(\pmp,\vu)^{-T}:\vU(\pmp)^j_1\\\vF(\pmp,\vu)^{-T}:\vU(\pmp)^j_2\\\vF(\pmp,\vu)^{-T}:\vU(\pmp)^j_3}^TN_{l(k,m)}(X_p)\jmp\\
+		&= \sumvk\sumgp w_p \det\vF(\pmp,\vu)\m{\tr(\vF(\pmp,\vu)^{-1}\vU(\pmp)^j_1)\\\tr(\vF(\pmp,\vu)^{-1}\vU(\pmp)^j_2)\\\tr(\vF(\pmp,\vu)^{-1}\vU(\pmp)^j_3)}^TN_{l(k,m)}(X_p)\jmp\in\R^{1\times 3}
 \end{align*}
 
 

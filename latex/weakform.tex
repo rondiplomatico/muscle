@@ -47,16 +47,16 @@ Consequently, we obtain a system of $3N+N_P$ equations
 \subsubsection{Integrals of main equation parts}
 In the following we fix a $k\in\{1,\ldots, N\}$.
 Then, by \eqref{eq:fphidx}, the first summand of \eqref{def:weakform} reads as
-\begin{align*}
-	\intor \rho_0(X)\d{\vV}{t}(X,t)\varphi_k(X)dX
-		&\re{eq:fphidx} \sumvk\sumgp w_p \rho_0(\pmp)\d{\vV}{t}(\pmp,t)N_{l(k,m)}(X_p)\jmp\\
-		&= \sumvk\sumgp w_p \rho_0(\pmp)\sumi \vc_i''(t)\varphi_i(\pmp) N_{l(k,m)}(X_p)\jmp\\
-		&= \sumi \vc_i''(t)\sumvk\sumgp w_p \rho_0(\pmp)N_{l(i,m)}(X_p) N_{l(k,m)}(X_p)\jmp
-\end{align*}
+\begin{align}
+	\intor \rho_0(X)\d{\vV}{t}(X,t)\varphi_k(X)dX\nonumber
+		&\re{eq:fphidx} \sumvk\sumgp w_p \rho_0(\pmp)\d{\vV}{t}(\pmp,t)\Nkmp\jmp\nonumber\\
+		&= \sumvk\sumgp w_p \rho_0(\pmp)\sumi \vc_i''(t)\varphi_i(\pmp) \Nkmp\jmp\nonumber\\
+		&= \sumi \vc_i''(t)\sumvk\sumgp w_p \rho_0(\pmp)N_{l(i,m)}(X_p) \Nkmp\jmp\label{def:discreteVphidX}
+\end{align}
 Similarly, the second summand of \eqref{def:weakform} writes as
-\begin{align*}
-		\intor\vP(X,t)\dpk dX &\re{eq:fgradphidx} \sumvk\sumgp w_p\vP(\pmp,t)\dNkmp\jmp.
-\end{align*}
+\begin{align}
+		\intor\vP(X,t)\dpk dX &\re{eq:fgradphidx} \sumvk\sumgp w_p\vP(\pmp,t)\dNkmp\jmp.\label{def:discretePgradphidX}
+\end{align}
 Finally, for $k\in\{1\ldots N_P\}$, condition \eqref{def:maineq_cond} formulates to
 \begin{align}
 	\intor (J(X,t)-1)\psi_k(X)dX &= \sumvk\sumgp w_p (\det\vF(\pmp,t)-1) \bNkmp\jmp\label{eq:weak_incomp_condition}\\
