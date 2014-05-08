@@ -24,8 +24,8 @@
 % Display
 \usepackage[font={small,it}]{caption}
 %\usepackage{multirow}
-%\usepackage{fancyvrb}
-%\usepackage{listings}
+\usepackage{fancyvrb}
+\usepackage{listings}
 
 % Illustrations
 %\usepackage{tikz}
@@ -51,6 +51,7 @@
 \input{Commands}
 \input{macros}
 %
+\newcommand{\Ns}{\mathcal{N}}
 \newcommand{\Nk}{\mathcal{N}_k}
 \newcommand{\Or}{\Omega_0}
 \newcommand{\Om}{\Omega_R}
@@ -76,6 +77,7 @@
 \newcommand{\m}[1]{\ensuremath{\left(\begin{matrix}#1\end{matrix}\right)}}
 \newcommand{\sumnk}{\suml{i\in{\Nk}}{}}
 \newcommand{\sumgp}{\suml{p=1}{G}}
+\newcommand{\sumiP}{\suml{i=1}{N_p}}
 \newcommand{\jmp}{J^m_p}
 \newcommand{\re}[1]{\stackrel{\eqref{#1}}{=}}
 \newcommand{\sumvk}{\suml{m\in V_k}{}}
@@ -86,11 +88,9 @@
 \newcommand{\dpk}{\Dp{k}}
 \newcommand{\dpi}{\Dp{i}}
 \newcommand{\dpj}{\Dp{j}}
-% Displacement basis ansatz functions
-\newcommand{\bD}{N}
-% Pressure basis ansatz functions
-\newcommand{\bP}{\tilde{N}}
-\newcommand{\dNkmp}{\bD^\nabla_{l(k,m)}(X_p)}
+\newcommand{\dNkmp}{N^\nabla_{k,m}(X_p)}
+\newcommand{\dNimp}{N^\nabla_{i,m}(X_p)}
+\newcommand{\dNjmp}{N^\nabla_{j,m}(X_p)}
 \newcommand{\bPkmp}{\bP_{l(k,m)}(X_p)}
 \newcommand{\lfo}{\lambda_f^{opt}}
 
@@ -126,6 +126,9 @@ We define the quantities
 
 \section{FEM discretization}
 
+\subsection{Domain decomposition, basis functions and master reference volume}
+\input{fembasics}
+
 \subsection{Weak form and linear ansatz}
 \input{weakform}
 
@@ -137,26 +140,6 @@ We define the quantities
 
 \subsection{Calculation of $\nabla_{\Bc_m}\left\{\det \BF(X,t)\right\}$}
 \input{grad-cm-detF}
-
-% \begin{align*}
-% 	\intor \rho_0(X)\d{\vV}{t}(X,t)\varphi_k(X)dX
-% 		&= \intor \rho_0(X)\sumi \vc_i''(t)\varphi_i(X)\varphi_k(X)dX\\
-% 		&= \sumi \vc_i''(t) \intor \rho_0(X)\varphi_i(X)\varphi_k(X)dX\\
-% 		&= \sumnk \vc_i''(t) \intor \rho_0(X)\varphi_i(X)\varphi_k(X)dX
-% \end{align*}
-% The second term of \eqref{def:weakform}, with \eqref{def:completeP}, reads as
-% \begin{align*}
-% 	&\intor\vP(X,t)\dpk dX\\ 
-% 		=& \intor2(c_{10} + I_1(\vC(X,t))c_{01})\vF(X,t) - 2c_{01}\vF(X,t)\vC(X,t)\\
-% 		&\quad+g(\lambda_f(X,t))\vF(X,t)\va_0(X)\otimes\va_0(X)\dpkdX\\
-% 		=& \intor2(c_{10} + I_1(\vC(X,t))c_{01})\sumi (\vc_i(t)\otimes \dpi)\dpkdX\\
-% 		&-2c_{01}\intor\suml{i,j,l}{N}(\vc_i(t)\cdot \vc_j(t))(\divergence\varphi_l(X)\cdot\dpi)(\vc_l(t)\otimes\dpj)\dpkdX\\
-% 		&+\intor g(\lambda_f(X,t))\sumi (\vc_i(t)\cdot \va_0(X))(\dpi\cdot\va_0(X))\dpkdX\\
-% 		=& \sumnk\vc_i(t)\intor2(c_{10} + I_1(\vC(X,t))c_{01})(\dpi\cdot\dpk)dX\\
-% 		&-2c_{01}\suml{i,j,l\in\Nk}{}(\vc_i(t)\cdot \vc_j(t))\vc_l(t)
-% 		\intor(\divergence\varphi_l(X)\cdot\dpi)(\dpj\cdot\dpk)dX\\
-% 		&+\sumnk \intor g(\lambda_f(X,t))(\vc_i(t)\cdot \va_0(X))(\dpi\cdot\va_0(X))\dpkdX
-% \end{align*}
 
 \bibliographystyle{plain}
 \bibliography{cbm_library}

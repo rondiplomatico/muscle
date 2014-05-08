@@ -45,8 +45,10 @@ classdef Model < models.BaseFullModel
             this.T = 10; % [ms]
             this.dt = .01; % [ms]
             s = solvers.MLode15i;
-            s.RelTol = 1e-2;
-            s.AbsTol = 1e-2;
+            % Use relatively coarse precision settings. This skips fine
+            % oscillations but yields the correct long time results.
+            s.RelTol = 1e-1;
+            s.AbsTol = 1e-1;
             this.ODESolver = s;
             this.System.MaxTimestep = []; %model.dt;
             

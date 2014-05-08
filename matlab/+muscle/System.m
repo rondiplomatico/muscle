@@ -16,6 +16,7 @@ classdef System < models.BaseDynSystem
 
     properties
        globidx_displ;
+       
        globidx_pressure;
        
        Plota0 = true;
@@ -357,10 +358,10 @@ classdef System < models.BaseDynSystem
 %             for k = [1 2 7 8]
             for k = 1
                 % Quadratic
-                velo_dir(1,tq.elems(k,[1:3 9 10 13:15])) = true;
+%                 velo_dir(1,tq.elems(k,[1:3 9 10 13:15])) = true;
 %                 velo_dir(1,tq.elems(k,[3 10 15])) = true;
             end
-            velo_dir_val(velo_dir) = .01;
+%             velo_dir_val(velo_dir) = .01;
 
 %             velo_dir(1,tq.elems(1,[1 2 9 13 14])) = true;
 %             velo_dir(1,tq.elems(2,[1 2 9 13 14])) = true;
@@ -431,14 +432,16 @@ classdef System < models.BaseDynSystem
             % Set discrete a0 values at all gauss points
             anull = zeros(3,geo.NumGaussp,fe.NumElems);
             % Direction is x
-%             anull(1,:) = -1;
-%             anull(1,:) = 1;
+            anull(2,:,:) = -1;
+            anull(1,:,:) = 1;
             this.HasFibres = false;
             
             if any(anull(:))
                 this.HasFibres = true;
             
-                anull = anull ./ ([1;1;1]*Norm.L2(anull));
+                for m = 1:fe.NumElems
+                    anull(:,:,m) = anull(:,:,m) ./ ([1;1;1]*Norm.L2(anull(:,:,m)));
+                end
                 this.a0 = anull;
 
                 % Precomputations

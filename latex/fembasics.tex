@@ -1,0 +1,136 @@
+We specify a master hexahedron/volume/element $\Om = [-1,1]^3$ with corners
+\begin{align*}
+	\vX_{master} := \m{-1 & 1 & -1 & 1 & -1 & 1 & -1 &1\\-1 & -1 & 1 & 1 & -1 & -1 & 1 &1\\-1 & -1 & -1 & -1 & 1 & 1 & 1 &1\\}.
+\end{align*}
+This will be the ``natural'' order when referring to corners of the master volume, and we will stick with that order also for basis function indexing and all derived quantities.
+All integrals will be performed on this master element $\Om$, where we apply a Gauss Quadrature with
+\begin{align}
+	X_1,\ldots,X_G  &\in \Om &&\text{Gauss points},\\
+	w_1,\ldots,w_G  &\in \R &&\text{Gauss weights},
+\end{align}
+so that
+\begin{align}
+	\intom f(X)dX \approx \sumgp w_pf(X_p)\label{def:gaussintapprox}
+\end{align}
+for any integrable $f(X)$.
+\subsubsection{Master basis functions}
+\paragraph{Linear master basis functions}
+For $\H^1$ we define the $n_b=8$ linear basis functions
+\begin{align*}
+	N_i:\Om &\to [0,1]\\
+	N_i(X)  &= (1+(-1)^{i}X_1)(1+(-1)^{\ceil{\frac{i}{2}}}X_2)(1+(-1)^{\ceil{\frac{i}{4}}}X_3),\quad i=1\ldots n_b
+\end{align*}
+which amounts to trilinear functions equal to one in each corner of the hexahedron.
+The set of functions has the property
+\begin{align}
+	\suml{i=1}{n_b}N_i &\equiv 1 & \text{i.e.}\quad \suml{i=1}{n_b}N_i(X) &= 1 \fo X\in\Om,\label{eq:basisfunsum}
+\end{align}
+which will be needed later.
+\paragraph{Quadratic master basis functions}
+For quadratic basis functions we need more Degrees of Freedom (DoF) in order to be able to satisfy \eqref{eq:basisfunsum}.
+Well-known are $n_b=20$ or $n_b=27$ DoFs using extra edge-midpoint and mid-face locations.
+We will use $n_b = 20$ with extra DoFs on the $12$ edge-midpoints.
+Those be easily computed by a transformation matrix $T\in\R^{20 \times 8}$: 
+\begin{lstlisting}
+i = [1 2  2  3  4  4  5  5 6  7  7 8  9  9 10 10 11 11 12 12 13 14 14 15 16 16 17 17 18 19 19 20];  
+j = [1 1  2  2  1  3  2  4 3  3  4 4  1  5 2  6  3  7  4  8  5  5  6  6  5  7  6  8  7  7  8  8];
+s = [1 .5 .5 1 .5 .5 .5 .5 1 .5 .5 1 .5 .5 .5 .5 .5 .5 .5 .5 1  .5 .5 1  .5 .5 .5 .5 1  .5 .5 1];
+T = sparse(i,j,s,20,8);
+\end{lstlisting}
+Then the extended ``corner'' set for the master hexahedron is $\vX_{master}T' \in\R^{20\times 3}$.
+Now, for $\H^1$ we define the quadratic basis functions
+\begin{align*}
+	N_i:\Om &\to [0,1]\\
+	N_1(X)  &= \frac{1}{8}(1-X_1)(1-X_2)(1-X_3)(-X_1-X_2-X_3-2)\\ % C1
+    N_2(X)  &= \frac{1}{4}(1-X_1^2)(1-X_2)(1-X_3)\\ % E2
+    N_3(X)  &= \frac{1}{8}(1+X_1)(1-X_2)(1-X_3)(X_1-X_2-X_3-2)\\ % C3
+    N_4(X) &= \frac{1}{4}(1-X_2^2)(1-X_1)(1-X_3)\\ % E4
+    N_5(X) &= \frac{1}{4}(1-X_2^2)(1+X_1)(1-X_3)\\ % E5
+    N_6(X) &= \frac{1}{8}(1-X_1)(1+X_2)(1-X_3)(-X_1+X_2-X_3-2)\\ % C6
+    N_7(X) &= \frac{1}{4}(1-X_1^2)(1+X_2)(1-X_3)\\ % E7
+    N_8(X) &= \frac{1}{8}(1+X_1)(1+X_2)(1-X_3)(X_1+X_2-X_3-2)\\ % C8
+    N_9(X) &= \frac{1}{4}(1-X_3^2)(1-X_1)(1-X_2)\\ % E9    
+    N_{10}(X) &= \frac{1}{4}(1-X_3^2)(1+X_1)(1-X_2)\\ % E10
+    N_{11}(X) &= \frac{1}{4}(1-X_3^2)(1-X_1)(1+X_2)\\ % E11
+    N_{12}(X) &= \frac{1}{4}(1-X_3^2)(1+X_1)(1+X_2)\\ % E12
+    N_{13}(X) &= \frac{1}{8}(1-X_1)(1-X_2)(1+X_3)(-X_1-X_2+X_3-2)\\ % C13
+    N_{14}(X) &= \frac{1}{4}(1-X_1^2)(1-X_2)(1+X_3)\\ % E14
+    N_{15}(X) &= \frac{1}{8}(1+X_1)(1-X_2)(1+X_3)(X_1-X_2+X_3-2)\\ %C15
+    N_{16}(X) &= \frac{1}{4}(1-X_2^2)(1-X_1)(1+X_3)\\ % E16
+    N_{17}(X) &= \frac{1}{4}(1-X_2^2)(1+X_1)(1+X_3)\\ % E17
+    N_{18}(X) &= \frac{1}{8}(1-X_1)(1+X_2)(1+X_3)(-X_1+X_2+X_3-2)\\ % C18
+    N_{19}(X) &= \frac{1}{4}(1-X_1^2)(1+X_2)(1+X_3)\\ % E19
+    N_{20}(X) &= \frac{1}{4}(1+X_1)(1+X_2)(1+X_3)(X_1+X_2+X_3-2)]\\
+\end{align*}
+which amounts to triquadratic functions equal to one in each corner and edge-midpoints of the hexahedron.
+
+\subsubsection{Domain decomposition}
+Let $\Or$ be our domain of interest, decomposed into $\Or = \Omega_1\cup \ldots \cup \Omega_M$, where
+$\Omega_m = [\vx^m_1,\ldots,\vx^m_{n_b}]$ is a deformed cube specified by the $n_b$ points $\vx_i^m\in\R^3$.
+Let $\Ns &:= \{\vx_1,\ldots\vx_N\}$ denote the set of $N$ distinct nodes in
+$\{\vx_1^1, \ldots, \vx_{n_b}^1, \vx_1^2, \ldots, \vx_{n_b}^{M-1}, \vx_1^M, \ldots, \vx_{n_b}^M\}$, numbered by first occurrence.
+
+Using the notation
+\begin{align}
+	\vN(X) &:= \m{N_1(X) & \ldots & N_{n_b}(X)}^T\in\R^{n_b\times 1}\\
+	\vX^m &:= \m{\vx^m_1 \ldots \vx^m_{n_b}} \in\R^{3\times n_b}
+\end{align}
+ we can specify an \e{isogeometric mapping} or diffeomorphism
+\begin{align}
+	\Phi_m : \Om &\to \Omega_m\\
+	X &\mapsto \vX^m\vN(X)
+\end{align}
+which satisfies $\Omega_m = \Phi_m(\Or)$ and has the Jacobian
+\begin{align}
+	J\Phi_m(X) &= \m{\grad \Phi_{m_1}(X)\\\grad \Phi_{m_2}(X)\\\grad \Phi_{m_3}(X)\\} 
+	= \vX^m\m{\grad N_1(X)\\ \vdots\\\grad N_{n_b}(X)} = \vX^m\nabla\vN(X) \in \R^{3\times 3}.\label{def:refbasis_jacobian}
+\end{align}
+
+\subsubsection{Node basis functions}
+With the volume index set
+\begin{align}
+	%E_m &:= E(\Omega_m) := \{i\in\{1\ldots N\}~|~ \vx_i\in\Omega_m\}, \quad m=1\ldots M,\\
+	V_k &:= \bigl\{i\in\{1\ldots M\}~|~ \vx_k\in\Omega_i\bigr\},&&k=1\ldots N
+	%\Nk &:= \{i\in\{1\ldots N\}~|~ \vx_i\in E_m, m\in V_k\} = \{i ~|~ \supp\varphi_i \cap \supp\varphi_k \neq\es\},
+\end{align}
+we now define basis functions $\varphi_k$ on each node $k$ via
+\begin{align}
+	\varphi_k(X) &:= \begin{cases}
+		N_{l(k,m)}(\Phi^{-1}_m(X)), & X\in\Omega_m, m\in V_k,\\
+		0 & \text{else},	
+	\end{cases}\label{def:referencebasisfun}\\
+	l(k,m) &:= \{i\in\{1\ldots n_b\}~|~ N_i(\Phi_m^{-1}(\vx_k))=1\},\quad m=1\ldots M.
+\end{align}
+Here $l(k,m)$ refers to the local corner index of the basis function on $\Omega_m$ that equals one at $\vx_k$.
+
+
+For the gradient of $\varphi_k$ we thus obtain
+\begin{align}
+	\grad\varphi_k(X) &\re{def:referencebasisfun} \grad (N_{l(k,m)}(\Phi^{-1}_m(X)))
+					  = \grad N_{l(k,m)}(\Phi^{-1}_m(X))J\Phi^{-1}_m(X)\nonumber\\
+					  &= \grad N_{l(k,m)}(\Phi^{-1}_m(X))(J\Phi_m(X))^{-1}\label{eq:gradvarphi}
+\end{align}
+for $X\in\Omega_m, m\in V_k$ (zero otherwise).
+ 
+\subsubsection{Discrete integrals with node basis functions}
+We define the shorthands
+\begin{align}
+	\pmp &:= \Phi_m(X_p)\\
+	\jmp &:= |\det J\Phi_m(X_p)| = |\det \vX^m\nabla\vN(X_p)|.\label{def:jacshorthand}\\
+	\dNkmp &:= \nabla\varphi_k(\pmp) \re{eq:gradvarphi} \left(J\Phi_m(X_p)\right)^{-T}\nabla N_{l(k,m)}(X_p))\in\R^3\label{}
+\end{align}
+
+With the above, and the transformation theorem and the local support of the basis function $\varphi_k$ we now have for any integrable $f(X,t)$ that
+\begin{align}
+   \intl{\Or}{}f(X,t)\varphi_k(X)dX &= \suml{m=1}{M}\intl{\Omega_m}{}f(X,t)\varphi_k(X)dX = \sumvk\intl{\Omega_m}{}f(X,t)\varphi_k(X)dX\nonumber\\
+    &= \sumvk\intl{\Phi_m(\Omega)}{}f(X,t)\varphi_k(X)dX\label{eq:fphidx}\nonumber\\
+	&= \sumvk\intl{\Om}{}f(\Phi_m(X),t)\varphi_k(\Phi_m(X))|\det J\Phi_m(X)|dX\nonumber\\
+	& \re{def:gaussintapprox} \sumvk\sumgp w_pf(\pmp,t)\varphi_k(\pmp)|\det J\Phi_m(X_p)|\nonumber\\
+	& \re{def:referencebasisfun} \sumvk\sumgp w_pf(\pmp,t)N_{l(k,m)}(\Phi_m^{-1}(\pmp))|\det J\Phi_m(X_p)|\nonumber\\
+	& \re{def:jacshorthand} \sumvk\sumgp w_pf(\pmp,t)N_{l(k,m)}(X_p)\jmp\label{eq:fphidx}
+\end{align}
+
+Similarly we obtain for the gradient that
+\begin{align}
+	\intl{\Or}{}f(X,t)\nabla\varphi_k(X)dX &= \sumvk\sumgp w_pf(\pmp,t)\dNkmp\jmp\label{eq:fgradphidx}
+\end{align}
