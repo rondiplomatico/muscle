@@ -82,7 +82,14 @@ classdef System < models.BaseDynSystem
             
             % Call superclass constructor
             this = this@models.BaseDynSystem(model);
-            mc = model.Config;
+            
+            %% Set system components
+            % Core nonlinearity
+            this.f = muscle.Dynamics(this);
+        end
+        
+        function configUpdated(this)
+            mc = this.Model.Config;
             tq = mc.PosFE;
             tl = mc.PressFE;
                 
@@ -90,10 +97,8 @@ classdef System < models.BaseDynSystem
 %             % nodes geometry (used for plotting)
             this.pressure_to_displ_nodes = Utils.findVecInMatrix(tq.nodes,tl.nodes);
             
-            [displ_dir, velo_dir, velo_dir_val] = model.Config.getBC;
-            
             % Call subroutine for boundary condition index crunching
-            this.computeBC(displ_dir, velo_dir, velo_dir_val);
+            this.computeBC;
             
             % Init fibre directions and precomputable values
             this.inita0;
@@ -148,12 +153,10 @@ classdef System < models.BaseDynSystem
             end
             this.M = dscomponents.ConstMassMatrix(MM);
             
-            %% Set system components
-            % Core nonlinearity
-            this.f = muscle.Dynamics(this);
-            
             %% Initial value
             this.x0 = this.assembleX0;
+            
+            this.f.configUpdated;
         end
         
         function pm = plot(this, t, uvw, withvelo, pm, vid)
@@ -317,13 +320,12 @@ classdef System < models.BaseDynSystem
             x0 = dscomponents.ConstInitialValue(x0);
         end
         
-        function computeBC(this, displ_dir, velo_dir, velo_dir_val)
+        function computeBC(this)
+            mc = this.Model.Config;
+            [displ_dir, velo_dir, velo_dir_val] = mc.getBC;
             
-            if any(any(displ_dir & velo_dir))
-                error('Cannot impose displacement and velocity dirichlet conditions on same DoF');
-            end
-            fe_displ = this.Model.Config.PosFE;
-            fe_press = this.Model.Config.PressFE;
+            fe_displ = mc.PosFE;
+            fe_press = mc.PressFE;
             
             % Position of position entries in global state space vector
             num_displacement_dofs = fe_displ.NumNodes * 3;

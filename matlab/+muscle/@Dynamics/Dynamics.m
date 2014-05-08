@@ -13,11 +13,13 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     methods
         function this = Dynamics(sys)
             this = this@dscomponents.ACompEvalCoreFun(sys);
-            
-            mc = sys.Model.Config;
+        end
+        
+        function configUpdated(this)
+            mc = this.System.Model.Config;
             dfe = mc.PosFE;
             
-            dirvals = length(sys.bc_dir_val);
+            dirvals = length(this.System.bc_dir_val);
             d = dfe.NumNodes * 6 - dirvals + mc.PressFE.NumNodes;
             this.xDim = d;
             this.fDim = d;
@@ -132,17 +134,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         end
 
     end
-    
-%     methods(Access=private)
-%         function gv = g(this, lambdafsq)
-%             alpha = .1;
-%             lambdaf = sqrt(lambdafsq);
-%             gv = (this.b1/lambdafsq)*(lambdaf^this.d1-1);
-%             ratio = lambdaf/this.lambdafopt;
-%             fl = (-6.25*ratio*ratio + 12.5*ratio - 5.25) * (ratio >= .6) * (ratio < 1.4);
-%             gv = gv + (this.Pmax/lambdaf)*fl*alpha;
-%         end
-%     end
  
     methods(Access=protected)
         function fx = evaluateComponents(this, pts, ends, ~, ~, x, ~)

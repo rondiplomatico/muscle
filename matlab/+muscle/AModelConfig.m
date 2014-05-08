@@ -44,6 +44,10 @@ classdef AModelConfig < handle
             velo_dir_val = zeros(3,N);
             displ_dir = this.setPositionDirichletBC(displ_dir);
             [velo_dir, velo_dir_val] = this.setVelocityDirichletBC(velo_dir, velo_dir_val);
+            
+            if any(any(displ_dir & velo_dir))
+                error('Cannot impose displacement and velocity dirichlet conditions on same DoF');
+            end
         end
         
         function anull = geta0(this)

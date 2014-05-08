@@ -15,7 +15,10 @@ classdef Model < models.BaseFullModel
     end
     
     methods
-        function this = Model
+        function this = Model(conf)
+            if nargin < 1
+                conf = muscle.DebugConfig;
+            end
             % Creates a new muscle model
             this = this@models.BaseFullModel;
             this.Name = sprintf('FEM Muscle model%s','');
@@ -24,9 +27,9 @@ classdef Model < models.BaseFullModel
             this.Data = data.ModelData(this);
             %this.Data.useFileTrajectoryData;
             
-            this.Config = muscle.DebugConfig;
- 
             this.System = muscle.System(this);
+            
+            this.setConfig(conf);
             
             % True timestepping in ODE solver
             %   this.System.MaxTimestep = 1e-5; % [ms]
@@ -52,6 +55,14 @@ classdef Model < models.BaseFullModel
 %             if ~chk
 %                 error('Health tests failed!');
 %             end
+        end
+        
+        function setConfig(this, value)
+            if ~isa(value, 'muscle.AModelConfig')
+                error('Config must be a muscle.AModelConfig instance');
+            end
+            this.Config = value;
+            this.System.configUpdated;
         end
         
         function varargout = plot(this, varargin)

@@ -29,6 +29,8 @@ classdef cubegeom < handle
         function this = cubegeom(pts, cubes)
             if nargin < 2
                 [pts, cubes] = cubegeom.DemoCubeGrid;
+            elseif size(unique(pts','rows'),1) ~= size(pts,2);
+                error('Please provide unique points!');
             end
             this.pts = pts;
             this.cubes = cubes;
