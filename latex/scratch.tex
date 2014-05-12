@@ -109,16 +109,17 @@ The quantities referred to in the reference configuration are upper-case letters
 Bold face is used to indicate vectorial quantities.
 
 We model the movement/deformation of a continuous muscle over time, whose shape corresponds to the reference domain $\Or\subset\R^3$.
-The movement of each particle $X\in\R^3$ in the body is described by a \e{motion} $\chi(X,t)\in\R^3$, which gives the position of each $X\in\R^3$ at time
-$t\in[0,T]$ with $\Or = \chi(\Or,0)$.
+We choose the units $[X] = mm, [t] = ms$.
+The movement of each particle $X\in\R^3$ in the body is described by a \e{motion} $\chi(X,t)\in\R^3$ (with $[\chi(X,t)] = mm$),
+which gives the position of each $X\in\R^3$ at time $t\in[0,T]$ with $\Or = \chi(\Or,0)$.
 
 We define the quantities
 \begin{align}
-	\text{velocity field} && \vV(X,t) &:= \d{\chi}{t}(X,T),\\
-	\text{acceleration field} && \vA(X,t) &:= \d{\vV}{t}(X,t) = \dd{\chi}{t}(X,t),\\
-	\text{deformation gradient} && \vF(X,t) &:= \d{\chi}{X}(X,t) = \m{\nabla \chi_1 & \nabla \chi_2 & \nabla \chi_3}^T \in \R^{3\times 3},\\
-	\text{right cauchy strain tensor} && \vC(X,t) &:= \vF(X,t)^T\vF(X,t)\\
-	\text{volume ratio} && J(X,t) &:= \det(\vF(X,t)).
+	&\text{velocity field} & \vV(X,t) &:= \d{\chi}{t}(X,t), && \left[\frac{mm}{ms}\right]\\
+	&\text{acceleration field} & \vA(X,t) &:= \d{\vV}{t}(X,t) = \dd{\chi}{t}(X,t), && \left[\frac{mm}{ms^2}\right]\\
+	&\text{deformation gradient} & \vF(X,t) &:= \d{\chi}{X}(X,t) = \m{\nabla \chi_1 & \nabla \chi_2 & \nabla \chi_3}^T \in \R^{3\times 3}, && [-]\\
+	&\text{right cauchy strain tensor} & \vC(X,t) &:= \vF(X,t)^T\vF(X,t), && [-]\\
+	&\text{volume ratio} & J(X,t) &:= \det(\vF(X,t)). && [-]
 \end{align}
 
 \section{Derivation of governing equations}

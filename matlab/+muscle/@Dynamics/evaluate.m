@@ -16,6 +16,7 @@ function duvw = evaluate(this, uvwdof, t)
     Pmax = this.Pmax;
     alpha = this.alpha; %#ok<*PROP>
     havefibres = sys.HasFibres;
+    visc = this.fViscosity;
 
     % Include dirichlet values to state vector
     uvwcomplete = zeros(2*dofs_displ + fe_press.NumNodes,1);
@@ -50,7 +51,7 @@ function duvw = evaluate(this, uvwdof, t)
             u = uvwcomplete(elemidx_displ);
             % Deformation gradient
             F = u * dtn;
-
+           
             %% Isotropic part (Invariant I1 related)
             I1 = sum(sum((u'*u) .* (dtn*dtn')));
             
@@ -72,6 +73,12 @@ function duvw = evaluate(this, uvwdof, t)
                 gval = (b1/lambdafsq)*(lambdaf^d1-1) + (Pmax/lambdaf)*fl*alpha;
                 a0 = sys.a0oa0(:,:,(m-1)*num_gausspoints + gp);
                 P = P + gval*F*a0;
+            end
+            
+            % Viscosity
+            if visc > 0
+                v = uvwcomplete(elemidx_displ+dofs_displ);
+                P = P + visc* v * dtn;
             end
             
             weight = g.gaussw(gp) * fe_pos.elem_detjac(m,gp);

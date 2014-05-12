@@ -28,7 +28,12 @@ classdef AModelConfig < handle
         end
         
         function [velo_dir, velo_dir_val] = setVelocityDirichletBC(~, velo_dir, velo_dir_val)
-            % set nothing!
+            % Determines the dirichlet velocities.
+            %
+            % The unit for the applied quantities is [mm/ms] = [m/s]
+            %
+            % In the default implementation there are no velocity
+            % conditions.
         end
     end
     
@@ -53,6 +58,10 @@ classdef AModelConfig < handle
         function anull = geta0(this)
             anull = zeros(3,this.Geometry.NumGaussp,this.PosFE.NumElems);
             anull = this.seta0(anull);
+            % Normalize anull vectors
+            for m = 1:this.PosFE.NumElems
+                anull(:,:,m) = anull(:,:,m) ./ ([1;1;1]*Norm.L2(anull(:,:,m)));
+            end
         end
     end
     

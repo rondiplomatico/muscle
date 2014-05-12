@@ -156,12 +156,13 @@ classdef fembase < handle
                 text(p(1,k),p(2,k),p(3,k),sprintf('%d',k),'Parent',h,'Color','k');
             end
             view(h,[52 30]);
+            daspect([1 1 1]);
             
-            h = pm.nextPlot('mass','Mass matrix','node','node');
-            mesh(h,full(this.M));
-            
-            pm.nextPlot('mass_pattern','Mass matrix pattern','dof','dof');
-            spy(this.M);
+%             h = pm.nextPlot('mass','Mass matrix','node','node');
+%             mesh(h,full(this.M));
+%             
+%             pm.nextPlot('mass_pattern','Mass matrix pattern','dof','dof');
+%             spy(this.M);
             
             if nargin < 2
                 pm.done;

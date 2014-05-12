@@ -1,7 +1,7 @@
-Assuming a mass $\rho_0(X)$ at each point we define the total momentum
-\[
- 	\vL(t) := \intor \rho_0(X)\vV(X,t) dX,
-\] 
+Assuming a density $\rho_0(X), \left[\rho_0(X)\right] = \frac{kg}{mm^3}$ at each point we define the total momentum
+\begin{align*}
+ 	\vL(t) &:= \intor \rho_0(X)\vV(X,t) dX, & [\vL(t)] &= [\rho_0\vV]mm^3 = \frac{kg}{mm^3}\frac{m}{s}mm^3 = 10^{-3}Nms
+\end{align*} 
 for which we postulate the balance equation
 \begin{align}
 	\force(t) \stackrel{!}{=} \d{\vL}{t}(t) = \vL'(t) = \intor \rho_0(X)\d{\vV}{t}(X,t) dX = \intor \rho_0(X)\vA(X,t) dX,\label{def:bal_eq}
@@ -10,20 +10,20 @@ given \e{resultant forces} $\force(t)$.
 
 \subsection{Structure of force}
 We assume the forces $\force(t)$ to be composed of two different sources: Forces on the boundary and body forces.
-The body forces $\vB(X,t)$ measures the force per unit reference volume on $X$ at time $t$.
+The body forces $\vB(X,t)$ measures the force per unit reference volume ($\left[\vB(X,t)\right] = 10^{-3}\frac{N}{mm^3}$) on $X$ at time $t$.
 These forces are self-weight or gravity, for example.
-Further, we assume to have \e{traction vectors} $\vT(X,t,N)$ (first Piola-Kirchhoff traction vector) that indicates the force working per unit surface area with normal $N$ 
-at the point $X\in\partial\Or$ at time $t$.
+Further, we assume to have \e{traction vectors} $\vT(X,t,N)$ (first Piola-Kirchhoff traction vector) that indicates the force working per unit
+surface area ($[\vT(X,t,N)] = 10^{-3}\frac{N}{mm^2} = 10^{-3}MPa = kPa$) with normal $N$ at the point $X\in\partial\Or$ at time $t$.
 Then the resultant forces are given as
 \begin{align}
-	\force(t) := \intorb \vT(X,t,N)dN + \intor \vB(X,t)dX \label{def:force}
+	\force(t) &:= \intorb \vT(X,t,N)dN + \intor \vB(X,t)dX, & \left[\force(t)\right] = \left[\vL'(t)\right] &= 10^{-3}N. \label{def:force}
 \end{align}
 
 According to \e{Cauchy's stress theorem}, we can express tractions as tensor product
 \begin{align}
 	\vT(X,t,N) &= \vP(X,t)N,\label{def:T}
 \end{align}
-where $\vP$ denotes the \e{first Piola-Kirchhoff stress tensor}.
+where $\vP$ denotes the \e{first Piola-Kirchhoff stress tensor}, which is measured in kiloPascal, i.e. $[\vP] = kPa$.
 With this we have, following Gauss integral theorem,
 \begin{align}
 	\intorb \vT(X,t,N)dN &= \intorb \vP(X,t)NdN = \intor \divergence\vP(X,t)dX.\label{eq:div_form_traction}
@@ -60,9 +60,10 @@ In our setting we deal with \e{hyperelastic materials}, which are characterized 
 current configuration/deformation at times $0$ and $t$.
 By the variational approach, we see that the internal virtual work conjugate of $\vP$ is $\dot{\vF}$,
 which allows us to define a \e{elastic potential} or \e{stored strain energy function} as
-\begin{align}
-	\Psi_F(\vF(X,t),X) := \intl{0}{t}\vP(X,s):\dot{\vF}(X,s)ds,
-\end{align}
+\begin{align*}
+	\Psi_F(\vF(X,t),X) &:= \intl{0}{t}\vP(X,s):\dot{\vF}(X,s)ds,\\
+	[\Psi_F] &= kPa = 10^{-3}\frac{N}{mm^2} = 10^{-3}\frac{J}{mm^2 m} = 10^{-6}\frac{J}{mm^3}.
+\end{align*}
 which denotes the work done by the stresses per unit undeformed volume from initial to current configuration at $t$,
 see \cite[p.156]{Bonet2008} or \cite[p.207]{Holzapfel2000}.
 Now, by definition, we have
@@ -137,7 +138,7 @@ Now, comparing equations \eqref{eq:secondpiolahyper} and \eqref{def:cincompconst
 	\vS(X,t) &= 2\d{\Psi}{\vC}(\vC(X,t)) + \gamma J(X,t)\vC(X,t)^{-1},\label{def:incompressible_secondpiola}
 \end{align}
 where $\gamma$ is an arbitrary scalar.
-In order to relate this quantity to a physical quantitiy, we consider the concept of hydrostatic pressure in a small detour.
+In order to relate this quantity to a physical quantity, we consider the concept of hydrostatic pressure in a small detour.
 
 \paragraph{Relation to hydrostatic pressure}
 In the following we omit the $(X,t)$ (or $(x,t)$) arguments for improved readability.
@@ -149,7 +150,7 @@ The resulting deviatoric part is trace-free, e.g.
 \begin{align}
 	\tr{\vsig'} &= \tr\left(\vsig - \frac{1}{3}(\tr\vsig)\vI\right) = \suml{i=1}{3}(\vsig_{ii} - \frac{1}{3}\tr\vsig) = \tr\vsig - \tr\vsig = 0.
 \end{align}
-Here, the scalar $p$ is called the \e{hydrostatic pressure}.
+Here, the scalar $p$ is called the \e{hydrostatic pressure}, $[p] = kPa$.
 From the definition \eqref{def:secondpiola} of the second Piola-Kirchhoff stress tensor we obtain the same split for $\vS$
 (omitting $X,t$ arguments for readability) via
 \begin{align}
@@ -250,10 +251,10 @@ In the following, we will specify different $\Psi(I_1,I_2,I_4,I_5)$ depending on
 \end{align}
 
 \subsubsection{Isotropic stress tensor $\vSi$}
-Now, for the isotropic part we use
-\[
-	\Psi(I_1,I_2,I_3) = c_{10}(I_1-3) + c_{01}(I_2-3),
-\]
+Now, for the isotropic part we use (for constants see \cite{Zheng1999})
+\begin{align*}
+	\Psi(I_1,I_2,I_3) &= c_{10}(I_1-3) + c_{01}(I_2-3), & c_{10} &= 6.352e^{-10}kPa, & c_{01} &= 3.627kPa, 
+\end{align*}
 which gives
 \begin{align}
 	\vSi(X,t) &= 2(c_{10} + I_1c_{01})\vI - 2c_{01}\vC(X,t)\\
@@ -269,7 +270,11 @@ Now, according to \cite{Markert2005}, we employ
 \begin{align*}
 	\Psi(\lambda_f) := \sumi \frac{b_i}{d_i}(\lambda_f^{d_i} - 1) - b_i\ln\lambda_f
 \end{align*}
-with $n=1$ summands, so that
+with $n=1$ summands 
+\begin{align*}
+	b_1 &= 2.756e^{-5}kPa, & d_1 &= 43.373 [-].
+\end{align*}
+We thus have
 \begin{align}
 	\d{\Psi}{\vC}(\lambda_f) &= \d{\Psi}{\lambda_f}(\lambda_f)\d{\lambda_f}{I_4}(I_4)\d{I_4}{\vC}(\vC,\va_0),\label{eq:dpsidC}
 \end{align}
@@ -299,7 +304,7 @@ Here we define
 		0 & \text{else}
 	\end{cases} \label{def:fl},
 \end{align}
-with suitable constant $p^{max}$ and function $\gamma$.
+with maximum pressure $p^{max} = 7.3 \left[\frac{N}{cm^2}\right] = 73 [kPa]$ and dimensionless function $\gamma$.
 Similar to \eqref{eq:dpsidC} we obtain
 \begin{align}
 	\d{\Psi}{\vC}(\lambda_f) &= \frac{p^{max}}{2\lambda_f}f_l(\lambda_f)\gamma(\alpha,\lambda_f')\va_0\otimes\va_0

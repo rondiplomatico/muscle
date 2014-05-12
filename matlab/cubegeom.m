@@ -58,7 +58,7 @@ classdef cubegeom < handle
             for k=1:size(e,1)
                 plot3(h,p(1,[e(k,1) e(k,2)]),p(2,[e(k,1) e(k,2)]),p(3,[e(k,1) e(k,2)]),'r');
             end
-            
+            daspect([1 1 1]);
             if nargin < 2
                 pm.done;
             end

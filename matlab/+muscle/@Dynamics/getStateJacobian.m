@@ -25,6 +25,7 @@ function J = getStateJacobian(this, uvwdof, ~)
     globidx_press = sys.globidx_pressure;
 
     dofs_displ = N*3;
+    visc = this.fViscosity;
 
     % Include dirichlet values to state vector
     uvwcomplete = zeros(2*dofs_displ + fe_press.NumNodes,1);
@@ -99,7 +100,7 @@ function J = getStateJacobian(this, uvwdof, ~)
                     dlambdaf = (1/lambdaf)*dtna0(k)*sum(([1; 1; 1] * dtna0') .* u, 2);
                 end
 
-                %% Grad_u K(u,v,w)
+                %% grad_u K(u,v,w)
                 % Recall: gradients from nabla K_{u,w} are
                 % negative, as KerMor implements Mu'' = -K(u,v,w)
                 % instead of Mu'' + K(u,v,w) = 0
@@ -141,6 +142,24 @@ function J = getStateJacobian(this, uvwdof, ~)
                 j = [j; one*elemidx_displ(3,k)];
                 snew = -weight * dPz * dtn';
                 s = [s; snew(:)];
+                
+                %% grad_v K(u,v,w)
+                if visc > 0
+                    i = [i; inew];
+                    j = [j; one*elemidx_velo(1,k)];
+                    snew = -weight * visc*e1_dyad_dPhik * dtn';
+                    s = [s; snew(:)];
+                    % ydim
+                    i = [i; inew];
+                    j = [j; one*elemidx_velo(2,k)];
+                    snew = -weight * visc*e2_dyad_dPhik * dtn';
+                    s = [s; snew(:)];
+                    % zdim
+                    i = [i; inew];
+                    j = [j; one*elemidx_velo(3,k)];
+                    snew = -weight * visc*e3_dyad_dPhik * dtn';
+                    s = [s; snew(:)];
+                end
 
                 %% grad u g(u)
                 % dx

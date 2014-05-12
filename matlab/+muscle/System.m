@@ -18,6 +18,8 @@ classdef System < models.BaseDynSystem
        pressure_to_displ_nodes;
        
        % The overall values of dirichlet conditions
+       %
+       % To specify in [mm] for position and mm/ms for velocity
        % 
        % Collected from bc_dir_displ_val, bc_dir_velo_val
        bc_dir_val;
@@ -36,11 +38,11 @@ classdef System < models.BaseDynSystem
        % z | 1    0    0       |
        bc_dir_displ;
        bc_dir_displ_idx;
-       bc_dir_displ_val;
+       bc_dir_displ_val; % [mm]
        
        bc_dir_velo;
        bc_dir_velo_idx;
-       bc_dir_velo_val;
+       bc_dir_velo_val; % [mm/ms]
        
        % A helper array containing the indices of the actual dofs in the
        % global indexing.
@@ -199,13 +201,14 @@ classdef System < models.BaseDynSystem
             %% Loop over time
             h = pm.nextPlot('geo','Output','x','y');
             view(h, [46 30]);
+            daspect([1 1 1]);
             hold(h,'on');
             box2 = dfem.geo.getBoundingBox(1.1);
             
             xpos = 1:3:dfem.NumNodes*3;
             box = [min(min(uvw(xpos,:))) max(max(uvw(xpos,:)))...
                 min(min(uvw(xpos+1,:))) max(max(uvw(xpos+1,:)))...
-                min(min(uvw(xpos+2,:))) max(max(uvw(xpos+2,:)))];
+                min(min(uvw(xpos+2,:))) max(max(uvw(xpos+2,:)))]*1.1;
             for ts = 1:1:length(t)
                 % Quit if figure has been closed
                 if ~ishandle(h)
@@ -246,17 +249,26 @@ classdef System < models.BaseDynSystem
                 end
                 
                 %% a0 fibres
-                if this.HasFibres
+                if this.HasFibres && this.Plota0
                     Ngp = dfem.N(dfem.geo.gaussp);
-                    if this.Plota0
-                        for m = 1:dfem.NumElems
-                            u = uvw(1:vstart-1,ts);
-                            u = u(this.globidx_displ(:,:,m));
-                            gps = u*Ngp;
-                            anull = u*this.dNa0(:,:,m);
-                            quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'g');
-                        end
+%                     xyz = zeros(3,dfem.geo.NumGaussp,dfem.NumElems);
+%                     dir = zeros(3,dfem.geo.NumGaussp,dfem.NumElems);
+                    for m = 1:dfem.NumElems
+                        u = uvw(1:vstart-1,ts);
+                        u = u(this.globidx_displ(:,:,m));
+                        gps = u*Ngp;
+                        anull = u*this.dNa0(:,:,m);
+                        quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'g');
+                        
+%                         xyz(:,:,m) = gps;
+%                         dir(:,:,m) = anull;
                     end
+%                     xyz = reshape(xyz,3,[]);
+%                     dir = reshape(dir,3,[]);
+%                     pt = this.Model.Config.Geometry.pts;
+%                     streamline(xyz(1,:),xyz(2,:),xyz(3,:),...
+%                         dir(1,:),dir(2,:),dir(3,:),...
+%                         pt(1,:),pt(2,:),pt(3,:));
                 end
                 
                 %% Misc
@@ -282,6 +294,15 @@ classdef System < models.BaseDynSystem
             if nargin < 4
                 pm.done;
             end
+        end
+        
+        function pm = plotDiff(this, t, uvw1, uvw2, fac, varargin)
+            if nargin < 5
+                fac = 5;
+            end
+            x0 = this.x0.evaluate([]);
+            diff = repmat(x0,1,length(t)) + (uvw1-uvw2)*fac;
+            pm = this.plot(t,diff,varargin{:});
         end
     end
     
@@ -378,13 +399,9 @@ classdef System < models.BaseDynSystem
             
             anull = this.Model.Config.geta0;
             this.HasFibres = false;
-            
             if any(anull(:))
                 this.HasFibres = true;
             
-                for m = 1:fe.NumElems
-                    anull(:,:,m) = anull(:,:,m) ./ ([1;1;1]*Norm.L2(anull(:,:,m)));
-                end
                 this.a0 = anull;
 
                 % Precomputations

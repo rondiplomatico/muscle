@@ -1,7 +1,9 @@
 classdef Model < models.BaseFullModel
     % Model: Model for a FEM-discretized muscle model
     %
-    % The global time unit for this model is milliseconds [ms].
+    % The global time unit for this model is milliseconds [ms] and the
+    % spatial quantities are in [mm].
+    % This results in pressure values of [kPa].
     %
     % @author Daniel Wirtz @date 2012-11-22
     

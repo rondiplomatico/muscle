@@ -5,9 +5,22 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
        c01 = 3.627; % [kPa]
        b1 = 2.756e-5; % [kPa]
        d1 = 43.373; % [-]
-       Pmax = 7.3; % N/cm²
+       Pmax = 73; % [kPa], in Paper 7.3N/cm², but kPa = 0.1N/cm² 
        lambdafopt = 1.2; % [-]
        alpha = .1;
+    end
+    
+    properties(Dependent)
+        % The model's viscosity.
+        %
+        % Set to zero to disable.
+        %
+        % @type double @default 0
+        Viscosity;
+    end
+    
+    properties(Access=protected)
+        fViscosity = 0;
     end
     
     methods
@@ -48,6 +61,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             globidx_press = sys.globidx_pressure;
             
             dofs_displ = N*3;
+            visc = this.fViscosity;
             
             dofsperelem_displ = fe_pos.DofsPerElement;
             dofsperelem_press = fe_press.DofsPerElement;
@@ -65,14 +79,25 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                         % xdim
                         i = [i; inew]; %#ok<*AGROW>
                         j = [j; one*elemidx_displ(1,k)];
-                        
                         % ydim
                         i = [i; inew]; 
                         j = [j; one*elemidx_displ(2,k)]; 
-                        
                         % zdim
                         i = [i; inew]; 
                         j = [j; one*elemidx_displ(3,k)]; 
+                        
+                        %% Grad_v K(u,v,w)
+                        if visc > 0
+                            % xdim
+                            i = [i; inew]; %#ok<*AGROW>
+                            j = [j; one*elemidx_velo(1,k)];
+                            % ydim
+                            i = [i; inew]; 
+                            j = [j; one*elemidx_velo(2,k)]; 
+                            % zdim
+                            i = [i; inew]; 
+                            j = [j; one*elemidx_velo(3,k)]; 
+                        end
                         
                         %% grad u g(u)
                         % dx
@@ -105,7 +130,12 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % Overrides the random argument jacobian test as restrictions
             % on the possible x values (detF = 1) hold.
             
+            oldvisc = this.fViscosity;
+            
             %res = test_Jacobian@dscomponents.ACoreFun(this, varargin{:});
+            if oldvisc ~= 0
+                this.Viscosity = 0;
+            end
             x0 = this.System.x0.evaluate([]);
             res = test_Jacobian@dscomponents.ACoreFun(this, x0);
             
@@ -116,9 +146,22 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             J = this.getStateJacobian(x0);
             Jeff(logical(J)) = true;
             check = (Jp | Jeff) & ~Jp;
-            if any(check(:))
-                error('boo');
-            end
+            res = res && ~any(check(:));
+            
+            this.Viscosity = 1;
+            x0 = this.System.x0.evaluate([]);
+            res = res && test_Jacobian@dscomponents.ACoreFun(this, x0);
+            
+            % Check if sparsity pattern and jacobian matrices match
+            Jp = this.JSparsityPattern;
+            Jeff = Jp;
+            Jeff(:) = false;
+            J = this.getStateJacobian(x0);
+            Jeff(logical(J)) = true;
+            check = (Jp | Jeff) & ~Jp;
+            res = res && ~any(check(:));
+            
+            this.Viscosity = oldvisc;
         end
         
         function copy = clone(this)
@@ -131,6 +174,11 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % Copy local properties
             % No local properties are to be copied here, as so far everything is done in the
             % constructor.
+        end
+        
+        function set.Viscosity(this, value)
+            this.fViscosity = value;
+            this.configUpdated;
         end
 
     end
