@@ -1,12 +1,39 @@
 classdef DebugConfig < muscle.AModelConfig
+    % A simple configuration for Debug purposes.
+    % 
+    % Uses a single undeformed 
+    
+    properties(SetAccess=private)
+        Version;
+    end
     
     methods
-        function this = DebugConfig
+        function this = DebugConfig(version)
+            % Creates a Debug simple muscle model configuration.
+            %
+            % Version 1: No fibres
+            % Version 2: Fibres, but no FibreTypes
+            % Version 3: Fibres with fibre type distribution and APExp
+            % evaluations
+            if nargin < 1
+                version = 3;
+            end
             % Single cube with same config as reference element
-            [pts, cubes] = cubegeom.DemoCubeGrid(0:1,0:1,0:1);
+            [pts, cubes] = geometry.Cube8Node.DemoGrid(0:1,0:1,0:1);
             pts(pts == 0) = -1;
-            geo = cubegeom(pts, cubes);
+            geo = geometry.Cube8Node(pts, cubes);
             this = this@muscle.AModelConfig(geo);
+            
+            this.Version = version;
+            %% Muscle fibre weights
+            if version == 3
+                types = [0 .2 .4 .6 .8 1];
+                ftw = zeros(geo.GaussPointsPerElem,length(types),geo.NumElements);
+                % Test: Use only slow-twitch muscles
+                ftw(:,1,:) = 1;
+                this.FibreTypeWeights = ftw;
+                this.FibreTypes = types;
+            end
         end
         
     end
@@ -14,16 +41,17 @@ classdef DebugConfig < muscle.AModelConfig
     methods(Access=protected)
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             %% Dirichlet conditions: Position (fix one side)
-            tq = this.PosFE;
-            displ_dir(:,tq.elems(1,[6:8 11 12 18:20])) = true;
+            geo = this.PosFE.Geometry;
+            displ_dir(:,geo.Elements(1,[6:8 11 12 18:20])) = true;
         end
         
         function anull = seta0(this, anull)
             % Set discrete a0 values at all gauss points
             
-            % Direction is x
-            anull(2,:,:) = -1;
-            anull(1,:,:) = 1;
+            if this.Version >= 2
+%                 anull(2,:,:) = -1;
+                anull(1,:,:) = 1;
+            end
         end
     end
     

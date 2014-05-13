@@ -3,7 +3,7 @@ classdef fembase < handle
     %   Detailed explanation goes here
     
     properties
-        geo;
+        Geometry;
         
         N;
         
@@ -14,60 +14,32 @@ classdef fembase < handle
         
         % The mass matrix
         M;
-        
-        nodes;
-        
-        elems;
-        
+                
         elem_detjac;
-        
-        edges;
         
         % transformed basis function gradients, stored in eldofs x gp*3
         % x element matrix (accessible in 20x3-chunks for each gauss point and element)
         transgrad;
     end
-    
-    properties(Dependent)
-        NumNodes;
-        NumElems;
-        DofsPerElement;
-    end
-    
-    properties(SetAccess=protected)
-        % The indices of edges
-        EdgeIndices = [1 3 6 8 13 15 18 20];
-    end
-    
+        
     methods
-        function this = fembase(geo)
-            if nargin < 1
-                geo = cubegeom;
-            end
-            this.geo = geo;
+        function this = fembase(geometry)
+            this.Geometry = geometry;
         end
         
         function init(this)
             %% Compute edges from cubes.
             % Mind the corner numbering of the cubes! (see above)
             
-            g = this.geo;
-            el = this.elems;
-            dof = this.nodes;
-            np = size(dof,2);
-            
-%             %% Compute node to cube indices
-%             pv = cell(np,1);
-%             for i=1:np
-%                 pv{i} = find(sum(el == i,2));
-%             end
-%             this.pts_cubes = pv;
+            g = this.Geometry;
+            el = g.Elements;
+            np = g.NumNodes;
             
             %% Precomputations
             % Iterate each cube
             gp = g.gaussp;
             % Number of gauss points
-            ngp = size(gp,2);
+            ngp = g.GaussPointsPerElem;
             Mass = zeros(np,np);
             % Number of elements
             nel = size(el,1);
@@ -96,7 +68,7 @@ classdef fembase < handle
                     %% Jacobian related
                     dNxi = this.gradN(xi);
                     % Jacobian of isogeometric mapping
-                    Jac = this.nodes(:,elem)*dNxi;
+                    Jac = g.Nodes(:,elem)*dNxi;
                     
                     %% Mass matrix related
                     % Jacobian at gauss point: get coordinates of nodes (8
@@ -128,59 +100,16 @@ classdef fembase < handle
                 pm = PlotManager;%(false,1,2);
                 pm.LeaveOpen = true;
             end
-            this.geo.plot(pm);
             
-            p = this.nodes;
-            h = pm.nextPlot('nodes','Grid nodes','x','y');
-            plot3(h,p(1,:),p(2,:),p(3,:),'k.','MarkerSize',14);
-            for k = 1:this.NumElems
-                el = this.elems(k,:);
-                center = sum(p(:,el),2)/this.DofsPerElement;
-                text(center(1),center(2),center(3),sprintf('#%d',k),'Parent',h,'Color','m');
-                % Plot local numbering for first element
-                if k == 1
-                    off = .04;
-                    for i = 1:this.DofsPerElement
-                        text(off+p(1,el(i)),off+p(2,el(i)),off+p(3,el(i)),sprintf('%d',i),'Parent',h,'Color','r');
-                    end
-                    eg = this.edges;
-                    hold(h,'on');
-                    for i = 1:size(eg,1)
-                        if any(el == eg(i,1)) && any(el == eg(i,2))
-                            plot3(h,[p(1,eg(i,1)) p(1,eg(i,2))],[p(2,eg(i,1)) p(2,eg(i,1))],[p(3,eg(i,1)) p(3,eg(i,2))],'r');
-                        end
-                    end
-                end
-            end
-            for k = 1:this.NumNodes
-                text(p(1,k),p(2,k),p(3,k),sprintf('%d',k),'Parent',h,'Color','k');
-            end
-            view(h,[52 30]);
-            daspect([1 1 1]);
+            h = pm.nextPlot('mass','Mass matrix','node','node');
+            mesh(h,full(this.M));
             
-%             h = pm.nextPlot('mass','Mass matrix','node','node');
-%             mesh(h,full(this.M));
-%             
-%             pm.nextPlot('mass_pattern','Mass matrix pattern','dof','dof');
-%             spy(this.M);
+            pm.nextPlot('mass_pattern','Mass matrix pattern','dof','dof');
+            spy(this.M);
             
             if nargin < 2
                 pm.done;
             end
-        end
-    end
-    
-    methods
-        function value = get.NumNodes(this)
-            value = size(this.nodes,2);
-        end
-        
-        function value = get.NumElems(this)
-            value = size(this.elems,1);
-        end
-        
-        function value = get.DofsPerElement(this)
-            value = size(this.elems,2);
         end
     end
     
@@ -204,10 +133,10 @@ classdef fembase < handle
             ranges = {-1:1, -2:1, -2:2};
             res = true;
             for k = 1:length(ranges)
-                [pts, cubes] = cubegeom.DemoCubeGrid(ranges{k},ranges{k});
-                g = cubegeom(pts, cubes);
+                [pts, cubes] = geometry.Cube8Node.DemoGrid(ranges{k},ranges{k});
+                g = geometry.Cube8Node(pts, cubes);
                 tl = trilinear(g);
-                tq = triquadratic(g);
+                tq = triquadratic(g.toCube20);
                 res = res && norm(tl.elem_detjac-tq.elem_detjac,'inf') < 1e-14;
             end
         end

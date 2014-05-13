@@ -31,23 +31,24 @@ classdef Model < models.BaseFullModel
             
             this.System = muscle.System(this);
             
-            this.setConfig(conf);
             
-            % True timestepping in ODE solver
-            %   this.System.MaxTimestep = 1e-5; % [ms]
-%             this.dt = 0.01;
-%             this.T = 1;
-%             this.ODESolver = solvers.ExplEuler;
             
             this.T = 10; % [ms]
             this.dt = .01; % [ms]
             s = solvers.MLode15i;
             % Use relatively coarse precision settings. This skips fine
             % oscillations but yields the correct long time results.
-            s.RelTol = 1e-2;
-            s.AbsTol = 1e-2;
+            s.RelTol = 1e-1;
+            s.AbsTol = 1e-1;
             this.ODESolver = s;
             this.System.MaxTimestep = []; %model.dt;
+            
+            % Set the config to the model, triggering geometry related
+            % pre-computations
+            this.setConfig(conf);
+            
+            % Call the config-specific model configuration
+            conf.configureModel(this);
             
             %% Health tests
 %             this.System.f.test_Jacobian;
@@ -72,6 +73,17 @@ classdef Model < models.BaseFullModel
             %
             % See also: musclefibres.MuscleFibreSystem
             [varargout{1:nargout}] = this.System.plot(varargin{:});
+        end
+    end
+    
+    methods(Static)
+        function test_ModelVersions
+            % @TODO
+            %
+            % with direct inversion
+            % with viscosity
+            % with fibres
+            % deformed reference geom
         end
     end
     

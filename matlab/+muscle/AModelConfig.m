@@ -3,18 +3,43 @@ classdef AModelConfig < handle
     %   Detailed explanation goes here
     
     properties(SetAccess=private)
-        Geometry;
-        
         PosFE;
         
         PressFE;
     end
     
+    properties(SetAccess=protected)
+        FibreTypeWeights = [];
+        FibreTypes = [];
+    end
+    
     methods
-        function this = AModelConfig(geo)
-            this.Geometry = geo;
-            this.PosFE = triquadratic(geo);
-            this.PressFE = trilinear(geo);
+        function this = AModelConfig(geo, press_geo)
+            if nargin < 2
+                if isa(geo,'geometry.Cube8Node')
+                    pos_geo = geo.toCube20Node;
+                    press_geo = geo;
+                elseif isa(geo,'geometry.Cube20Node')
+                    pos_geo = geo;
+                    press_geo = geo.toCube8Node;
+                else
+                    error('Scenario not yet implemented for geometry class "%s"', class(geo));
+                end
+            else
+                pos_geo = geo;
+            end
+            if ~isa(pos_geo,'geometry.Cube20Node') || ~isa(press_geo,'geometry.Cube8Node')
+                error('Scenario not yet implemented.');
+            end
+            this.PosFE = triquadratic(pos_geo);
+            this.PressFE = trilinear(press_geo);
+        end
+        
+        function configureModel(this, model)
+            % Overload this method to set model-specific quantities like
+            % simulation time etc
+            
+            % do nothing by default
         end
     end
     
@@ -43,7 +68,7 @@ classdef AModelConfig < handle
     
     methods(Sealed)
         function [displ_dir, velo_dir, velo_dir_val] = getBC(this)
-            N = this.PosFE.NumNodes;
+            N = this.PosFE.Geometry.NumNodes;
             displ_dir = false(3,N);
             velo_dir = false(3,N);
             velo_dir_val = zeros(3,N);
@@ -56,10 +81,11 @@ classdef AModelConfig < handle
         end
         
         function anull = geta0(this)
-            anull = zeros(3,this.Geometry.NumGaussp,this.PosFE.NumElems);
+            g = this.PosFE.Geometry;
+            anull = zeros(3,g.GaussPointsPerElem,g.NumElements);
             anull = this.seta0(anull);
             % Normalize anull vectors
-            for m = 1:this.PosFE.NumElems
+            for m = 1:g.NumElements
                 anull(:,:,m) = anull(:,:,m) ./ ([1;1;1]*Norm.L2(anull(:,:,m)));
             end
         end

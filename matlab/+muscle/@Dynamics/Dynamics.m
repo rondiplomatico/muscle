@@ -5,9 +5,22 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
        c01 = 3.627; % [kPa]
        b1 = 2.756e-5; % [kPa]
        d1 = 43.373; % [-]
+       
        Pmax = 73; % [kPa], in Paper 7.3N/cm², but kPa = 0.1N/cm² 
+       
        lambdafopt = 1.2; % [-]
-       alpha = .1;
+       
+       % The activation of the muscle
+       alpha = .1; % [-]
+    end
+    
+    properties(SetAccess=private)
+        APExp;
+    end
+    
+    properties(Transient, SetAccess=private)
+        % Prepared arguments for APExpansion
+        muprep;
     end
     
     properties(Dependent)
@@ -26,104 +39,35 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     methods
         function this = Dynamics(sys)
             this = this@dscomponents.ACompEvalCoreFun(sys);
+            
+            %% Load AP expansion
+            d = fileparts(which('muscle.Dynamics'));
+            s = load(fullfile(d,'AP'));
+            s.kexp.Ma = s.kexp.Ma(1,:);
+            this.APExp = s.kexp;
         end
         
         function configUpdated(this)
             mc = this.System.Model.Config;
-            dfe = mc.PosFE;
+            geo = mc.PosFE.Geometry;
             
             dirvals = length(this.System.bc_dir_val);
-            d = dfe.NumNodes * 6 - dirvals + mc.PressFE.NumNodes;
+            d = geo.NumNodes * 6 - dirvals + mc.PressFE.Geometry.NumNodes;
             this.xDim = d;
             this.fDim = d;
             this.computeSparsityPattern;
         end
         
-        function evaluateCoreFun(varargin)
-            error('Custom projection is implemented and evaluate overridden directly');
+        function prepareSimulation(this, mu)
+            prepareSimulation@dscomponents.ACompEvalCoreFun(this, mu);
+            mc = this.System.Model.Config;
+            if ~isempty(mc.FibreTypes)
+                this.muprep = [mc.FibreTypes; ones(size(mc.FibreTypes))*mu];
+            end
         end
         
-        function computeSparsityPattern(this)
-            sys = this.System;
-            mc = sys.Model.Config;
-            g = mc.Geometry;
-            fe_pos = mc.PosFE;
-            fe_press = mc.PressFE;
-            
-            N = fe_pos.NumNodes;
-            M = fe_press.NumNodes;
-            
-            %% -I part in u'(t) = -v(t)
-            i = (1:3*N)';
-            j = ((1:3*N)+3*N)';
-            
-            globidx_disp = sys.globidx_displ;
-            globidx_press = sys.globidx_pressure;
-            
-            dofs_displ = N*3;
-            visc = this.fViscosity;
-            
-            dofsperelem_displ = fe_pos.DofsPerElement;
-            dofsperelem_press = fe_press.DofsPerElement;
-            num_gausspoints = g.NumGaussp;
-            num_elements = fe_pos.NumElems;
-            for m = 1:num_elements
-                elemidx_displ = globidx_disp(:,:,m);
-                elemidx_velo = elemidx_displ + dofs_displ;
-                elemidx_pressure = globidx_press(:,m);
-                inew = elemidx_velo(:);
-                one = ones(size(inew));
-                for gp = 1:num_gausspoints
-                    for k = 1:dofsperelem_displ
-                        %% Grad_u K(u,v,w)
-                        % xdim
-                        i = [i; inew]; %#ok<*AGROW>
-                        j = [j; one*elemidx_displ(1,k)];
-                        % ydim
-                        i = [i; inew]; 
-                        j = [j; one*elemidx_displ(2,k)]; 
-                        % zdim
-                        i = [i; inew]; 
-                        j = [j; one*elemidx_displ(3,k)]; 
-                        
-                        %% Grad_v K(u,v,w)
-                        if visc > 0
-                            % xdim
-                            i = [i; inew]; %#ok<*AGROW>
-                            j = [j; one*elemidx_velo(1,k)];
-                            % ydim
-                            i = [i; inew]; 
-                            j = [j; one*elemidx_velo(2,k)]; 
-                            % zdim
-                            i = [i; inew]; 
-                            j = [j; one*elemidx_velo(3,k)]; 
-                        end
-                        
-                        %% grad u g(u)
-                        % dx
-                        i = [i; elemidx_pressure(:)];
-                        j = [j; ones(dofsperelem_press,1)*elemidx_displ(1,k)]; 
-                        % dy
-                        i = [i; elemidx_pressure(:)];
-                        j = [j; ones(dofsperelem_press,1)*elemidx_displ(2,k)]; 
-                        %dz
-                        i = [i; elemidx_pressure(:)];
-                        j = [j; ones(dofsperelem_press,1)*elemidx_displ(3,k)]; 
-                    end
-                    %% Grad_w K(u,v,w)
-                    inew = elemidx_velo(:);
-                    for k = 1:dofsperelem_press
-                        i = [i; inew];
-                        j = [j; ones(3*dofsperelem_displ,1)*elemidx_pressure(k)]; 
-                    end
-                end
-            end
-            J = sparse(i,j,ones(size(i)),6*N+M,6*N+M);
-            % Remove values at dirichlet nodes
-            J(:,sys.bc_dir_idx) = [];
-            J(sys.bc_dir_idx,:) = [];
-            
-            this.JSparsityPattern = logical(J);
+        function evaluateCoreFun(varargin)
+            error('Custom projection is implemented and evaluate overridden directly');
         end
         
         function res = test_Jacobian(this, varargin)
@@ -136,27 +80,29 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             if oldvisc ~= 0
                 this.Viscosity = 0;
             end
-            x0 = this.System.x0.evaluate([]);
-            res = test_Jacobian@dscomponents.ACoreFun(this, x0);
+            mu = this.System.Model.getRandomParam;
+            x0 = this.System.x0.evaluate(mu);
+            % Use nonzero t to have an effect
+            t = 100;
+            res = test_Jacobian@dscomponents.ACoreFun(this, x0, t, mu);
             
             % Check if sparsity pattern and jacobian matrices match
             Jp = this.JSparsityPattern;
             Jeff = Jp;
             Jeff(:) = false;
-            J = this.getStateJacobian(x0);
+            J = this.getStateJacobian(x0,t);
             Jeff(logical(J)) = true;
             check = (Jp | Jeff) & ~Jp;
             res = res && ~any(check(:));
             
             this.Viscosity = 1;
-            x0 = this.System.x0.evaluate([]);
-            res = res && test_Jacobian@dscomponents.ACoreFun(this, x0);
+            res = res && test_Jacobian@dscomponents.ACoreFun(this, x0, t, mu);
             
             % Check if sparsity pattern and jacobian matrices match
             Jp = this.JSparsityPattern;
             Jeff = Jp;
             Jeff(:) = false;
-            J = this.getStateJacobian(x0);
+            J = this.getStateJacobian(x0, t);
             Jeff(logical(J)) = true;
             check = (Jp | Jeff) & ~Jp;
             res = res && ~any(check(:));
@@ -179,6 +125,10 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         function set.Viscosity(this, value)
             this.fViscosity = value;
             this.configUpdated;
+        end
+        
+        function value = get.Viscosity(this)
+            value = this.fViscosity;
         end
 
     end

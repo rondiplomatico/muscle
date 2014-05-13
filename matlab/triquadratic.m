@@ -2,69 +2,13 @@ classdef triquadratic < fembase
     % Triquatratic: Quadratic ansatz functions on cube with 20 nodes per
     % cube
     %
-    %% Cube indexing for triquadratic:
-    %
-    %           18---19---20 
-    %          / |       / |
-    %        /   |     /   |        Y+
-    %       /    16   /    17       |     Z+
-    %      6----7+---8     |        |    /
-    %      |     |   |     |        |   /
-    %      |     13--+14---15       |  /
-    %      |    /    |    /         | / 
-    %      4   9     5  10          |/
-    %      | /       | /            +---------X+
-    %      |/        |/
-    %      1----2----3 
-    %
-    % Corner indices: 1 3 6 8 13 15 18 20
-    %
-    %% Cube node positions:
-    % C1     -1    -1    -1
-    % E2      0    -1    -1
-    % C3      1    -1    -1
-    % E4     -1     0    -1
-    %       % 0     0    -1
-    % E5      1     0    -1
-    % C6     -1     1    -1
-    % E7      0     1    -1
-    % C8      1     1    -1
-    % E9     -1    -1     0 
-    %       % 0    -1     0
-    % E10     1    -1     0
-    %       %-1     0     0
-    %       % 0     0     0
-    %       % 1     0     0
-    % E11    -1     1     0
-    %       % 0     1     0
-    % E12     1     1     0
-    % C13    -1    -1     1
-    % E14     0    -1     1
-    % C15     1    -1     1
-    % E16    -1     0     1
-    %       % 0     0     1
-    % E17     1     0     1
-    % C18    -1     1     1
-    % E19     0     1     1
-    % C20     1     1     1
-    %
-    % without combinations 5,11,13,14,15,17 and 23 (they are neither on a
-    % corner or an edge due to 2 zero entries)
-    
-    properties
-        % cell array of dim n containing indices of all cubes that are
-        % adjacent to the n-th point
-        pts_cubes;
-    end
     
     methods
         function this = triquadratic(geo)
             if nargin < 1
-                geo = cubegeom;
+                geo = geometry.Cube20Node;
             end
             this = this@fembase(geo);
-            
-            this.EdgeIndices = [1 3 6 8 13 15 18 20];
             this.init;
         end
         
@@ -120,39 +64,7 @@ classdef triquadratic < fembase
                 [-2*x(1,:).*(1+x(2,:)).*(1+x(3,:))  (1-x(1,:).^2).*(1+x(3,:))  (1-x(1,:).^2).*(1+x(2,:))]/4;...
                 [(1+x(2,:)).*(1+x(3,:)).*(x(1,:)+x(2,:)+x(3,:)-2)+(1+x(1,:)).*(1+x(2,:)).*(1+x(3,:)) (1+x(1,:)).*(1+x(3,:)).*(x(1,:)+x(2,:)+x(3,:)-2)+(1+x(1,:)).*(1+x(2,:)).*(1+x(3,:)) (1+x(1,:)).*(1+x(2,:)).*(x(1,:)+x(2,:)+x(3,:)-2)+(1+x(1,:)).*(1+x(2,:)).*(1+x(3,:))]/8];
             
-            % Transform cube data to dof/element data
-            p = this.geo.pts;
-            c = this.geo.cubes;
-            nc = size(c,1);
-            % Transformation matrix for corners to corner+edges locations
-            i = [1 2  2  3  4  4  5  5 6  7  7 8  9  9 10 10 11 11 12 12 13 14 14 15 16 16 17 17 18 19 19 20];  
-            j = [1 1  2  2  1  3  2  4 3  3  4 4  1  5 2  6  3  7  4  8  5  5  6  6  5  7  6  8  7  7  8  8];
-            s = [1 .5 .5 1 .5 .5 .5 .5 1 .5 .5 1 .5 .5 .5 .5 .5 .5 .5 .5 1  .5 .5 1  .5 .5 .5 .5 1  .5 .5 1];
-            T = sparse(i,j,s,20,8);
-            nodes = zeros(3,nc*20);
-            
-            % Iterate all cubes and collect nodes
-            for cidx = 1:nc
-                cube = c(cidx,:);
-                pos = 20*(cidx-1)+1:20*cidx;
-                nodes(:,pos) = p(:,cube)*T';
-            end
-            [nodes, ~, elems] = unique(nodes','rows','stable');
-            this.nodes = nodes';
-            this.elems = reshape(elems,20,[])';
-            
             init@fembase(this);
-            
-            %% Compute edges
-            e = int16.empty(0,2);
-            for i=1:size(this.elems,1)
-                hlp = this.elems(i,[1 2 1 4 1 9 2 3 3 5 3 10 4 6 5 8 6 7 ...
-                    6 11 7 8 8 12 9 13 10 15 11 18 12 20 13 14 13 16 ...
-                    14 15 15 17 16 18 17 20 18 19 19 20]);
-                e(end+1:end+24,:) = reshape(hlp',2,[])';
-            end
-            e = unique(e,'rows');
-            this.edges = e;
         end
     end
     

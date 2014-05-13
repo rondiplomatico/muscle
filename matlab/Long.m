@@ -3,46 +3,42 @@ classdef Long < muscle.AModelConfig
     methods
         function this = Long
             % Single cube with same config as reference element
-            [pts, cubes] = cubegeom.DemoCubeGrid(-1:1,-4:4,0:1);
-            
-            geo = cubegeom(pts, cubes);
+            [pts, cubes] = geometry.Cube8Node.DemoCubeGrid(-1:1,-4:4,0:1);
+            geo = geometry.Cube8Node(pts, cubes);
             this = this@muscle.AModelConfig(geo);
+        end
+        
+        function configureModel(~, model)
+            model.T = 50;
+            model.dt = 1;
+            f = model.System.f;
+            f.alpha = .01;
+            f.Viscosity = 0;
         end
     end
     
     methods(Access=protected)
+        
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             %% Dirichlet conditions: Position (fix one side)
-            tq = this.PosFE;
+            geo = this.PosFE.Geometry;
             for k = [8 16]
-                displ_dir(:,tq.elems(k,[6:8 11 12 18:20])) = true;
+                displ_dir(:,geo.Elements(k,[6:8 11 12 18:20])) = true;
             end
         end
         
         function [velo_dir, velo_dir_val] = setVelocityDirichletBC(this, velo_dir, velo_dir_val)
             %% Dirichlet conditions: Position (fix one side)
-            tq = this.PosFE;
-            
+            geo = this.PosFE.Geometry;
             for k = [1 9]
-                % Quadratic
-                velo_dir(1,tq.elems(k,[1:3 9 10 13:15])) = true;
-%                 velo_dir(1,tq.elems(k,[3 10 15])) = true;
+                velo_dir(1,geo.Elements(k,[1:3 9 10 13:15])) = true;
             end
             velo_dir_val(velo_dir) = -.1;
-
-%             velo_dir(1,tq.elems(1,[1 2 9 13 14])) = true;
-%             velo_dir(1,tq.elems(2,[1 2 9 13 14])) = true;
-%             velo_dir(1,tq.elems(7,[2 3 10 14 15])) = true;
-%             velo_dir(1,tq.elems(8,[2 3 10 14 15])) = true;
-%             velo_dir_val(1,tq.elems(1,[1 2 9 13 14])) = -.01;
-%             velo_dir_val(1,tq.elems(2,[1 2 9 13 14])) = -.01;
-%             velo_dir_val(2,tq.elems(7,[2 3 10 14 15])) = .01;
-%             velo_dir_val(2,tq.elems(8,[2 3 10 14 15])) = .01;
         end
         
         function anull = seta0(this, anull)
-            geo = this.Geometry;
-            if geo.NumGaussp ~= 27
+            geo = this.PosFE.Geometry;
+            if geo.GaussPointsPerElem ~= 27
                 warning('a0 designed for 27 gauss points!');
             end
             x = linspace(0,1,8*3);
