@@ -21,6 +21,8 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     properties(Transient, SetAccess=private)
         % Prepared arguments for APExpansion
         muprep;
+        
+        LastBCResiduals;
     end
     
     properties(Dependent)

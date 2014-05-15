@@ -3,13 +3,13 @@ classdef Cube20Node < geometry.BaseGeometry
 %
 %           18---19---20 
 %          / |       / |
-%        /   |     /   |        Y+
-%       /    16   /    17       |     Z+
+%        /   |     /   |        Z+
+%       /    16   /    17       |     Y+
 %      6----7+---8     |        |    /
 %      |     |   |     |        |   /
-%      |     13--+14---15       |  /
+%      |     6--+7---8       |  /
 %      |    /    |    /         | / 
-%      4   9     5  10          |/
+%      4   4     5  5          |/
 %      | /       | /            +---------X+
 %      |/        |/
 %      1----2----3 
@@ -71,6 +71,15 @@ classdef Cube20Node < geometry.BaseGeometry
             end
             e = unique(e,'rows');
             this.Edges = e;
+            
+            %% Set Face indices
+            this.MasterFaces = [  1 4 6 9 11 13 16 18
+                            3 5 8 10 12 15 17 20
+                            1:3 9 10 13:15
+                            6:8 11 12 18:20
+                            1:8
+                            13:20];
+            this.Faces = this.computeFaces;
         end
         
         function cube8 = toCube8Node(this)

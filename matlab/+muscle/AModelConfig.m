@@ -41,6 +41,16 @@ classdef AModelConfig < handle
             
             % do nothing by default
         end
+        
+        function P = getBoundaryPressure(~, elemidx, faceidx)
+            % Determines the neumann forces on the boundary.
+            %
+            % The unit for the applied quantities is kiloPascal [kPa]
+            %
+            % In the default implementation there are no force boundary
+            % conditions.
+            P = [];
+        end
     end
     
     methods(Access=protected)
@@ -70,12 +80,12 @@ classdef AModelConfig < handle
         function [displ_dir, velo_dir, velo_dir_val] = getBC(this)
             N = this.PosFE.Geometry.NumNodes;
             displ_dir = false(3,N);
+            displ_dir = this.setPositionDirichletBC(displ_dir);
             velo_dir = false(3,N);
             velo_dir_val = zeros(3,N);
-            displ_dir = this.setPositionDirichletBC(displ_dir);
             [velo_dir, velo_dir_val] = this.setVelocityDirichletBC(velo_dir, velo_dir_val);
             
-            if any(any(displ_dir & velo_dir))
+            if any(any(displ_dir & velo_dir)) 
                 error('Cannot impose displacement and velocity dirichlet conditions on same DoF');
             end
         end

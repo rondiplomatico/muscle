@@ -12,6 +12,7 @@ classdef System < models.BaseDynSystem
        globidx_pressure;
        
        Plota0 = true;
+       PlotVelocities = true;
     end
     
     properties(SetAccess=private)
@@ -43,6 +44,9 @@ classdef System < models.BaseDynSystem
        bc_dir_velo;
        bc_dir_velo_idx;
        bc_dir_velo_val; % [mm/ms]
+              
+       bc_neum_forces_nodeidx; % [N]
+       bc_neum_forces_val;
        
        % A helper array containing the indices of the actual dofs in the
        % global indexing.
@@ -77,6 +81,10 @@ classdef System < models.BaseDynSystem
        dNa0;
     end
     
+    properties(Transient, SetAccess=private)
+        LastRunBCResiduals;
+    end
+    
     methods
         function this = System(model)
             % The system x'' + K(x) is transformed into the first order system
@@ -104,7 +112,18 @@ classdef System < models.BaseDynSystem
             this.pressure_to_displ_nodes = g.getCommonNodesWith(gp);
             
             % Call subroutine for boundary condition index crunching
-            this.computeBC;
+            this.computeDirichletBC;
+            
+            %% Construct B matrix
+            % Collect neumann forces
+            [B, this.bc_neum_forces_nodeidx] = this.getSpatialExternalForces;
+            this.bc_neum_forces_val = B(this.bc_neum_forces_nodeidx + g.NumNodes * 3);
+            % Remove dirichlet DoFs
+            B(this.bc_dir_idx) = [];
+            % Set as constant input conversion matrix
+            this.B = dscomponents.LinearInputConv(B);
+            % Set constant input function
+            this.Inputs{1} = @(t)1;
             
             % Init fibre directions and precomputable values
             this.inita0;
@@ -142,7 +161,7 @@ classdef System < models.BaseDynSystem
             MM = sparse(I(:),J(:),s(S(:)),3*nd,3*nd);
             % Insert identity for velocity and zeros for pressure
             MM = blkdiag(speye(size(MM)),...
-                MM,sparse(gp.NumNodes,gp.NumNodes));
+                this.Model.MuscleDensity*MM,sparse(gp.NumNodes,gp.NumNodes));
             
             % Strip out the entries of dirichlet nodes
             MM(this.bc_dir_idx,:) = [];
@@ -166,18 +185,23 @@ classdef System < models.BaseDynSystem
             this.f.configUpdated;
         end
         
-        function pm = plot(this, t, uvw, withvelo, pm, vid)
-            if nargin < 6
-                vid = false;
-                if nargin < 4
-                    withvelo = true;
-                end
-            end
-            if nargin < 5 || isempty(pm)
+        function pm = plot(this, t, uvw, varargin)
+            i = inputParser;
+            i.KeepUnmatched = true;
+            i.addParamValue('Vid',false,@(v)islogical(v));
+            i.addParamValue('Forces',true,@(v)islogical(v));
+            i.addParamValue('Pressure',false,@(v)islogical(v));
+            i.addParamValue('pm',[],@(v)isa(v,'PlotManager'));
+            i.addParamValue('PDF',[]);
+            i.parse(varargin{:});
+            r = i.Results;
+            
+            if isempty(r.pm)
                 pm = PlotManager;
                 pm.LeaveOpen = true;
-
-            end            
+            else
+                pm = r.pm;
+            end
             mc = this.Model.Config;
             dfem = mc.PosFE;
             geo = dfem.Geometry;
@@ -195,14 +219,30 @@ classdef System < models.BaseDynSystem
             end
             uvw = yall;
             
-            bc_dir_displ_applies = sum(this.bc_dir_displ,1) >= 1;
-            bc_dir_velo_applies = sum(this.bc_dir_velo,1) >= 1;
+            hlp = sum(this.bc_dir_displ,1);
+            bc_dir_3pos_applies = hlp == 3;
+            bc_dir_2pos_applies = hlp == 2;
+            bc_dir_1pos_applies = hlp == 1;
+            bc_dir_pos_applies = hlp >= 1; 
+            bc_dir_velo_applies = sum(this.bc_dir_velo,1) >= 1 & ~bc_dir_pos_applies;
+            no_bc = ~bc_dir_pos_applies & ~bc_dir_velo_applies;
             
-            if vid
+            if ~isempty(r.PDF)
+                pdf_xpos = 1:3:size(r.PDF,1);
+            end
+            
+            if r.Vid
                 avifile = fullfile(pwd,'output.avi');
                 vw = VideoWriter(avifile);
                 vw.FrameRate = 30;
                 vw.open;
+            end
+            
+            if r.Forces
+                forces = zeros(size(this.bc_dir_displ));
+                forces(this.bc_neum_forces_nodeidx) = this.bc_neum_forces_val;
+                forces_apply = sum(abs(forces),1) ~= 0;
+                forces = forces(:,forces_apply);
             end
             
             %% Loop over time
@@ -211,13 +251,12 @@ classdef System < models.BaseDynSystem
             daspect([1 1 1]);
             zlabel(h,'z [mm]');
             hold(h,'on');
-%             box2 = dfem.geo.getBoundingBox(1.1);
             
             xpos = 1:3:geo.NumNodes*3;
             box = [min(min(uvw(xpos,:))) max(max(uvw(xpos,:)))...
                 min(min(uvw(xpos+1,:))) max(max(uvw(xpos+1,:)))...
-                min(min(uvw(xpos+2,:))) max(max(uvw(xpos+2,:)))]*1.1;
-            for ts = 1:1:length(t)
+                min(min(uvw(xpos+2,:))) max(max(uvw(xpos+2,:)))]*1.05;
+            for ts = 1:length(t)
                 % Quit if figure has been closed
                 if ~ishandle(h)
                     break;
@@ -225,10 +264,10 @@ classdef System < models.BaseDynSystem
                 u = reshape(uvw(1:vstart-1,ts),3,[]);
                 v = reshape(uvw(vstart:pstart-1,ts),3,[]);
                 cla(h);
-                plot3(h,u(1,:),u(2,:),u(3,:),'k.','MarkerSize',14);
+                plot3(h,u(1,no_bc),u(2,no_bc),u(3,no_bc),'r.','MarkerSize',14);
                 
                 % Velocities
-                if withvelo
+                if this.PlotVelocities
                     %quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'k.','MarkerSize',14);
 %                     quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),0,'r','MarkerSize',10);
                     quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'b.', 'MarkerSize',14);
@@ -236,24 +275,42 @@ classdef System < models.BaseDynSystem
                 
                 %% Dirichlet conditions
                 % Displacement
-                plot3(h,u(1,bc_dir_displ_applies),u(2,bc_dir_displ_applies),u(3,bc_dir_displ_applies),'k.','MarkerSize',20);
+                plot3(h,u(1,bc_dir_3pos_applies),u(2,bc_dir_3pos_applies),u(3,bc_dir_3pos_applies),'.','MarkerSize',20,'Color',[0 0 0]);
+                plot3(h,u(1,bc_dir_2pos_applies),u(2,bc_dir_2pos_applies),u(3,bc_dir_2pos_applies),'.','MarkerSize',20,'Color',[.5 .5 .5]);
+                plot3(h,u(1,bc_dir_1pos_applies),u(2,bc_dir_1pos_applies),u(3,bc_dir_1pos_applies),'.','MarkerSize',20,'Color',[.7 .7 .7]);
                 for k=1:size(e,1)
                     plot3(h,u(1,[e(k,1) e(k,2)]),u(2,[e(k,1) e(k,2)]),u(3,[e(k,1) e(k,2)]),'r');
                 end
                 % Velocity
                 plot3(h,u(1,bc_dir_velo_applies),u(2,bc_dir_velo_applies),u(3,bc_dir_velo_applies),'g.','MarkerSize',20);
                 
-                %% Pressure
-                p = uvw(pstart:end,ts);
-                pn = this.pressure_to_displ_nodes;
-                pneg = p<0;
-                % Negative pressures
-                if any(pneg)
-                    scatter3(h,u(1,pn(pneg)),u(2,pn(pneg)),u(3,pn(pneg)),-p(pneg),'r');
+                %% Position Dirichlet Forces
+                if ~isempty(r.PDF)
+                    udir = u(:,bc_dir_pos_applies);
+                    quiver3(h,udir(1,:),udir(2,:),udir(3,:),...
+                        r.PDF(pdf_xpos,ts)',r.PDF(pdf_xpos+1,ts)',r.PDF(pdf_xpos+2,ts)','k.', 'MarkerSize',14);
                 end
-                % Positive pressures
-                if any(~pneg)
-                    scatter3(h,u(1,pn(~pneg)),u(2,pn(~pneg)),u(3,pn(~pneg)),p(~pneg),'b');
+                
+                %% Neumann condition forces
+                if r.Forces
+                    uforce = u(:,forces_apply);
+                    quiver3(h,uforce(1,:),uforce(2,:),uforce(3,:),...
+                        forces(1,:),forces(2,:),forces(3,:),'r.', 'MarkerSize',14);
+                end
+                
+                %% Pressure
+                if r.Pressure
+                    p = uvw(pstart:end,ts);
+                    pn = this.pressure_to_displ_nodes;
+                    pneg = p<0;
+                    % Negative pressures
+                    if any(pneg)
+                        scatter3(h,u(1,pn(pneg)),u(2,pn(pneg)),u(3,pn(pneg)),-p(pneg)*10,'b');
+                    end
+                    % Positive pressures
+                    if any(~pneg)
+                        scatter3(h,u(1,pn(~pneg)),u(2,pn(~pneg)),u(3,pn(~pneg)),p(~pneg)*10,'b');
+                    end
                 end
                 
                 %% a0 fibres
@@ -275,19 +332,19 @@ classdef System < models.BaseDynSystem
                 title(h,sprintf('Deformation at t=%g',t(ts)));
 %                 hold(h,'off');
                 
-                if vid
+                if r.Vid
                     vw.writeVideo(getframe(gcf));
                 else
-%                     pause(.05);
-                    pause;
+                    pause(.05);
+%                     pause;
                 end
             end
             
-            if vid
+            if r.Vid
                 vw.close;
             end
 
-            if nargin < 4
+            if isempty(r.pm)
                 pm.done;
             end
         end
@@ -303,6 +360,7 @@ classdef System < models.BaseDynSystem
     end
     
     methods(Access=private)
+        
         function x0 = assembleX0(this)
             % Constant initial values as current node positions
             mc = this.Model.Config;
@@ -340,9 +398,9 @@ classdef System < models.BaseDynSystem
             x0 = dscomponents.ConstInitialValue(x0);
         end
         
-        function computeBC(this)
+        function computeDirichletBC(this)
             mc = this.Model.Config;
-            [displ_dir, velo_dir, velo_dir_val] = mc.getBC;
+            [pos_dir, velo_dir, velo_dir_val] = mc.getBC;
             
             fe_displ = mc.PosFE;
             geo = fe_displ.Geometry;
@@ -350,23 +408,30 @@ classdef System < models.BaseDynSystem
             pgeo = fe_press.Geometry;
             
             % Position of position entries in global state space vector
-            num_displacement_dofs = geo.NumNodes * 3;
+            num_position_dofs = geo.NumNodes * 3;
             
             %% Displacement
-            this.bc_dir_displ = displ_dir;
+            this.bc_dir_displ = pos_dir;
             % Set values to node positions
-            this.bc_dir_displ_val = geo.Nodes(displ_dir);
+            this.bc_dir_displ_val = geo.Nodes(pos_dir);
             % Add zeros for respective velocities
-            this.bc_dir_displ_val = [this.bc_dir_displ_val; zeros(size(this.bc_dir_displ_val))];
+            %this.bc_dir_displ_val = [this.bc_dir_displ_val; zeros(size(this.bc_dir_displ_val))];
             % Collect indices of dirichlet values per 3-set of x,y,z values
-            relpos = find(displ_dir(:));
+%             relpos = find(pos_dir(:));
             % Same positions for points and velocity
-            this.bc_dir_displ_idx = [relpos; num_displacement_dofs + relpos];
+%             this.bc_dir_displ_idx = [relpos; num_position_dofs + relpos];
+            this.bc_dir_displ_idx = find(pos_dir(:));
             
             %% Velocity
-            this.bc_dir_velo = velo_dir;
-            this.bc_dir_velo_val = velo_dir_val(velo_dir);
-            this.bc_dir_velo_idx = num_displacement_dofs + find(velo_dir(:));
+            % Incorporate zero velocity conditions from fixed node
+            % dirichlet conditions first
+            this.bc_dir_velo_val = zeros(size(this.bc_dir_displ_val));
+            this.bc_dir_velo_idx = num_position_dofs+this.bc_dir_displ_idx;
+            % Add any user-defines values (cannot conflict with position
+            % dirichlet conditions, this is checked in AModelConfig.getBC)
+            this.bc_dir_velo_idx = [this.bc_dir_velo_idx; num_position_dofs + find(velo_dir(:))];
+            this.bc_dir_velo_val = [this.bc_dir_velo_val; velo_dir_val(velo_dir)];
+            this.bc_dir_velo = velo_dir | pos_dir;
             
             %% Hydrostatic Pressure Dirichlet conditions
 %             press_dir = false(1,tl.NumNodes);
@@ -380,18 +445,47 @@ classdef System < models.BaseDynSystem
             % Compute dof positions in global state space vector
             total = geo.NumNodes * 6 + pgeo.NumNodes;
             pos = false(1,total);
-            pos(1:num_displacement_dofs) = true;
+            pos(1:num_position_dofs) = true;
             pos(this.bc_dir_idx) = [];
             this.dof_idx_displ = find(pos);
             
             pos = false(1,total);
-            pos(num_displacement_dofs+1:num_displacement_dofs*2) = true;
+            pos(num_position_dofs+1:num_position_dofs*2) = true;
             pos(this.bc_dir_idx) = [];
             this.dof_idx_velo = find(pos);
             
             idx = 1:total;
             idx(this.bc_dir_idx) = [];
             this.dof_idx_global = idx;
+        end
+        
+        function [force, nodeidx] = getSpatialExternalForces(this)
+            mc = this.Model.Config;
+            fe_displ = mc.PosFE;
+            geo = fe_displ.Geometry;
+            ngp = geo.GaussPointsPerElemFace;
+            force = zeros(geo.NumNodes * 3,1);
+            for fn = 1:geo.NumFaces
+                elemidx = geo.Faces(1,fn);
+                faceidx = geo.Faces(2,fn);
+                masterfacenodeidx = geo.MasterFaces(faceidx,:);
+                % So far: Constant pressure on all gauss points!
+                P = mc.getBoundaryPressure(elemidx, faceidx);
+                if ~isempty(P)
+                    integrand = zeros(3,geo.NodesPerFace);
+                    for gi = 1:ngp
+                        PN = (P * fe_displ.NormalsOnFaceGP(:,gi,fn)) * fe_displ.Ngpface(:,gi,fn)';
+                        integrand = integrand + geo.facegaussw(gi)*PN*fe_displ.face_detjac(fn,gi);
+                    end
+                    facenodeidx = geo.Elements(elemidx,masterfacenodeidx);
+                    facenodeidx = (facenodeidx-1)*3+1;
+                    facenodeidx = [facenodeidx; facenodeidx+1; facenodeidx+2];%#ok
+                    force(facenodeidx(:)) = integrand(:);
+                end
+            end
+            % Augment to u,v,w vector
+            nodeidx = find(abs(force) > 1e-13);
+            force = [zeros(size(force)); force; zeros(mc.PressFE.Geometry.NumNodes,1)];
         end
         
         function inita0(this)

@@ -20,11 +20,11 @@ classdef EntireTA < muscle.AModelConfig
             % Overload this method to set model-specific quantities like
             % simulation time etc
             
-            model.T = 1000;
-            model.dt = 5;
+            model.T = 150;
+            model.dt = 1;
             f = model.System.f;
             f.alpha = .3;
-            f.Viscosity = 5;
+            f.Viscosity = .1;
             os = model.ODESolver;
             os.RelTol = .3;
             os.AbsTol = .1;

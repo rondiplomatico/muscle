@@ -16,6 +16,10 @@ classdef fembase < handle
         M;
                 
         elem_detjac;
+        face_detjac;
+        Ngpface;
+        dN_facenormals;
+        NormalsOnFaceGP;
         
         % transformed basis function gradients, stored in eldofs x gp*3
         % x element matrix (accessible in 20x3-chunks for each gauss point and element)
@@ -28,9 +32,6 @@ classdef fembase < handle
         end
         
         function init(this)
-            %% Compute edges from cubes.
-            % Mind the corner numbering of the cubes! (see above)
-            
             g = this.Geometry;
             el = g.Elements;
             np = g.NumNodes;
@@ -52,7 +53,7 @@ classdef fembase < handle
             eljac = zeros(nel,ngp);
             % transformed basis function gradients, stored in eldofs x gp*3
             % x element matrix (accessible in 20x3-chunks for each gauss point and element)
-            tg = zeros(eldofs,ngp*3,nel);
+            dtnall = zeros(eldofs,ngp*3,nel);
             % Iterate all volumes
             for m = 1:nel
                 bval = zeros(eldofs,eldofs);
@@ -82,7 +83,7 @@ classdef fembase < handle
                     bval = bval + g.gaussw(gi)*(Nxi*Nxi')*eljac(m,gi);
                     
                     %% Transformed Basis function gradients at xi
-                    tg(:,3*(gi-1)+1:3*gi,m) = dNxi / Jac;
+                    dtnall(:,3*(gi-1)+1:3*gi,m) = dNxi / Jac;
                 end
                 % Build up upper right part of symmetric mass matrix
                 for j=1:eldofs
@@ -90,9 +91,60 @@ classdef fembase < handle
                 end
             end
             this.Ngp = Ngpval;
-            this.transgrad = tg;
+            this.transgrad = dtnall;
             this.M = sparse(Mass + Mass' - diag(diag(Mass)));
             this.elem_detjac = eljac;
+            
+            %% Boundary/Face precomputations
+            nf = g.NumFaces;
+            ngp = g.GaussPointsPerElemFace;
+            npf = g.NodesPerFace;
+            Ngpval = zeros(npf,ngp,nf);
+            facejac = zeros(nf,ngp);
+            dNN = zeros(npf,ngp,nf);
+            transNormals = zeros(3,ngp,nf);
+            for fn = 1:nf
+                elemidx = g.Faces(1,fn);
+                faceidx = g.Faces(2,fn);
+                masterfacenodeidx = g.MasterFaces(faceidx,:);
+                % Get N values on all gauss points of the face, returning a
+                % DofsPerElem x ngp vector.
+                Nall = this.N(g.facegaussp(:,:,faceidx));
+                % From that, we only need the values on the face nodes
+                Ngpval(:,:,fn) = Nall(masterfacenodeidx,:);
+                
+                dNxi = this.gradN(g.facegaussp(:,:,faceidx));    
+                for gi = 1:ngp
+                    dNxipos = [0 9 18]+gi;
+%                     facenodeidx = g.Elements(elemidx,masterfacenodeidx);
+                    
+                    % Get full transformation jacobian
+                    Jac = g.Nodes(:,g.Elements(elemidx,:))*dNxi(:,dNxipos);
+
+                    % Precompute transformed normals
+                    transNormals(:,gi,fn) = Jac*g.FaceNormals(:,faceidx);
+%                     transNormals(:,gi,fn) = g.FaceNormals(:,faceidx);
+                    
+                    % Take only the restriction of the jacobian to the
+                    % face-dimensions for transformation theorem
+                    Jac = Jac(g.FaceDims(:,faceidx),g.FaceDims(:,faceidx));
+%                     Jac_check = g.Nodes(:,g.Elements(elemidx,:)) * this.gradN(xi);
+%                     Jac_check = Jac_check(g.FaceDims(:,faceidx),g.FaceDims(:,faceidx));
+%                     det(Jac) - det(Jac_check)
+                    facejac(fn,gi) = det(Jac);
+                    
+                    % Precompute transformation of face normals, only the
+                    % gradient N * n part (will be left-multiplied with u
+                    % at the corresponding locations to get the deformed
+                    % normal, can be used for plotting)
+                    dNN(:,gi,fn) = dNxi(masterfacenodeidx,dNxipos) * g.FaceNormals(:,faceidx);
+                end
+                transNormals(:,:,fn) = Norm.normalizeL2(transNormals(:,:,fn));
+            end
+            this.dN_facenormals = dNN;
+            this.face_detjac = facejac;
+            this.Ngpface = Ngpval;
+            this.NormalsOnFaceGP = transNormals;
         end
                 
         function plot(this, pm)

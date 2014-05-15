@@ -1,8 +1,8 @@
 classdef Cube8Node < geometry.BaseGeometry
 %% Cube indexing:
 %  /7---8 1: (-1,-1,-1)
-% 3-+-4/| 2: ( 1,-1,-1)
-% | 5-+-6 3: (-1, 1,-1) 
+% 5-+-6/| 2: ( 1,-1,-1)
+% | 3-+-4 3: (-1, 1,-1) 
 % 1---2/  4: ( 1, 1,-1)
 %         5: (-1,-1, 1)
 %         6: ( 1,-1, 1)
@@ -30,6 +30,15 @@ classdef Cube8Node < geometry.BaseGeometry
             end
             e = unique(e,'rows');
             this.Edges = e;
+            
+            %% Set Face indices
+            this.MasterFaces = [  1 3 5 7
+                            2 4 6 8
+                            1 2 5 6
+                            3 4 7 8
+                            1 2 3 4
+                            5 6 7 8];
+            this.Faces = this.computeFaces;
         end
         
         function cube20 = toCube20Node(this)

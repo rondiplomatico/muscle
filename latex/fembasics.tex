@@ -134,3 +134,42 @@ Similarly we obtain for the gradient that
 \begin{align}
 	\intl{\Or}{}f(X,t)\nabla\varphi_k(X)dX &= \sumvk\sumgp w_pf(\pmp,t)\dNkmp\jmp\label{eq:fgradphidx}
 \end{align}
+
+\subsubsection{Boundary faces}
+On $\Om$ we define the six faces $F_1^R \cup \ldots \cup F_6^R = \partial\Om$ with normals
+\begin{align*}
+	(\vec{N}^R_1 \ldots \vec{N}^R_6) &:= \m{-1 & 1 & 0 & 0 & 0 & 0\\0 & 0 & -1 & 1 & 0 & 0\\0 & 0 & 0 & 0 & -1 & 1},\\
+	\vec{N}^R(X) &:\equiv \vec{N}^R_i && X\in F^R_i, i=1\ldots 6.
+\end{align*}
+
+For the given geometry $\Or$ define $B_m := \partial\Omega_m \cap \partial\Or, m=1\ldots M$, i.e. the respective parts of the global boundary on each sub-domain $\Omega_m$.
+This corresponds to boundary parts $B^R_m := \Phi_m^{-1}(B_m) \subseteq \partial \Om$ on the master element.
+If $I^R_m \subseteq \{1, \ldots, 6\}$ denotes the set of face indices that make up $B^R_m$, we can use the elementary faces to write
+\begin{align*}
+	B^R_m = \bigcup_{i\in I^R_m}F_i^R.
+\end{align*}
+
+The face normals $\vec{N}(X)$ at $X \in \partial \Omega_m$ are given by
+\begin{align}
+	\vec{N}(X) &= J\Phi_m(\Phi_m^{-1}(X))\vec{N}^R(\Phi_m^{-1}(X)) && X \in\partial\Omega_m\nonumber\\
+			     &= J\Phi_m(X^R)\vec{N}^R(X^R) && X^R := \Phi_m^{-1}(X) \in\partial\Om\nonumber\\
+				 &= J\Phi_m(X^R)\vec{N}^R_i && X^R \in F^R_i \subset \partial\Om.\label{eq:Normal_trans}
+\end{align}
+
+Assuming a suitable set of Gauss points $\{X_1^i,\ldots,X^i_{G_F}\}$ (and weights $w_1,\ldots,w_{G_F}$)
+for 2D integration on each face $F^R_i$ of the master element $\Om$, we have for any $f(X,t)$ and $m = 1\ldots M$:
+\begin{align*} %\intl{\partial\Phi_m(B^R_m)}{} f(X,t) \vec{N}_m(X)d\vec{N}_m  =
+	\intl{B_m}{} f(X,t)\vec{N}(X)d\vec{N} &= \intl{\Phi_m(B^R_m)}{} f(X,t) \vec{N}(X)d\vec{N}\\
+	&=\intl{B^R_m}{} f(\Phi_m(X),t) \vec{N}(\Phi_m(X))\left|\det(J{\Phi_m}_{|\partial\Om}(X))\right|d\vec{N}^R\\
+	&=\suml{i\in I^R_m}{} \intl{F^R_i}{} f(\Phi_m(X),t) \vec{N}(\Phi_m(X))\left|\det(J{\Phi_m}_{|\partial\Om}(X))\right|d\vec{N}^R\\
+	&\re{eq:Normal_trans}\suml{i\in I^R_m}{} \intl{F^R_i}{} f(\Phi_m(X),t) J\Phi_m(X)\vec{N}_i\left|\det(J{\Phi_m}_{|\partial\Om}(X))\right|d\vec{N}^R\\
+	&=\suml{i\in I^R_m}{} \sumgp w_p f(\Phi_m(X^i_p),t) J\Phi_m(X^i_p)\vec{N}_i\left|\det(J{\Phi_m}_{|\partial\Om}(X^i_p))\right|
+\end{align*}
+ 
+Now, for $f(X,t) = \vP(X,t)\varphi_k(X)$ we obtain:
+\begin{align*}
+	\intorb \vP(X,t)\varphi_k(X)\vec{N}(X)d\vec{N} &= \suml{m=1}{M} \intl{\partial\Or \cap \partial\Omega_m}{}\vP(X,t)\varphi_k(X) \vec{N}(X)d\vec{N}\\
+	&=\suml{m=1}{M} \intl{B_m}{}\vP(X,t)\varphi_k(X) \vec{N}(X)d\vec{N}\\
+	&=\sumvk \intl{B_m}{}\vP(X,t)\varphi_k(X) \vec{N}(X)d\vec{N}\\
+	&=\sumvk \suml{i\in I^R_m}{}\sumgp w_p \vP(X_p^i,t)\varphi_k(X_p^i) J\Phi_m(X_p^i)\vec{N}_i\left|\det(J{\Phi_m}_{|\partial\Om}(X_p^i))\right|.
+\end{align*}

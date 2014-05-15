@@ -26,7 +26,7 @@ function duvw = evaluate(this, uvwdof, t)
         forceargs = [this.muprep; t*ones(1,size(this.muprep,2))];
         % This is the learned 
 %         FibreForces = this.APExp.evaluate(forceargs)';
-        FibreForces = min(1,.1*t*ones(size(this.muprep,2),1));
+        FibreForces = alphaconst*min(1,.1*t*ones(size(this.muprep,2),1));
     end
 
     % Include dirichlet values to state vector
@@ -119,9 +119,12 @@ function duvw = evaluate(this, uvwdof, t)
         % Update pressure value at according positions
         duvw(elemidx_pressure) = duvw(elemidx_pressure) + integrand_press;
     end
-    % Remove values at dirichlet nodes
+    
+    %% Save & remove values at dirichlet pos/velo nodes
+    this.LastBCResiduals = duvw(sys.bc_dir_idx);
     duvw(sys.bc_dir_idx) = [];
 
+    %% If direct mass matrix inversion is used
     if sys.UseDirectMassInversion
         duvw(sys.dof_idx_velo) = sys.Minv * duvw(sys.dof_idx_velo);
     end

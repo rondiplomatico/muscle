@@ -13,6 +13,12 @@ classdef BaseGeometry < handle
         
         DofsPerElement;
         
+        MasterFaces;
+        
+        % A 2 x N_F vector containing the element number in the first row
+        % and the face number on that element in the second row.
+        Faces;
+        
         %CornerIndices;
     end
     
@@ -20,12 +26,30 @@ classdef BaseGeometry < handle
         NumElements;
         NumNodes;
         GaussPointsPerElem;
+        GaussPointsPerElemFace;
+        NumFaces;
+        NodesPerFace;
     end
     
     properties(SetAccess=private)
         gaussp;
         
         gaussw;
+        
+        % Faces are:
+        % Idx : 1     2      3      4    5      6
+        % Face: X-    X+     Y-     Y+   Z-     Z+
+        % Pos:  Left  Right  Front  Rear Bottom Top
+        FaceNormals = [-1 1  0 0  0 0
+                        0 0 -1 1  0 0
+                        0 0  0 0 -1 1];
+                    
+                    
+        FaceDims = logical([0 0 1 1 1 1
+                            1 1 0 0 1 1
+                            1 1 1 1 0 0]);
+        facegaussp;
+        facegaussw;
     end
     
     methods
@@ -40,12 +64,18 @@ classdef BaseGeometry < handle
             this.gaussp = [GX(:) GY(:) GZ(:)]';
             this.gaussw = W(:);
             
-%             %% Compute node to cube indices
-%             pv = cell(np,1);
-%             for i=1:np
-%                 pv{i} = find(sum(el == i,2));
-%             end
-%             this.pts_cubes = pv;
+            % Faces Gauss points
+            [WX,WY] = meshgrid(w);
+            [GX,GY] = meshgrid(g);
+            W = WX.*WY;
+            fgp = zeros(3,9,6);
+            faceremainingdim = [-1 1 -1 1 -1 1];
+            for faceidx = 1:6
+                fgp(this.FaceDims(:,faceidx),:,faceidx) = [GX(:) GY(:)]';
+                fgp(~this.FaceDims(:,faceidx),:,faceidx) = faceremainingdim(faceidx);
+            end
+            this.facegaussp = fgp;
+            this.facegaussw = W(:);
         end
         
         function plot(this, withdofnr, pm)
@@ -64,20 +94,23 @@ classdef BaseGeometry < handle
             for k = 1:this.NumElements
                 el = this.Elements(k,:);
                 center = sum(p(:,el),2)/this.DofsPerElement;
-                text(center(1),center(2),center(3),sprintf('#%d',k),'Parent',h,'Color','m');
+                text(center(1),center(2),center(3),sprintf('E_%d',k),'Parent',h,'Color','m');
                 % Plot local numbering for first element
                 if k == 1
                     off = .04;
                     for i = 1:this.DofsPerElement
                         text(off+p(1,el(i)),off+p(2,el(i)),off+p(3,el(i)),sprintf('%d',i),'Parent',h,'Color','r');
                     end
+                    for i = 1:6
+                        facenodes = p(:,el(this.MasterFaces(i,:)));
+                        mid = mean(facenodes,2);
+                        text(mid(1),mid(2),mid(3),sprintf('F_%d',i),'Parent',h,'Color','g');
+                    end
                 end
             end
             eg = this.Edges;
             for i = 1:size(eg,1)
-%                 if any(el == eg(i,1)) && any(el == eg(i,2))
-                    plot3(h,[p(1,eg(i,1)) p(1,eg(i,2))],[p(2,eg(i,1)) p(2,eg(i,2))],[p(3,eg(i,1)) p(3,eg(i,2))],'r');
-%                 end
+                plot3(h,[p(1,eg(i,1)) p(1,eg(i,2))],[p(2,eg(i,1)) p(2,eg(i,2))],[p(3,eg(i,1)) p(3,eg(i,2))],'r');
             end
             if withdofnr
                 for k = 1:this.NumNodes
@@ -108,6 +141,41 @@ classdef BaseGeometry < handle
            
     end
     
+    methods(Access=protected)
+        function [faces, inner] = computeFaces(this)
+            % Computes the outward faces of this geometry.
+            %
+            % Return values:
+            % faces: A 2 x P index matrix of all P faces, containing the
+            % element index in the first row and the face number of that
+            % element that is outward in the second row. The face number is
+            % assigned as in FaceNormals.
+            % inner: A NumElements x 6 matrix with the indices of elements
+            % whose faces are opposing each other. Each column corresponds
+            % to the face number 1 to 6, sorted as given in FaceNormals.
+            inner = zeros(this.NumElements,6);
+            for faceidx = 1:3
+                Aside = (faceidx-1)*2+1;
+                Bside = Aside+1;
+                
+                % Also sort the element node indices in case of
+                % nonidentical numbering within each element
+                A = sort(this.Elements(:,this.MasterFaces(Aside,:)),2);
+                B = sort(this.Elements(:,this.MasterFaces(Bside,:)),2);
+                for l = 1:this.NumElements
+                    opposing = sum(abs(A - circshift(B,l-1)),2) == 0;
+                    if any(opposing)
+                        opposedto = circshift(opposing,-(l-1));
+                        inner(opposing, Aside) = find(opposedto);
+                        inner(opposedto, Bside) = find(opposing);
+                    end
+                end
+            end
+            [elemnr, facenr] = find(inner == 0);
+            faces = [elemnr facenr]';
+        end
+    end
+    
     methods
         function nc = get.NumElements(this)
             nc = size(this.Elements,1);
@@ -117,10 +185,21 @@ classdef BaseGeometry < handle
             nc = size(this.Nodes,2);
         end
         
+        function nf = get.NumFaces(this)
+            nf = size(this.Faces,2);
+        end
+        
         function nc = get.GaussPointsPerElem(this)
             nc = size(this.gaussp,2);
         end
         
+        function nc = get.GaussPointsPerElemFace(this)
+            nc = size(this.facegaussp,2);
+        end
+        
+        function npf = get.NodesPerFace(this)
+            npf = size(this.MasterFaces,2);
+        end
     end
     
     methods(Static)

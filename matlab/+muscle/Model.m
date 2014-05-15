@@ -7,13 +7,15 @@ classdef Model < models.BaseFullModel
     %
     % @author Daniel Wirtz @date 2012-11-22
     
-    properties
+    properties(SetAccess=private)
         % Seed that can be used by random number generator instances in order to enable result
         % reproduction.
         % @type int @default 1
         RandSeed = 1;
         
         Config;
+        
+        MuscleDensity = 1.1e-6; % [kg/mm³] (1100kg/m³)
     end
     
     methods
@@ -30,8 +32,6 @@ classdef Model < models.BaseFullModel
             %this.Data.useFileTrajectoryData;
             
             this.System = muscle.System(this);
-            
-            
             
             this.T = 10; % [ms]
             this.dt = .01; % [ms]
@@ -60,6 +60,34 @@ classdef Model < models.BaseFullModel
 %             end
         end
         
+        function [f, residuals_neumann] = getResidualForces(this, t, uvw)
+            mt = this.scaledTimes;
+            sys = this.System;
+            numdp = length(sys.bc_dir_displ_idx);
+            resi = zeros(numdp,length(mt));
+            residuals_neumann = zeros(length(sys.bc_neum_forces_nodeidx),length(mt));
+            dyall = zeros(this.Config.PosFE.Geometry.NumNodes * 6 + this.Config.PressFE.Geometry.NumNodes,1);
+            for k=1:length(t)
+                dy = sys.f.evaluate(uvw(:,k),t(k));
+                % Place in global vector
+                dyall(this.dof_idx_global,:) = dy;
+                % Select nodes that are exposed to neumann conditions (the
+                % index is in global positions and not effective DoFs)
+                residuals_neumann(:,k) = dyall(sys.bc_neum_forces_nodeidx);
+                
+                % Take only the first numdp ones - those are the first in
+                % the residual vector (see Dynamics.evaluate)
+                resi(:,k) = sys.f.LastBCResiduals(numdp + (1:numdp));
+            end
+            
+            pos = sys.bc_dir_displ;
+            nodehasdirvals = sum(pos,1) > 0;
+            pos(:,~nodehasdirvals) = [];
+            pos = reshape(pos,[],1);
+            % Augment to full 3dim quantities
+            f(pos,:) = resi;
+        end
+        
         function setConfig(this, value)
             if ~isa(value, 'muscle.AModelConfig')
                 error('Config must be a muscle.AModelConfig instance');
@@ -84,6 +112,7 @@ classdef Model < models.BaseFullModel
             % with viscosity
             % with fibres
             % deformed reference geom
+            % dirichlet nodes with not all 3 directions fixed, plotting
         end
     end
     

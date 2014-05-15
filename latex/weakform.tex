@@ -21,39 +21,40 @@ With \eqref{def:chi} we deduce the discrete quantities
 		   &=\sumi \vc_i(t)\cdot \grad\varphi_i(X) = \sumi \vc_i(t)\otimes \dpi.
 \end{align*}
 
-Now, equation \eqref{def:maineq} (without body forces) and the incompressibility constraint give the system 
+Now, equation \eqref{def:maineq} and the incompressibility constraint give the system 
 \begin{align}
-	\rho_0(X)\d{\vV}{t}(X,t) &= \divergence\vP(X,t) && \fo X\in\Or,\label{def:maineq_nobodyforce}\\
+	\rho_0(X)\d{\vV}{t}(X,t) &= \divergence\vP(X,t) + \vB(X,t)&& \fo X\in\Or,\label{def:mainsys1}\\
 	J(X,t) &= 1 && \fo X\in\Or,\label{def:maineq_cond}
 \end{align}
 for which we have the spatial weak form
 \begin{align}
-	\intor\rho_0(X)\d{\vV}{t}(X,t)\varphi(X)dX &= \intor\divergence\vP(X,t)\varphi(X)dX &&\fo \varphi\in\H^2\\
-	\intor (J(X,t)-1)\psi(X)dX &= 0 && \fo \psi\in\H^1
+	\intor\rho_0(X)\d{\vV}{t}(X,t)\varphi(X)dX &= \intor\divergence\vP(X,t)\varphi(X)dX + \intor\vB(X,t)\varphi(X)dX &&\fo \varphi\in\H^2\label{def:mainsys1_weak}\\
+	\intor (J(X,t)-1)\psi(X)dX &= 0 && \fo \psi\in\H^1\label{def:maineq_cond_weak}
 \end{align}
-The right hand side of \eqref{def:maineq_nobodyforce} can be transformed as
+The first summand on the right hand side of \eqref{def:mainsys1_weak} can be transformed (via integration by parts and Gauss' Theorem) as
 \begin{align*}
 	\intor \div{\vP(X,t)}\varphi(X) dX &= \intor \div{\vP(X,t)\varphi(X)} - \vP(X,t)\divergence\varphi(X) dX\\
-		 &= \underbrace{\intorb \vP(X,t)\varphi(X) dN}_{=0} - \intor \vP(X,t)\divergence\varphi(X)dX\\
-		 &= \intor -\vP(X,t)\divergence\varphi(X) dX.
+		 &= \intorb \vP(X,t)\varphi(X)\vec{N}d\vec{N} - \intor \vP(X,t)\divergence\varphi(X)dX.
 \end{align*}
-Now, to satisfy equations \eqref{def:maineq_nobodyforce} and \eqref{def:maineq_cond}, they must hold true for every node basis function. 
+Now, to satisfy equations \eqref{def:mainsys1_weak} and \eqref{def:maineq_cond_weak}, they must hold true for every node basis function. 
 Consequently, we obtain a system of $3N+N_P$ equations
 \begin{align}
-	\intor \rho_0(X)\d{\vV}{t}(X,t)\varphi_k(X)dX + \intor\vP(X,t)\dpk dX &= \vnull, && \fo k=1\ldots N,\label{def:weakform}\\
-	\intor (J(X,t)-1)\psi_k(X)dX &= 0, && \fo k=1\ldots N_P.\label{def:weakform_nb}
+	&\intor \rho_0(X)\d{\vV}{t}(X,t)\varphi_k(X)dX + \intor\vP(X,t)\dpk dX\label{def:mainsys1_weak_kparts}\\
+	&= \intorb \vP(X,t)\varphi_k(X)\vec{N}d\vec{N} + \intor\vB(X,t)\varphi_k(X)dX, && \fo k=1\ldots N,\nonumber\\
+	0 &= \intor (J(X,t)-1)\psi_k(X)dX, && \fo k=1\ldots N_P.\label{def:maineq_cond_weak_kparts}
 \end{align}
 
 \subsubsection{Integrals of main equation parts}
 In the following we fix a $k\in\{1,\ldots, N\}$.
-Then, by \eqref{eq:fphidx}, the first summand of \eqref{def:weakform} reads as
+Then, by \eqref{eq:fphidx} we obtain
 \begin{align}
 	\intor \rho_0(X)\d{\vV}{t}(X,t)\varphi_k(X)dX\nonumber
 		&\re{eq:fphidx} \sumvk\sumgp w_p \rho_0(\pmp)\d{\vV}{t}(\pmp,t)\Nkmp\jmp\nonumber\\
 		&= \sumvk\sumgp w_p \rho_0(\pmp)\sumi \vc_i''(t)\varphi_i(\pmp) \Nkmp\jmp\nonumber\\
-		&= \sumi \vc_i''(t)\sumvk\sumgp w_p \rho_0(\pmp)N_{l(i,m)}(X_p) \Nkmp\jmp\label{def:discreteVphidX}
+		&= \sumi \vc_i''(t)\sumvk\sumgp w_p \rho_0(\pmp)N_{l(i,m)}(X_p) \Nkmp\jmp,\label{def:discreteVphidX}\\
+	\intor\vB(X,t)\varphi_k(X)dX &= \sumvk\sumgp w_p \vB(\pmp,t)\Nkmp\jmp\nonumber.
 \end{align}
-Similarly, the second summand of \eqref{def:weakform} writes as
+Similarly, the second summand of \eqref{def:mainsys1_weak_kparts} writes as
 \begin{align}
 		\intor\vP(X,t)\dpk dX &\re{eq:fgradphidx} \sumvk\sumgp w_p\vP(\pmp,t)\dNkmp\jmp.\label{def:discretePgradphidX}
 \end{align}
