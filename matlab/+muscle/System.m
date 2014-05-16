@@ -12,7 +12,6 @@ classdef System < models.BaseDynSystem
        globidx_pressure;
        
        Plota0 = true;
-       PlotVelocities = true;
     end
     
     properties(SetAccess=private)
@@ -47,6 +46,7 @@ classdef System < models.BaseDynSystem
               
        bc_neum_forces_nodeidx; % [N]
        bc_neum_forces_val;
+       FacesWithForce;
        
        % A helper array containing the indices of the actual dofs in the
        % global indexing.
@@ -199,10 +199,12 @@ classdef System < models.BaseDynSystem
             i = inputParser;
             i.KeepUnmatched = true;
             i.addParamValue('Vid',false,@(v)islogical(v));
-            i.addParamValue('Forces',true,@(v)islogical(v));
+            i.addParamValue('Forces',false,@(v)islogical(v));
+            i.addParamValue('Velo',false,@(v)islogical(v));
             i.addParamValue('Pressure',false,@(v)islogical(v));
             i.addParamValue('pm',[],@(v)isa(v,'PlotManager'));
             i.addParamValue('PDF',[]);
+            i.addParamValue('RNF',[]);
             i.parse(varargin{:});
             r = i.Results;
             
@@ -249,10 +251,29 @@ classdef System < models.BaseDynSystem
             end
             
             if r.Forces
+                % Get forces on each node in x,y,z directions
+                % This is where the connection between plane index and
+                % x,y,z coordinate is "restored"
                 forces = zeros(size(this.bc_dir_displ));
                 forces(this.bc_neum_forces_nodeidx) = this.bc_neum_forces_val;
+                
+                % Forces at face centers
+                force_elem_face_idx = geo.Faces(:,this.FacesWithForce);
+                numfaceswithforce = size(force_elem_face_idx,2);
+                meanforces = zeros(3,numfaceswithforce);
+                for k=1:numfaceswithforce
+                    masterfacenodeidx = geo.MasterFaces(force_elem_face_idx(2,k),:);
+                    facenodeidx = geo.Elements(force_elem_face_idx(1,k),masterfacenodeidx);
+                    meanforces(:,k) = mean(forces(:,facenodeidx),2);
+                end
+                
+                % Also save forces at x,y,z nodes for plotting
                 forces_apply = sum(abs(forces),1) ~= 0;
                 forces = forces(:,forces_apply);
+                
+                if ~isempty(r.RNF)
+                    residual_neumann_forces = zeros(size(this.bc_dir_displ));
+                end
             end
             
             %% Loop over time
@@ -277,10 +298,10 @@ classdef System < models.BaseDynSystem
                 plot3(h,u(1,no_bc),u(2,no_bc),u(3,no_bc),'r.','MarkerSize',14);
                 
                 % Velocities
-                if this.PlotVelocities
+                if r.Velo
                     %quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'k.','MarkerSize',14);
 %                     quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),0,'r','MarkerSize',10);
-                    quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'b.', 'MarkerSize',14);
+                    quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'b', 'MarkerSize',14);
                 end
                 
                 %% Dirichlet conditions
@@ -298,14 +319,33 @@ classdef System < models.BaseDynSystem
                 if ~isempty(r.PDF)
                     udir = u(:,bc_dir_pos_applies);
                     quiver3(h,udir(1,:),udir(2,:),udir(3,:),...
-                        r.PDF(pdf_xpos,ts)',r.PDF(pdf_xpos+1,ts)',r.PDF(pdf_xpos+2,ts)','k.', 'MarkerSize',14);
+                        r.PDF(pdf_xpos,ts)',r.PDF(pdf_xpos+1,ts)',r.PDF(pdf_xpos+2,ts)','k', 'MarkerSize',14);
                 end
                 
                 %% Neumann condition forces
                 if r.Forces
+                    % Plot force vectors at nodes
                     uforce = u(:,forces_apply);
                     quiver3(h,uforce(1,:),uforce(2,:),uforce(3,:),...
-                        forces(1,:),forces(2,:),forces(3,:),'r.', 'MarkerSize',14);
+                        forces(1,:),forces(2,:),forces(3,:),0,'Color',[.8 .8 1]);
+                    % Plot force vectors at face centers
+                    for k=1:numfaceswithforce
+                        masterfacenodeidx = geo.MasterFaces(force_elem_face_idx(2,k),:);
+                        facenodeidx = geo.Elements(force_elem_face_idx(1,k),masterfacenodeidx);
+                        
+                        facecenter = mean(u(:,facenodeidx),2);
+                        quiver3(h,facecenter(1),facecenter(2),facecenter(3),...
+                            meanforces(1,k),meanforces(2,k),meanforces(3,k),0,'LineWidth',2,'Color','b','MaxHeadSize',1);
+                        
+                        if ~isempty(r.RNF)
+                            residual_neumann_forces(this.bc_neum_forces_nodeidx) = r.RNF(:,ts);
+                            meanforce = mean(residual_neumann_forces(:,facenodeidx),2);
+                            quiver3(h,facecenter(1),facecenter(2),facecenter(3),...
+                            meanforce(1),meanforce(2),meanforce(3),0,'LineWidth',2,'Color','k','MaxHeadSize',1);
+                        end
+                    end
+                    
+                   
                 end
                 
                 %% Pressure
@@ -331,7 +371,7 @@ classdef System < models.BaseDynSystem
                         u = u(this.globidx_displ(:,:,m));
                         gps = u*Ngp;
                         anull = u*this.dNa0(:,:,m);
-                        quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'g');
+                        quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'Color',[.5 .8 .5]);
                     end
                 end
                 
@@ -489,6 +529,7 @@ classdef System < models.BaseDynSystem
             geo = fe_displ.Geometry;
             ngp = geo.GaussPointsPerElemFace;
             force = zeros(geo.NumNodes * 3,1);
+            faceswithforce = false(1,geo.NumFaces);
             for fn = 1:geo.NumFaces
                 elemidx = geo.Faces(1,fn);
                 faceidx = geo.Faces(2,fn);
@@ -496,6 +537,7 @@ classdef System < models.BaseDynSystem
                 % So far: Constant pressure on all gauss points!
                 P = mc.getBoundaryPressure(elemidx, faceidx);
                 if ~isempty(P)
+                    faceswithforce(fn) = true;
                     integrand = zeros(3,geo.NodesPerFace);
                     for gi = 1:ngp
                         PN = (P * fe_displ.NormalsOnFaceGP(:,gi,fn)) * fe_displ.Ngpface(:,gi,fn)';
@@ -510,6 +552,7 @@ classdef System < models.BaseDynSystem
             % Augment to u,v,w vector
             nodeidx = find(abs(force) > 1e-13);
             force = [zeros(size(force)); force; zeros(mc.PressFE.Geometry.NumNodes,1)];
+            this.FacesWithForce = faceswithforce;
         end
         
         function inita0(this)

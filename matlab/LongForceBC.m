@@ -3,19 +3,19 @@ classdef LongForceBC < muscle.AModelConfig
     methods
         function this = LongForceBC
             % Single cube with same config as reference element
-            [pts, cubes] = geometry.Cube8Node.DemoCubeGrid(0:1,-1:1,0:1);
+            [pts, cubes] = geometry.Cube8Node.DemoGrid([0 20],-10:10:10,[0 15],.1);
             geo = geometry.Cube8Node(pts, cubes);
             this = this@muscle.AModelConfig(geo);
         end
         
         function configureModel(~, model)
-            model.T = 50;
-            model.dt = 1;
+            model.T = 5;
+            model.dt = .1;
             f = model.System.f;
-            f.alpha = 0;
+            f.alpha = .3;
             f.Viscosity = 0;
             os = model.ODESolver;
-            os.RelTol = .3;
+            os.RelTol = .1;
             os.AbsTol = .1;
         end
         
@@ -43,7 +43,7 @@ classdef LongForceBC < muscle.AModelConfig
         
         function anull = seta0(~, anull)
            % Direction is xz
-%            anull([1 3],:,:) = 1;
+           anull([1 3],:,:) = 1;
         end
     end
     

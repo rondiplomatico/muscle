@@ -66,14 +66,15 @@ classdef Model < models.BaseFullModel
             numdp = length(sys.bc_dir_displ_idx);
             resi = zeros(numdp,length(mt));
             residuals_neumann = zeros(length(sys.bc_neum_forces_nodeidx),length(mt));
-            dyall = zeros(this.Config.PosFE.Geometry.NumNodes * 6 + this.Config.PressFE.Geometry.NumNodes,1);
+            pos_dofs = this.Config.PosFE.Geometry.NumNodes * 3;
+            dyall = zeros(2*pos_dofs + this.Config.PressFE.Geometry.NumNodes,1);
             for k=1:length(t)
                 dy = sys.f.evaluate(uvw(:,k),t(k));
                 % Place in global vector
-                dyall(this.dof_idx_global,:) = dy;
+                dyall(sys.dof_idx_global,:) = dy;
                 % Select nodes that are exposed to neumann conditions (the
                 % index is in global positions and not effective DoFs)
-                residuals_neumann(:,k) = dyall(sys.bc_neum_forces_nodeidx);
+                residuals_neumann(:,k) = dyall(pos_dofs+sys.bc_neum_forces_nodeidx);
                 
                 % Take only the first numdp ones - those are the first in
                 % the residual vector (see Dynamics.evaluate)

@@ -1,10 +1,15 @@
 classdef Long < muscle.AModelConfig
-    
+% A long geometry with 20% deviation from default cubic positions and
+% complex fibre structure
+
     methods
-        function this = Long
+        function this = Long(devi)
+            if nargin < 1
+                devi = .2;
+            end
             % Single cube with same config as reference element
-            [pts, cubes] = geometry.Cube8Node.DemoCubeGrid(-1:1,-4:4,0:1);
-            geo = geometry.Cube8Node(pts, cubes);
+            [pts, cubes] = geometry.Cube20Node.DemoGrid(-10:10:10,-40:10:40, [0 10], devi);
+            geo = geometry.Cube20Node(pts, cubes);
             this = this@muscle.AModelConfig(geo);
         end
         
@@ -12,7 +17,7 @@ classdef Long < muscle.AModelConfig
             model.T = 50;
             model.dt = 1;
             f = model.System.f;
-            f.alpha = .01;
+            f.alpha = 1;
             f.Viscosity = 0;
         end
     end
@@ -27,14 +32,14 @@ classdef Long < muscle.AModelConfig
             end
         end
         
-        function [velo_dir, velo_dir_val] = setVelocityDirichletBC(this, velo_dir, velo_dir_val)
-            %% Dirichlet conditions: Position (fix one side)
-            geo = this.PosFE.Geometry;
-            for k = [1 9]
-                velo_dir(1,geo.Elements(k,[1:3 9 10 13:15])) = true;
-            end
-            velo_dir_val(velo_dir) = -.1;
-        end
+%         function [velo_dir, velo_dir_val] = setVelocityDirichletBC(this, velo_dir, velo_dir_val)
+%             %% Dirichlet conditions: Position (fix one side)
+%             geo = this.PosFE.Geometry;
+%             for k = [1 9]
+%                 velo_dir(1,geo.Elements(k,[1:3 9 10 13:15])) = true;
+%             end
+%             velo_dir_val(velo_dir) = -.1;
+%         end
         
         function anull = seta0(this, anull)
             geo = this.PosFE.Geometry;
