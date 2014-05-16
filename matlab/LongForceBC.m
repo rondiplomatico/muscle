@@ -17,6 +17,7 @@ classdef LongForceBC < muscle.AModelConfig
             os = model.ODESolver;
             os.RelTol = .1;
             os.AbsTol = .1;
+            model.System.Inputs{1} = @(t)min(1,t);
         end
         
         function P = getBoundaryPressure(~, elemidx, faceidx)

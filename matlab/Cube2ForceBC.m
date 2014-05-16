@@ -3,7 +3,7 @@ classdef Cube2ForceBC < muscle.AModelConfig
     methods
         function this = Cube2ForceBC
             % Single cube with same config as reference element
-            [pts, cubes] = geometry.Cube8Node.DemoCubeGrid(0:1,-1:2,0:1);
+            [pts, cubes] = geometry.Cube8Node.DemoGrid(0:1,-1:2,0:1);
             geo = geometry.Cube8Node(pts, cubes);
             this = this@muscle.AModelConfig(geo);
         end

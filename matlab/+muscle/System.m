@@ -144,7 +144,7 @@ classdef System < models.BaseDynSystem
             % element in the order of the nodes (along row) in the master
             % element.
             ne = g.NumElements;
-            globalelementdofs = zeros(3,g.DofsPerElement,ne);
+            globalelementdofs = zeros(3,g.DofsPerElement,ne,'int32');
             for m = 1:ne
                 % First index of element dof in global array
                 hlp = (g.Elements(m,:)-1)*3+1;
@@ -154,7 +154,7 @@ classdef System < models.BaseDynSystem
             this.globidx_displ = globalelementdofs;
             
             % The same for the pressure
-            globalpressuredofs = zeros(gp.DofsPerElement,gp.NumElements);
+            globalpressuredofs = zeros(gp.DofsPerElement,gp.NumElements,'int32');
             off = g.NumNodes * 6;
             for m = 1:gp.NumElements
                 globalpressuredofs(:,m) = off + gp.Elements(m,:);
@@ -344,8 +344,6 @@ classdef System < models.BaseDynSystem
                             meanforce(1),meanforce(2),meanforce(3),0,'LineWidth',2,'Color','k','MaxHeadSize',1);
                         end
                     end
-                    
-                   
                 end
                 
                 %% Pressure
@@ -555,7 +553,7 @@ classdef System < models.BaseDynSystem
 %             relpos = find(pos_dir(:));
             % Same positions for points and velocity
 %             this.bc_dir_displ_idx = [relpos; num_position_dofs + relpos];
-            this.bc_dir_displ_idx = find(pos_dir(:));
+            this.bc_dir_displ_idx = int32(find(pos_dir(:)));
             
             %% Velocity
             % Incorporate zero velocity conditions from fixed node
@@ -564,7 +562,7 @@ classdef System < models.BaseDynSystem
             this.bc_dir_velo_idx = num_position_dofs+this.bc_dir_displ_idx;
             % Add any user-defines values (cannot conflict with position
             % dirichlet conditions, this is checked in AModelConfig.getBC)
-            this.bc_dir_velo_idx = [this.bc_dir_velo_idx; num_position_dofs + find(velo_dir(:))];
+            this.bc_dir_velo_idx = int32([this.bc_dir_velo_idx; num_position_dofs + find(velo_dir(:))]);
             this.bc_dir_velo_val = [this.bc_dir_velo_val; velo_dir_val(velo_dir)];
             this.bc_dir_velo = velo_dir | pos_dir;
             
@@ -582,14 +580,14 @@ classdef System < models.BaseDynSystem
             pos = false(1,total);
             pos(1:num_position_dofs) = true;
             pos(this.bc_dir_idx) = [];
-            this.dof_idx_displ = find(pos);
+            this.dof_idx_displ = int32(find(pos));
             
             pos = false(1,total);
             pos(num_position_dofs+1:num_position_dofs*2) = true;
             pos(this.bc_dir_idx) = [];
-            this.dof_idx_velo = find(pos);
+            this.dof_idx_velo = int32(find(pos));
             
-            idx = 1:total;
+            idx = int32(1:total);
             idx(this.bc_dir_idx) = [];
             this.dof_idx_global = idx;
         end

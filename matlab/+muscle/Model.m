@@ -43,12 +43,12 @@ classdef Model < models.BaseFullModel
             this.ODESolver = s;
             this.System.MaxTimestep = []; %model.dt;
             
+            % Call the config-specific model configuration
+            conf.configureModel(this);
+            
             % Set the config to the model, triggering geometry related
             % pre-computations
             this.setConfig(conf);
-            
-            % Call the config-specific model configuration
-            conf.configureModel(this);
             
             %% Health tests
 %             this.System.f.test_Jacobian;
@@ -102,6 +102,7 @@ classdef Model < models.BaseFullModel
             pos(:,~nodehasdirvals) = [];
             pos = reshape(pos,[],1);
             % Augment to full 3dim quantities
+            f = zeros(length(pos),length(t));
             f(pos,:) = resi;
         end
         

@@ -101,13 +101,15 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         
         function configUpdated(this)
             mc = this.System.Model.Config;
-            geo = mc.PosFE.Geometry;
-            
-            dirvals = length(this.System.bc_dir_val);
-            d = geo.NumNodes * 6 - dirvals + mc.PressFE.Geometry.NumNodes;
-            this.xDim = d;
-            this.fDim = d;
-            this.computeSparsityPattern;
+            if ~isempty(mc)
+                geo = mc.PosFE.Geometry;
+
+                dirvals = length(this.System.bc_dir_val);
+                d = geo.NumNodes * 6 - dirvals + mc.PressFE.Geometry.NumNodes;
+                this.xDim = d;
+                this.fDim = d;
+                this.computeSparsityPattern;
+            end
         end
         
         function prepareSimulation(this, mu)

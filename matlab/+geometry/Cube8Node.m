@@ -28,7 +28,7 @@ classdef Cube8Node < geometry.BaseGeometry
                     8 7 5 7 6 2 6 5 6 8]);
                 e(end+1:end+12,:) = reshape(hlp',2,[])';
             end
-            e = unique(e,'rows');
+            e = unique(e,'rows','stable');
             this.Edges = e;
             
             %% Set Face indices

@@ -48,7 +48,8 @@ classdef DebugConfig < muscle.AModelConfig
             displ_dir(:,geo.Elements(1,[6 7 11 18 19])) = true;
             
             % Only fix the right back corner nodes in yz-direction
-            displ_dir([2 3],geo.Elements(1,[8 12 20])) = true;
+%             displ_dir([2 3],geo.Elements(1,[8 12 20])) = true;
+            displ_dir(:,geo.Elements(1,[8 12 20])) = true;
         end
         
         function anull = seta0(this, anull)

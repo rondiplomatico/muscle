@@ -23,12 +23,13 @@ function computeSparsityPattern(this)
     dofsperelem_press = pgeo.DofsPerElement;
     num_gausspoints = geo.GaussPointsPerElem;
     num_elements = geo.NumElements;
+    pones = ones(dofsperelem_press,1,'int32');
     for m = 1:num_elements
         elemidx_displ = globidx_disp(:,:,m);
         elemidx_velo = elemidx_displ + dofs_displ;
         elemidx_pressure = globidx_press(:,m);
         inew = elemidx_velo(:);
-        one = ones(size(inew));
+        one = ones(size(inew),'int32');
         for gp = 1:num_gausspoints
             for k = 1:dofsperelem_displ
                 %% Grad_u K(u,v,w)
@@ -58,23 +59,23 @@ function computeSparsityPattern(this)
                 %% grad u g(u)
                 % dx
                 i = [i; elemidx_pressure(:)];
-                j = [j; ones(dofsperelem_press,1)*elemidx_displ(1,k)]; 
+                j = [j; pones*elemidx_displ(1,k)]; 
                 % dy
                 i = [i; elemidx_pressure(:)];
-                j = [j; ones(dofsperelem_press,1)*elemidx_displ(2,k)]; 
+                j = [j; pones*elemidx_displ(2,k)]; 
                 %dz
                 i = [i; elemidx_pressure(:)];
-                j = [j; ones(dofsperelem_press,1)*elemidx_displ(3,k)]; 
+                j = [j; pones*elemidx_displ(3,k)]; 
             end
             %% Grad_w K(u,v,w)
             inew = elemidx_velo(:);
             for k = 1:dofsperelem_press
                 i = [i; inew];
-                j = [j; ones(3*dofsperelem_displ,1)*elemidx_pressure(k)]; 
+                j = [j; ones(3*dofsperelem_displ,1,'int32')*elemidx_pressure(k)]; 
             end
         end
     end
-    J = sparse(i,j,ones(size(i)),6*N+M,6*N+M);
+    J = sparse(double(i),double(j),ones(size(i)),6*N+M,6*N+M);
     % Remove values at dirichlet nodes
     J(:,sys.bc_dir_idx) = [];
     J(sys.bc_dir_idx,:) = [];

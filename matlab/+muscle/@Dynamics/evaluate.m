@@ -15,6 +15,7 @@ function duvw = evaluate(this, uvwdof, t)
     d1 = this.d1;
     lfopt = this.lambdafopt;
     Pmax = this.Pmax;
+    flfun = this.ForceLengthFun;
     alphaconst = min(1,t/this.fullActivationTime)*this.alpha;
     havefibres = sys.HasFibres;
     havefibretypes = havefibres && ~isempty(mc.FibreTypeWeights);
@@ -83,7 +84,7 @@ function duvw = evaluate(this, uvwdof, t)
                 % Evaluate g function
                 % Using a subfunction is 20% slower!
                 % So: direct implementation here
-                fl = this.ForceLengthFun(lambdaf/lfopt);
+                fl = flfun(lambdaf/lfopt);
                 if havefibretypes 
                     alpha = ftwelem(gp);
                 else

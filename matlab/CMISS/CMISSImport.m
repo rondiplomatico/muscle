@@ -74,9 +74,9 @@ classdef CMISSImport < handle
             
             %% Read 27 points for quadratic case
             
-            elems20 = [data(6:9:end,9:end) data(7:9:end,1:11)];
+%             elems20 = [data(6:9:end,9:end) data(7:9:end,1:11)];
             % Modified read for ip data from M. Sprenger
-%             elems20 = [data(6:9:end,9:end-1) data(7:9:end,1:12)];
+            elems20 = [data(6:9:end,9:end-1) data(7:9:end,1:12)];
             
             % Remove the inner/face points
             elems20(:,[5 11 13:15 17 23]) = [];
@@ -94,6 +94,21 @@ classdef CMISSImport < handle
             % Fit element node reference indices
             invidx(effidx) = 1:length(effidx);
             elems = invidx(elems);
+            
+            % Sort the node indices per element in the order of z
+            % increasing "outer", y increasing "mid" and x increasing "inner"
+%             for m=1:size(elems,1)
+%                 idx = sortXYZ(nodes(:,elems(m,:)));
+%                 elems(m,:) = elems(m,idx);
+%             end
+%             
+%             function idx = sortXYZ(vecs)
+%                 hlp = vecs - min(vecs(:));
+%                 dist = max(abs(vecs(:)))*100;
+%                 hlp(3,:) = hlp(3,:)*dist^2;
+%                 hlp(2,:) = hlp(2,:)*dist;
+%                 [~, idx] = sort(sum(hlp,1),'ascend');
+%             end
         end
     end
     
