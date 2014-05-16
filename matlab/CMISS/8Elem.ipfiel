@@ -1,0 +1,1017 @@
+ CMISS Version 2.1  ipfiel File Version 3
+ Heading: RunParameters.ippara   (21. Aug 2006)
+ 
+ The number of field variables is [3]:  6
+ The number of nodes is [  125]:   125
+ Do you want prompting for different versions of field variable 1 [N]? N
+ Do you want prompting for different versions of field variable 2 [N]? N
+ Do you want prompting for different versions of field variable 3 [N]? N
+ Do you want prompting for different versions of field variable 4 [N]? N
+ Do you want prompting for different versions of field variable 5 [N]? N
+ Do you want prompting for different versions of field variable 6 [N]? N
+ The number of derivatives for field variable 1 is [0]: 0
+ The number of derivatives for field variable 2 is [0]: 0
+ The number of derivatives for field variable 3 is [0]: 0
+ The number of derivatives for field variable 4 is [0]: 0
+ The number of derivatives for field variable 5 is [0]: 0
+ The number of derivatives for field variable 6 is [0]: 0
+ 
+ Node number [    1]:     1
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [    2]:     2
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [    3]:     3
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [    4]:     4
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [    5]:     5
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [    6]:     6
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [    7]:     7
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [    8]:     8
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [    9]:     9
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   10]:    10
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   11]:    11
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   12]:    12
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   13]:    13
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   14]:    14
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   15]:    15
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   16]:    16
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   17]:    17
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   18]:    18
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   19]:    19
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   20]:    20
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   21]:    21
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   22]:    22
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   23]:    23
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   24]:    24
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   25]:    25
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   26]:    26
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   27]:    27
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   28]:    28
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   29]:    29
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   30]:    30
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   31]:    31
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   32]:    32
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   33]:    33
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   34]:    34
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   35]:    35
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   36]:    36
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   37]:    37
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   38]:    38
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   39]:    39
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   40]:    40
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   41]:    41
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   42]:    42
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   43]:    43
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   44]:    44
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   45]:    45
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   46]:    46
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   47]:    47
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   48]:    48
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   49]:    49
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   50]:    50
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   51]:    51
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   52]:    52
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   53]:    53
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   54]:    54
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   55]:    55
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   56]:    56
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   57]:    57
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   58]:    58
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   59]:    59
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   60]:    60
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   61]:    61
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   62]:    62
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   63]:    63
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   64]:    64
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   65]:    65
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   66]:    66
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   67]:    67
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   68]:    68
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   69]:    69
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   70]:    70
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   71]:    71
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   72]:    72
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   73]:    73
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   74]:    74
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   75]:    75
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   76]:    76
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   77]:    77
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   78]:    78
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   79]:    79
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   80]:    80
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   81]:    81
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   82]:    82
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   83]:    83
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   84]:    84
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   85]:    85
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   86]:    86
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   87]:    87
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   88]:    88
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   89]:    89
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   90]:    90
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   91]:    91
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   92]:    92
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   93]:    93
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   94]:    94
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   95]:    95
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   96]:    96
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   97]:    97
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   98]:    98
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [   99]:    99
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  100]:   100
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  101]:   101
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  102]:   102
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  103]:   103
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  104]:   104
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  105]:   105
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  106]:   106
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  107]:   107
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  108]:   108
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  109]:   109
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  110]:   110
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  111]:   111
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  112]:   112
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  113]:   113
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  114]:   114
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  115]:   115
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  116]:   116
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  117]:   117
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  118]:   118
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  119]:   119
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  120]:   120
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  121]:   121
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  122]:   122
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  123]:   123
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  124]:   124
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00
+ 
+ Node number [  125]:   125
+ The field variable 1 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 2 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 3 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 4 value is [ 0.00000E+00]:  1.00000E+00
+ The field variable 5 value is [ 0.00000E+00]:  0.00000E+00
+ The field variable 6 value is [ 0.00000E+00]:  0.00000E+00

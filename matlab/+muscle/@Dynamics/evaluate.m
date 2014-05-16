@@ -83,9 +83,7 @@ function duvw = evaluate(this, uvwdof, t)
                 % Evaluate g function
                 % Using a subfunction is 20% slower!
                 % So: direct implementation here
-                ratio = lambdaf/lfopt;
-                fl = (-6.25*ratio*ratio + 12.5*ratio - 5.25) * (ratio >= .6) * (ratio <= 1.4);
-                
+                fl = this.ForceLengthFun(lambdaf/lfopt);
                 if havefibretypes 
                     alpha = ftwelem(gp);
                 else

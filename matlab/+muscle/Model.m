@@ -60,6 +60,22 @@ classdef Model < models.BaseFullModel
 %             end
         end
         
+        function plotForceLengthCurve(this)
+            pm = PlotManager(false,1,2);
+            pm.LeaveOpen = true;
+            f = this.System.f;
+            h = pm.nextPlot('force_length',sprintf('Force-Length curve for model %s',this.Name),'\lambda/\lambda_{opt}','force');
+            ratio = 0:.01:2;
+            plot(h,ratio,f.ForceLengthFun(ratio),'r');
+            h = pm.nextPlot('force_length_deriv',sprintf('Derivative of Force-Length curve for model %s',this.Name),'\lambda/\lambda_{opt}','deriv');
+            plot(h,ratio,f.ForceLengthFunDeriv(ratio),'b');
+            pm.done;
+        end
+        
+        function plotGeometrySetup(this)
+            this.System.plotGeometrySetup;
+        end
+        
         function [f, residuals_neumann] = getResidualForces(this, t, uvw)
             mt = this.scaledTimes;
             sys = this.System;

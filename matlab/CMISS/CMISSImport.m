@@ -73,7 +73,11 @@ classdef CMISSImport < handle
             %elemidx = data(1:9:end,5);
             
             %% Read 27 points for quadratic case
+            
             elems20 = [data(6:9:end,9:end) data(7:9:end,1:11)];
+            % Modified read for ip data from M. Sprenger
+%             elems20 = [data(6:9:end,9:end-1) data(7:9:end,1:12)];
+            
             % Remove the inner/face points
             elems20(:,[5 11 13:15 17 23]) = [];
             

@@ -94,7 +94,7 @@ classdef BaseGeometry < handle
             for k = 1:this.NumElements
                 el = this.Elements(k,:);
                 center = sum(p(:,el),2)/this.DofsPerElement;
-                text(center(1),center(2),center(3),sprintf('E_%d',k),'Parent',h,'Color','m');
+                text(center(1),center(2),center(3),sprintf('E_{%d}',k),'Parent',h,'Color','m');
                 % Plot local numbering for first element
                 if k == 1
                     off = .04;

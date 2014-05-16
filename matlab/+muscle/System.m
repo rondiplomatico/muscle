@@ -319,7 +319,7 @@ classdef System < models.BaseDynSystem
                 if ~isempty(r.PDF)
                     udir = u(:,bc_dir_pos_applies);
                     quiver3(h,udir(1,:),udir(2,:),udir(3,:),...
-                        r.PDF(pdf_xpos,ts)',r.PDF(pdf_xpos+1,ts)',r.PDF(pdf_xpos+2,ts)','k', 'MarkerSize',14);
+                        r.PDF(1:3:end,ts)',r.PDF(2:3:end,ts)',r.PDF(3:3:end,ts)','k', 'MarkerSize',14);
                 end
                 
                 %% Neumann condition forces
@@ -406,6 +406,77 @@ classdef System < models.BaseDynSystem
             x0 = this.x0.evaluate([]);
             diff = repmat(x0,1,length(t)) + (uvw1-uvw2)*fac;
             pm = this.plot(t,diff,varargin{:});
+        end
+        
+        function plotGeometrySetup(this)
+            pm = PlotManager;
+            pm.LeaveOpen = true;
+            
+            mc = this.Model.Config;
+            dfem = mc.PosFE;
+            geo = dfem.Geometry;
+            e = geo.Edges;
+            
+            hlp = sum(this.bc_dir_displ,1);
+            bc_dir_3pos_applies = hlp == 3;
+            bc_dir_2pos_applies = hlp == 2;
+            bc_dir_1pos_applies = hlp == 1;
+            bc_dir_pos_applies = hlp >= 1; 
+            no_bc = ~bc_dir_pos_applies;
+            
+            forces = zeros(size(this.bc_dir_displ));
+            forces(this.bc_neum_forces_nodeidx) = this.bc_neum_forces_val;
+            % Forces at face centers
+            force_elem_face_idx = geo.Faces(:,this.FacesWithForce);
+            numfaceswithforce = size(force_elem_face_idx,2);
+            meanforces = zeros(3,numfaceswithforce);
+            for k=1:numfaceswithforce
+                masterfacenodeidx = geo.MasterFaces(force_elem_face_idx(2,k),:);
+                facenodeidx = geo.Elements(force_elem_face_idx(1,k),masterfacenodeidx);
+                meanforces(:,k) = mean(forces(:,facenodeidx),2);
+            end
+            
+            h = pm.nextPlot('geometry',sprintf('Geometry for model %s',this.Model.Name),'x [mm]','y [mm]');
+            view(h, [46 30]);
+            daspect([1 1 1]);
+            zlabel(h,'z [mm]');
+            axis(h,geo.getBoundingBox*1.1);
+            hold(h,'on');
+            u = geo.Nodes;
+            
+            %% Nodes
+            plot3(h,u(1,no_bc),u(2,no_bc),u(3,no_bc),'r.','MarkerSize',14);
+            
+            %% Edges
+            for k=1:size(e,1)
+                plot3(h,u(1,[e(k,1) e(k,2)]),u(2,[e(k,1) e(k,2)]),u(3,[e(k,1) e(k,2)]),'r');
+            end
+            
+            %% Dirichlet position cond
+            plot3(h,u(1,bc_dir_3pos_applies),u(2,bc_dir_3pos_applies),u(3,bc_dir_3pos_applies),'.','MarkerSize',20,'Color',[0 0 0]);
+            plot3(h,u(1,bc_dir_2pos_applies),u(2,bc_dir_2pos_applies),u(3,bc_dir_2pos_applies),'.','MarkerSize',20,'Color',[.5 .5 .5]);
+            plot3(h,u(1,bc_dir_1pos_applies),u(2,bc_dir_1pos_applies),u(3,bc_dir_1pos_applies),'.','MarkerSize',20,'Color',[.7 .7 .7]);
+            
+            %% Neumann forces
+            for k=1:numfaceswithforce
+                masterfacenodeidx = geo.MasterFaces(force_elem_face_idx(2,k),:);
+                facenodeidx = geo.Elements(force_elem_face_idx(1,k),masterfacenodeidx);
+
+                facecenter = mean(u(:,facenodeidx),2);
+                quiver3(h,facecenter(1),facecenter(2),facecenter(3),...
+                    meanforces(1,k),meanforces(2,k),meanforces(3,k),0,'LineWidth',2,'Color','b','MaxHeadSize',1);
+            end
+            
+            %% Fibres
+            Ngp = dfem.N(geo.gaussp);
+            for m = 1:geo.NumElements
+                uelem = u(:,geo.Elements(m,:));
+                gps = uelem*Ngp;
+                anull = uelem*this.dNa0(:,:,m);
+                quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'Color',[.5 .8 .5]);
+            end
+            
+            pm.done;
         end
         
         function set.UseDirectMassInversion(this, value)

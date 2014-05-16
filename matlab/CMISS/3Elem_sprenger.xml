@@ -1,0 +1,694 @@
+<?xml version="1.0"?>
+<model 
+  xmlns="http://www.cellml.org/cellml/1.0#" 
+  xmlns:cmeta="http://www.cellml.org/metadata/1.0#" 
+  cmeta:id="OneMaterial_transient_softtissue" 
+  name="OneMaterial_transient_softtissue">
+    
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+
+    <!-- metadata about the CellML document itself -->
+    <rdf:Description rdf:about="">
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/" rdf:parseType="Resource">
+        <vCard:N xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" rdf:parseType="Resource">
+          <vCard:Family>Sprenger</vCard:Family>
+          <vCard:Given>Michael</vCard:Given>
+        </vCard:N>
+        <vCard:EMAIL xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" rdf:parseType="Resource">
+          <rdf:value>o.rohrle@auckland.ac.nz</rdf:value>
+          <rdf:type rdf:resource="http://imc.org/vCard/3.0#internet"/>
+        </vCard:EMAIL>
+        <vCard:ORG xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" rdf:parseType="Resource">
+          <vCard:Orgname>The University of Stuttgart</vCard:Orgname>
+          <vCard:Orgunit>Institute of Applied Mechanics, Chair II</vCard:Orgunit>
+        </vCard:ORG>
+      </dc:creator>
+
+      <dcterms:created xmlns:dcterms="http://purl.org/dc/terms/" rdf:parseType="Resource">
+        <dcterms:W3CDTF>2012-10-19</dcterms:W3CDTF>
+      </dcterms:created>
+    </rdf:Description>
+    
+    <!-- description of the model -->
+    <rdf:Description rdf:about="#MooneyRivlin">
+      <comment xmlns="http://www.cellml.org/metadata/1.1#" rdf:parseType="Resource">
+        <rdf:value>
+          This is a CellML version of the traversely isotropic constitutive material law,
+          defining the relation between the eight independent strain components
+          and the stress components. It is assumed that the strain components
+          will be controlled externally by the application using this CellML
+          model.
+	  To obtain a transversely material description for skeletal muscle, we use as 
+	  base a isotropic constitutive law (Mooney-Rivlin) and enhance this by a passive
+	  and active component, similar to Lemos et al. (2005). The coefficients for the
+	  passive and active part are taken from Blemker et al (2005). The input for this
+	  constitutive law are the material parameters for the Mooney-Rivilin material
+	  law, c1 and c2, and the level of activation of the muscle, alpha.
+          For more details see:
+	  Lemos, RR, Rokne, J., Baranoski, G.V.G, Kawakami, Y., and Kurihara T., 2005.
+	        Modeling and simulating the deformation of human skeletal muscle based
+		on anatomy and physiology. Comp. Anim. Virtual Worlds 16:319-330.
+          Blemker, S., Pinsky, P., Delp, S., 2005. A 3d model of muscle reveals the causes
+                of nonuniform strains in the biceps brachii. Journal of Biomechanics 38 (4),
+                657-665.
+        </rdf:value>
+      </comment>
+    </rdf:Description>
+  </rdf:RDF>
+
+  <!-- Global units -->
+  <units name="strain">
+    <unit units="dimensionless"/>
+  </units>
+  <units name="stress">
+    <unit units="dimensionless"/>
+  </units>
+  <units name="pole">
+    <unit units="dimensionless"/>
+  </units>
+  <units name="curvature">
+    <unit units="dimensionless"/>
+  </units>
+  <units name="scale">
+    <unit units="dimensionless"/>
+  </units>
+
+  <component cmeta:id="interface" name="interface">
+
+    <!-- Variables we expect to be set/controlled externally -->
+    <variable name="E11" private_interface="out" units="strain"/>
+    <variable name="E22" private_interface="out" units="strain"/>
+    <variable name="E33" private_interface="out" units="strain"/>
+    <variable name="E12" private_interface="out" units="strain"/>
+    <variable name="E13" private_interface="out" units="strain"/>
+    <variable name="E23" private_interface="out" units="strain"/>
+    
+    <variable name="ithfibre" private_interface="out" units="strain"/>
+    <variable name="alpha1" private_interface="out" units="strain"/>
+    
+    <variable name="c1M" private_interface="out" units="strain"/>
+    <variable name="c2M" private_interface="out" units="strain"/>
+    <variable name="c3M" private_interface="out" units="strain"/>
+    <variable name="c4M" private_interface="out" units="strain"/>
+    
+    <!-- Variables we want to make available externally -->
+    <variable name="Tdev11" private_interface="in" public_interface="out" units="stress"/>
+    <variable name="Tdev22" private_interface="in" public_interface="out" units="stress"/>
+    <variable name="Tdev33" private_interface="in" public_interface="out" units="stress"/>
+    <variable name="Tdev12" private_interface="in" public_interface="out" units="stress"/>
+    <variable name="Tdev13" private_interface="in" public_interface="out" units="stress"/>
+    <variable name="Tdev23" private_interface="in" public_interface="out" units="stress"/>
+    
+    <variable name="Tfdev11" private_interface="in" public_interface="out" units="stress"/>
+    <variable name="Tfdev22" private_interface="in" public_interface="out" units="stress"/>
+    <variable name="Tfdev33" private_interface="in" public_interface="out" units="stress"/>
+    <variable name="Tfdev12" private_interface="in" public_interface="out" units="stress"/>
+    <variable name="Tfdev13" private_interface="in" public_interface="out" units="stress"/>
+    <variable name="Tfdev23" private_interface="in" public_interface="out" units="stress"/>
+
+  </component> <!--interface-->
+
+  <component cmeta:id="equations" name="equations">
+
+    <!-- Inputs -->
+    <variable name="E11" public_interface="in" units="strain"/>
+    <variable name="E22" public_interface="in" units="strain"/>
+    <variable name="E33" public_interface="in" units="strain"/>
+    <variable name="E12" public_interface="in" units="strain"/>
+    <variable name="E13" public_interface="in" units="strain"/>
+    <variable name="E23" public_interface="in" units="strain"/>
+
+    <variable name="ithfibre" public_interface="in" units="strain"/>
+    <variable name="alpha1"   public_interface="in" units="strain"/>
+    
+    <variable name="c1M" public_interface="in" units="strain"/>
+    <variable name="c2M" public_interface="in" units="strain"/>
+    <variable name="c3M" public_interface="in" units="strain"/>
+    <variable name="c4M" public_interface="in" units="strain"/>
+        
+    <!-- Outputs computed here -->
+    <variable name="Tdev11" public_interface="out" units="stress"/>
+    <variable name="Tdev22" public_interface="out" units="stress"/>
+    <variable name="Tdev33" public_interface="out" units="stress"/>
+    <variable name="Tdev12" public_interface="out" units="stress"/>
+    <variable name="Tdev13" public_interface="out" units="stress"/>
+    <variable name="Tdev23" public_interface="out" units="stress"/>
+    
+    <variable name="Tfdev11" public_interface="out" units="stress"/>
+    <variable name="Tfdev22" public_interface="out" units="stress"/>
+    <variable name="Tfdev33" public_interface="out" units="stress"/>
+    <variable name="Tfdev12" public_interface="out" units="stress"/>
+    <variable name="Tfdev13" public_interface="out" units="stress"/>
+    <variable name="Tfdev23" public_interface="out" units="stress"/>
+
+   <!-- Temporary variables -->
+    <variable name="malpha" private_interface="none" public_interface="none" units="strain"/>
+
+    <variable name="sigma_max" private_interface="none" public_interface="none" units="strain"/> 
+    <variable name="lambda_ofl" private_interface="none" public_interface="none" units="strain"/> 
+
+    <variable name="delta_W_limb_asc" private_interface="none" public_interface="none" units="strain"/> 
+    <variable name="nu_ce_limb_asc" private_interface="none" public_interface="none" units="strain"/> 
+    <variable name="delta_W_limb_desc" private_interface="none" public_interface="none" units="strain"/> 
+    <variable name="nu_ce_limb_desc" private_interface="none" public_interface="none" units="strain"/> 
+    
+    <variable name="c1" private_interface="none" public_interface="none" units="strain"/>
+    <variable name="c2" private_interface="none" public_interface="none" units="strain"/>
+    <variable name="c3" private_interface="none" public_interface="none" units="strain"/>
+    <variable name="c4" private_interface="none" public_interface="none" units="strain"/>
+    <variable name="lambda_nll" private_interface="none" public_interface="none" units="strain"/>
+
+    <variable name="lambda" private_interface="none" public_interface="none" units="strain"/>
+    <variable name="ffp" private_interface="none" public_interface="none" units="strain"/>
+    <variable name="ffa" private_interface="none" public_interface="none" units="strain"/>
+    <variable name="fft" private_interface="none" public_interface="none" units="strain"/>
+    <variable name="fibrestress" private_interface="none" public_interface="none" units="strain"/>    
+
+    <!-- Definition of the parameters -->
+    <!--   sigma_max   : maximum stress for active and passive part (in kPa)  -->
+    <!--   lambda_ofl  : Optimal fibre stretch at which sarcomeres reach optimal length  -->
+    <!--   lambda      : fibre stretch -->
+    <!--  -->
+    <!--  -->
+    <!--  -->
+    <!--  -->
+    <!--  -->
+    <!--  -->
+    <!--  -->
+    <!--   ffp         : normalised passive fibre force -->
+    <!--   ffa         : normalised active fibre force -->
+    <!--   fft         : normalised total fibre force = ffp + alpha*ffa -->
+    <!--   fibrestress : sigma_max * fft  -->
+    <!--   muscle      : defines whether the material is muscle of tendon -->
+    <!--                 and to which amount in between -->
+    <!--                 muscle = 1 (=muscle) -->
+    <!--                 muscle = 0 (=tendon) -->
+    <!--  soft_tissue  : defines whether the material is muscle-tendon or-->
+    <!--                 just wobbling tissue like fat,... -->
+    <!--                 soft_tissue = 1 (= soft tissue) -->
+    <!--                 soft_tissue = 0 (= muscle-tendon) -->
+    <!--  -->
+
+
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="malpha_calculation_eq">
+      <apply id="malpha_calculation"><eq/>
+        <ci>malpha</ci>
+        <piecewise>
+          <piece>
+            <ci>alpha1</ci>
+            <apply><eq/>
+              <ci>ithfibre</ci>
+              <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">1</cn>
+            </apply>
+          </piece>
+        </piecewise>
+      </apply>
+    </math>
+    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="sigma_max_calculation_eq">
+      <apply id="sigma_max_calculation"><eq/>
+        <ci>sigma_max</ci>
+        <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">0.3</cn>
+      </apply>
+    </math>
+
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="lambda_ofl_calculation_eq">
+      <apply id="lambda_ofl_calculation"><eq/>
+	      <ci>lambda_ofl</ci>
+	      <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">1.4</cn>
+      </apply>
+    </math>
+
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="c1_calculation_eq">
+      <apply id="c1_calculation"><eq/>
+	      <ci>c1</ci>
+        <ci>c1M</ci>
+      </apply>
+    </math>
+
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="c2_calculation_eq">
+      <apply id="c2_calculation"><eq/>
+	      <ci>c2</ci>
+        <ci>c2M</ci>
+      </apply>
+    </math>
+
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="c3_calculation_eq">
+      <apply id="c3_calculation"><eq/>
+	      <ci>c3</ci>
+        <ci>c3M</ci>
+      </apply>
+    </math>
+
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="c4_calculation_eq">
+      <apply id="c4_calculation"><eq/>
+	      <ci>c4</ci>
+        <ci>c4M</ci>
+      </apply>
+    </math>
+
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="lambda_nll_calculation_eq">
+      <apply id="lambda_nll_calculation">
+      <eq/>
+	      <ci>lambda_nll</ci>
+	        <apply><plus/>
+  	      <ci>lambda_ofl</ci>
+          <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">0.15</cn>
+        </apply>
+      </apply>
+    </math>
+
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="delta_W_limb_asc_calculation_eq">
+      <apply id="delta_W_limb_asc_calculation"><eq/>
+        <ci>delta_W_limb_asc</ci>
+        <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">0.25</cn>
+      </apply>
+    </math>
+
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="nu_ce_limb_asc_calculation_eq">
+      <apply id="nu_ce_limb_asc_calculation"><eq/>
+        <ci>nu_ce_limb_asc</ci>
+        <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">3.0</cn>
+      </apply>
+    </math>
+   
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="delta_W_limb_desc_calculation_eq">
+      <apply id="delta_W_limb_desc_calculation"><eq/>
+        <ci>delta_W_limb_desc</ci>
+        <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">0.12</cn>
+      </apply>
+    </math>
+
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="nu_ce_limb_desc_calculation_eq">
+      <apply id="nu_ce_limb_desc_calculation"><eq/>
+        <ci>nu_ce_limb_desc</ci>
+        <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">4.0</cn>
+      </apply>
+    </math>
+    
+   <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="lambda_calculation_eq">
+      <apply id="lambda_calculation"><eq/>
+        <ci>lambda</ci>
+	      <ci>E11</ci>
+<!-- lambda = sqrt(2*E11 +1) is Olivers procedure
+     lambda = E11 is Yikuns procedure...  --> 
+<!--    <apply><root/>
+	        <apply><plus/>
+	          <apply><times/>
+	            <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">2.0</cn>
+	            <ci>E11</ci>
+	          </apply>
+	          <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">1.0</cn> 
+	        </apply>
+	      </apply>  --> 
+      </apply>
+    </math>
+
+<!-- FFP --> 
+  
+<!-- FFP-->   
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="ffp_calculation_eq">
+      <apply id="ffp_calculation"><eq/>
+        <ci>ffp</ci>
+        <piecewise>
+          <piece>
+            <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">0.</cn>
+            <apply><leq/>
+              <ci>lambda</ci>
+              <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">1.</cn>
+            </apply>
+          </piece>
+          <piece>
+            <apply><times/>
+              <ci>c3M</ci>
+              <apply><minus/>
+                <apply><power/>
+                  <ci>lambda</ci>
+                  <ci>c4M</ci>
+                </apply>
+                <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">1</cn>
+              </apply>
+            </apply>
+            <apply><lt/>
+              <ci>lambda</ci>
+              <ci>lambda_nll</ci>
+            </apply>
+          </piece>
+          <piece>
+            <apply><plus/>
+              <apply><times/>
+                <ci>c3M</ci>
+                <apply><minus/>
+                  <apply><power/>
+                    <ci>lambda_nll</ci>
+                    <ci>c4M</ci>
+                  </apply>
+                  <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">1</cn>
+                </apply>
+              </apply>
+              <apply><times/>
+                <ci>c3M</ci>
+                <ci>c4M</ci>
+                <apply><power/>
+                  <ci>lambda_nll</ci>
+                  <apply><minus/>
+                    <ci>c4M</ci>
+                    <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">1</cn>
+                  </apply>
+                </apply>
+                <apply><minus/>
+                  <ci>lambda</ci>
+                  <ci>lambda_nll</ci>
+                </apply>
+              </apply>
+            </apply>
+            <apply><geq/>
+              <ci>lambda</ci>
+              <ci>lambda_nll</ci>
+            </apply>
+          </piece>
+        </piecewise>
+      </apply>
+    </math>
+   
+<!-- FFA -->    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="ffa_calculation_eq">
+      <apply id="ffa_calculation"><eq/>
+        <ci>ffa</ci>
+        <piecewise>
+          <piece>
+            <apply><exp/>
+              <apply><minus/>
+                <apply><power/>
+                  <apply><abs/>
+                    <apply><divide/>
+                      <apply><minus/>
+                        <apply><divide/>
+                          <ci>lambda</ci>
+                          <ci>lambda_ofl</ci>
+                        </apply>
+                        <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">1</cn>
+                      </apply>
+                      <ci>delta_W_limb_asc</ci>
+                    </apply>
+                  </apply>
+                  <ci>nu_ce_limb_asc</ci>
+                </apply>
+              </apply>
+            </apply>
+            <apply><leq/>
+              <ci>lambda</ci>
+              <ci>lambda_ofl</ci>
+            </apply>
+          </piece>
+          <piece>
+            <apply><exp/>
+              <apply><minus/>
+                <apply><power/>
+                  <apply><abs/>
+                    <apply><divide/>
+                      <apply><minus/>
+                        <apply><divide/>
+                          <ci>lambda</ci>
+                          <ci>lambda_ofl</ci>
+                        </apply>
+                        <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">1</cn>
+                      </apply>
+                      <ci>delta_W_limb_desc</ci>
+                    </apply>
+                  </apply>
+                  <ci>nu_ce_limb_desc</ci>
+                </apply>
+              </apply>
+            </apply>
+            <apply><gt/>
+              <ci>lambda</ci>
+              <ci>lambda_ofl</ci>
+            </apply>
+          </piece>
+        </piecewise>
+      </apply>
+    </math>
+
+
+<!-- FFT -->   
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="fft_calculation_eq">
+      <apply id="fft_calculation"><eq/>
+        <ci>fft</ci>
+        <apply><plus/>
+         <ci>ffp</ci>
+          <apply><times/>
+            <ci>malpha</ci>
+            <ci>sigma_max</ci>
+            <ci>ffa</ci>	  
+          </apply>
+      	</apply>
+      </apply>
+    </math>
+    
+
+<!-- FIBRESTRESS -->   
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="fibrestress_calculation_eq">
+      <apply id="fibrestress_calculation"><eq/>
+        <ci>fibrestress</ci>
+        <apply><divide/>
+          <apply><times/>
+            <ci>fft</ci>
+            <ci>lambda</ci>
+          </apply>
+          <ci>lambda_ofl</ci>
+        </apply>  
+        <!--	<cn cellml:units="strain">0.0</cn> -->
+      </apply>
+    </math>
+
+    
+    <!-- CALCULATION OF THE 2nd PKST -->
+
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="Tdev11_calculation_eq">
+      <apply id="Tdev11_calculation"><eq/>
+        <ci>Tdev11</ci>
+        <apply><times/>
+          <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">2</cn>
+          <apply><plus/>
+            <apply><times/>
+              <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">2</cn>
+              <ci>c1</ci>
+            </apply>
+            <apply><times/>
+              <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">4</cn>
+              <ci>c2</ci>
+              <apply><plus/>
+                <ci>E22</ci>
+                <ci>E33</ci>
+              </apply>
+            </apply>
+            <apply><times/>
+              <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">4</cn>
+              <ci>c2</ci>
+            </apply>
+            <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">0</cn>
+          </apply>
+        </apply>
+      </apply>
+    </math>
+
+
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="Tdev22_calculation_eq">
+      <apply id="Tdev22_calculation"><eq/>
+        <ci>Tdev22</ci>
+        <apply><times/>
+          <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">2</cn>
+          <apply><plus/>
+            <apply><times/>
+              <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">2</cn>
+              <ci>c1</ci>
+            </apply>
+            <apply><times/>
+              <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">4</cn>
+              <ci>c2</ci>
+              <apply><plus/>
+                <ci>E11</ci>
+                <ci>E33</ci>
+              </apply>
+            </apply>
+            <apply><times/>
+              <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">4</cn>
+              <ci>c2</ci>
+            </apply>
+          </apply>
+        </apply>
+      </apply>
+    </math>
+    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="Tdev33_calculation_eq">
+      <apply id="Tdev33_calculation"><eq/>
+        <ci>Tdev33</ci>
+        <apply><times/>
+          <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">2</cn>
+          <apply><plus/>
+            <apply><times/>
+              <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">2</cn>
+              <ci>c1</ci>
+            </apply>
+            <apply><times/>
+              <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">4</cn>
+              <ci>c2</ci>
+              <apply><plus/>
+                <ci>E11</ci>
+                <ci>E22</ci>
+              </apply>
+            </apply>
+            <apply><times/>
+              <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">4</cn>
+              <ci>c2</ci>
+            </apply>
+          </apply>
+        </apply>
+      </apply>
+    </math>
+
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="Tdev12_calculation_eq">
+      <apply id="Tdev12_calculation"><eq/>
+        <ci>Tdev12</ci>
+        <apply><times/>
+          <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">2</cn>
+          <apply><minus/>
+            <apply><times/>
+              <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">4</cn>
+              <ci>E12</ci>
+              <ci>c2</ci>
+            </apply>
+          </apply>
+        </apply>
+      </apply>
+    </math>
+    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="Tdev13_calculation_eq">
+      <apply id="Tdev13_calculation"><eq/>
+        <ci>Tdev13</ci>
+        <apply><times/>
+          <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">2</cn>
+          <apply><minus/>
+            <apply><times/>
+              <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">4</cn>
+              <ci>E13</ci>
+              <ci>c2</ci>
+            </apply>
+          </apply>
+        </apply>
+      </apply>
+    </math>
+    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="Tdev23_calculation_eq">
+      <apply id="Tdev23_calculation"><eq/>
+        <ci>Tdev23</ci>
+        <apply><times/>
+          <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">2</cn>
+          <apply><minus/>
+            <apply><times/>
+              <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">4</cn>
+              <ci>E23</ci>
+              <ci>c2</ci>
+            </apply>
+          </apply>
+        </apply>
+      </apply>
+    </math>
+    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="Tfdev11_calculation_eq">
+      <apply id="Tfdev11_calculation"><eq/>
+        <ci>Tfdev11</ci>
+        <apply><times/>
+          <apply><divide/>
+            <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">1</cn>
+            <apply><power/>
+              <ci>lambda</ci><cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">2</cn>
+            </apply>
+          </apply>
+          <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">2</cn>
+          <ci>fibrestress</ci>
+        </apply>
+      </apply>
+    </math>
+    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="Tfdev22_calculation_eq">
+	    <apply id="Tfdev22_calculation"><eq/>
+		    <ci>Tfdev22</ci>
+		    <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">0.0</cn>
+	    </apply>
+    </math>
+    
+    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="Tfdev33_calculation_eq">
+	    <apply id="Tfdev33_calculation"><eq/>
+		    <ci>Tfdev33</ci>
+		    <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">0.0</cn>
+	    </apply>
+    </math>
+    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="Tfdev12_calculation_eq">
+	    <apply id="Tfdev12_calculation"><eq/>
+		    <ci>Tfdev12</ci>
+		    <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">0.0</cn>
+	    </apply>
+    </math>
+    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="Tfdev13_calculation_eq">
+	    <apply id="Tfdev13_calculation"><eq/>
+		    <ci>Tfdev13</ci>
+		    <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">0.0</cn>
+	    </apply>
+    </math>
+    
+    <math xmlns="http://www.w3.org/1998/Math/MathML" cmeta:id="Tfdev23_calculation_eq">
+	    <apply id="Tfdev23_calculation"><eq/>
+		    <ci>Tfdev23</ci>
+		    <cn xmlns:cellml="http://www.cellml.org/cellml/1.0#" cellml:units="strain">0.0</cn>
+	    </apply>
+    </math>
+
+  </component><!--membrane-->
+
+  <connection>
+    <map_components component_1="interface" component_2="equations"/>
+    <map_variables variable_1="E11" variable_2="E11"/>
+    <map_variables variable_1="E22" variable_2="E22"/>
+    <map_variables variable_1="E33" variable_2="E33"/>
+    <map_variables variable_1="E12" variable_2="E12"/>
+    <map_variables variable_1="E13" variable_2="E13"/>
+    <map_variables variable_1="E23" variable_2="E23"/>
+    <map_variables variable_1="ithfibre" variable_2="ithfibre"/>
+    
+<!--    <map_variables variable_1="malpha" variable_2="malpha"/> -->
+    <map_variables variable_1="alpha1" variable_2="alpha1"/>
+   
+    <map_variables variable_1="c1M" variable_2="c1M"/>
+    <map_variables variable_1="c2M" variable_2="c2M"/>
+    <map_variables variable_1="c3M" variable_2="c3M"/>
+    <map_variables variable_1="c4M" variable_2="c4M"/>
+
+    <map_variables variable_1="Tdev11" variable_2="Tdev11"/>
+    <map_variables variable_1="Tdev22" variable_2="Tdev22"/>
+    <map_variables variable_1="Tdev33" variable_2="Tdev33"/>
+    <map_variables variable_1="Tdev12" variable_2="Tdev12"/>
+    <map_variables variable_1="Tdev13" variable_2="Tdev13"/>
+    <map_variables variable_1="Tdev23" variable_2="Tdev23"/>
+
+    <map_variables variable_1="Tfdev11" variable_2="Tfdev11"/>
+    <map_variables variable_1="Tfdev22" variable_2="Tfdev22"/>
+    <map_variables variable_1="Tfdev33" variable_2="Tfdev33"/>
+    <map_variables variable_1="Tfdev12" variable_2="Tfdev12"/>
+    <map_variables variable_1="Tfdev13" variable_2="Tfdev13"/>
+    <map_variables variable_1="Tfdev23" variable_2="Tfdev23"/>
+       
+  </connection>
+  
+  <group>
+    <relationship_ref relationship="encapsulation"/>
+    <component_ref component="interface">
+      <component_ref component="equations"/>
+    </component_ref>
+  </group>
+
+</model>

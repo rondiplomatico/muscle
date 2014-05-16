@@ -1,4 +1,6 @@
 classdef Dynamics < dscomponents.ACompEvalCoreFun
+    % This class implements the nonlinear continuum mechanics as described
+    % in @cite Heidlauf2013 .
     
     properties
        c10 = 6.352e-10; % [kPa]
@@ -11,7 +13,36 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
        lambdafopt = 1.2; % [-]
        
        % The activation of the muscle
-       alpha = .1; % [-]
+       alpha = 0; % [-]
+       
+       % The force-length function as function handle
+       %
+       % This function describes the force-length relation for active
+       % force.
+       %
+       % The alternative function using gaussian-type shapes is from
+       % @cite Guenther2007
+       %
+       % @type function_handle @default Quadratic like in @cite
+       % Heidlauf2013
+       ForceLengthFun = @(ratio)(-6.25*ratio.*ratio + 12.5*ratio - 5.25) .* (ratio >= .6) .* (ratio <= 1.4);
+       % Alternative
+       % ForceLengthFun = @(ratio)(ratio<=1).*exp(-((1-ratio)/.57).^4) + (ratio>1).*exp(-((ratio-1)/.14).^3);
+       
+       % The derivative of the force-length function as function handle
+       %
+       % This function describes the derivative of the force-length
+       % relation for active force.
+       %
+       % The alternative function using gaussian-type shapes is from
+       % @cite Guenther2007
+       %
+       % @type function_handle @default Quadratic like in @cite
+       % Heidlauf2013
+       ForceLengthFunDeriv = @(ratio)(12.5*ratio.*(1-ratio)) .* (ratio >= .6) .* (ratio <= 1.4);
+       % Alternative
+       % ForceLengthFunDeriv = @(ratio)(ratio<=1).*((1/.57)*(((1-ratio)/.57).^3).*exp(-((1-ratio)/.57).^4)) ...
+       % - (ratio > 1) .* ((1/.14) .* (((ratio-1)/.14).^2) .* exp(-((ratio-1)/.14).^3));
     end
     
     properties(SetAccess=private)

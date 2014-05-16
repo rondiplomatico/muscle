@@ -84,11 +84,8 @@ function J = getStateJacobian(this, uvwdof, t)
                 lambdaf = sqrt(lambdafsq);
 
                 ratio = lambdaf/lfopt;
-                fl = 0; dfl = 0;
-                if (ratio >= .6) || (ratio <= 1.4)
-                    fl = (-6.25*ratio*ratio + 12.5*ratio - 5.25);
-                    dfl = 12.5*ratio*(1-ratio);
-                end
+                fl = this.ForceLengthFun(ratio);
+                dfl = this.ForceLengthFunDeriv(ratio);
                 if havefibretypes 
                     alpha = ftwelem(gp);
                 else
