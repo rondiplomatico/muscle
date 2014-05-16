@@ -203,35 +203,16 @@ classdef BaseGeometry < handle
     end
     
     methods(Static)
-        function [pts, cubes] = DemoCubeGrid(xr,yr,zr)
-            if nargin < 3
-                zr = -1:1;
-                if nargin < 2
-                    yr = -1:1;
-                    if nargin < 1
-                        xr = -1:1;
-                    end
-                end
-            end
-            % Generate regular grid
-            [X,Y,Z] = ndgrid(xr,yr,zr);
-            pts = [X(:) Y(:) Z(:)]';
-            
-            cubes = double.empty(0,8);
-            for i = 1:size(X,1)-1
-                for j = 1:size(X,2)-1
-                    for k = 1:size(X,3)-1
-                        hx = X([i i+1],[j j+1],[k k+1]);
-                        hy = Y([i i+1],[j j+1],[k k+1]);
-                        hz = Z([i i+1],[j j+1],[k k+1]);
-                        cubes(end+1,:) = Utils.findVecInMatrix(pts,[hx(:) hy(:) hz(:)]');%#ok
-                    end
-                end
-            end
-            
-            % Slightly deviate the grid
-%             s = RandStream('mt19937ar','Seed',1);
-%             pts = pts + s.rand(size(pts))*.1;
+        function res = test_DemoGrids
+            geometry.Cube8Node.DemoGrid(1:3);
+            geometry.Cube8Node.DemoGrid(1:3,1:4);
+            geometry.Cube8Node.DemoGrid(1:3,1:4,-1:3);
+            geometry.Cube8Node.DemoGrid(1:3,1:4,-1:3,.2);
+            geometry.Cube20Node.DemoGrid(1:2);
+            geometry.Cube20Node.DemoGrid(1:2,0:2);
+            geometry.Cube20Node.DemoGrid(-1:1,1:3,-1:1);
+            geometry.Cube20Node.DemoGrid(-1:1,1:2,-1:1,.2);
+            res = true;
         end
     end
     

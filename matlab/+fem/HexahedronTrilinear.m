@@ -1,23 +1,18 @@
-classdef trilinear < fembase
-    %TRILINEAR Summary of this class goes here
-    %   Detailed explanation goes here
-    %
+classdef HexahedronTrilinear < fem.BaseFEM
+    % HexahedronTrilinear: Base class for linear ansatz functions on
+    % hexahedral geometry (8-Point elements)
     
     methods
-        function this = trilinear(geo)
+        function this = HexahedronTrilinear(geo)
             if nargin < 1
                 geo = geometry.Cube8Node;
             end
-            
-            this = this@fembase(geo);
-            
+            this = this@fem.BaseFEM(geo);
             %this.EdgeIndices = 1:8;
-            this.init;
         end
-        
-        function init(this)
-            % Trilinear basis functions
-            this.N = @(x)[   (1-x(1,:)).*(1-x(2,:)).*(1-x(3,:));... % 1
+    
+        function Nx = N(~, x)
+            Nx = [(1-x(1,:)).*(1-x(2,:)).*(1-x(3,:));... % 1
                 (1+x(1,:)).*(1-x(2,:)).*(1-x(3,:));...
                 (1-x(1,:)).*(1+x(2,:)).*(1-x(3,:));... % 3
                 (1+x(1,:)).*(1+x(2,:)).*(1-x(3,:));...
@@ -25,8 +20,10 @@ classdef trilinear < fembase
                 (1+x(1,:)).*(1-x(2,:)).*(1+x(3,:));...
                 (1-x(1,:)).*(1+x(2,:)).*(1+x(3,:));... % 7
                 (1+x(1,:)).*(1+x(2,:)).*(1+x(3,:));]/8;
-            
-            this.gradN = @(x)[-(1-x(2,:)).*(1-x(3,:)) -(1-x(1,:)).*(1-x(3,:)) -(1-x(1,:)).*(1-x(2,:));... % 1
+        end
+        
+        function dNx = gradN(~, x)
+            dNx = [-(1-x(2,:)).*(1-x(3,:)) -(1-x(1,:)).*(1-x(3,:)) -(1-x(1,:)).*(1-x(2,:));... % 1
                 (1-x(2,:)).*(1-x(3,:)) -(1+x(1,:)).*(1-x(3,:)) -(1+x(1,:)).*(1-x(2,:));...
                 -(1+x(2,:)).*(1-x(3,:)) (1-x(1,:)).*(1-x(3,:)) -(1-x(1,:)).*(1+x(2,:));... % 3
                 (1+x(2,:)).*(1-x(3,:))  (1+x(1,:)).*(1-x(3,:)) -(1+x(1,:)).*(1+x(2,:));...
@@ -34,15 +31,13 @@ classdef trilinear < fembase
                 (1-x(2,:)).*(1+x(3,:)) -(1+x(1,:)).*(1+x(3,:)) (1+x(1,:)).*(1-x(2,:));...
                 -(1+x(2,:)).*(1+x(3,:)) (1-x(1,:)).*(1+x(3,:)) (1-x(1,:)).*(1+x(2,:));... % 7
                 (1+x(2,:)).*(1+x(3,:))  (1+x(1,:)).*(1+x(3,:)) (1+x(1,:)).*(1+x(2,:))]/8;
-            
-            init@fembase(this);
         end
     end
     
     methods(Static)
         function res = test_TrilinearBasisFun
-            q = trilinear;
-            res = fembase.test_BasisFun(q);
+            q = fem.HexahedronTrilinear;
+            res = fem.BaseFEM.test_BasisFun(q);
             
             % test for correct basis function values on nodes
             [X,Y,Z] = ndgrid(-1:2:1,-1:2:1,-1:2:1);

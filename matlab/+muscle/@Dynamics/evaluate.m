@@ -15,7 +15,7 @@ function duvw = evaluate(this, uvwdof, t)
     d1 = this.d1;
     lfopt = this.lambdafopt;
     Pmax = this.Pmax;
-    alphaconst = this.alpha; %#ok<*PROP>
+    alphaconst = min(1,t/this.fullActivationTime)*this.alpha;
     havefibres = sys.HasFibres;
     havefibretypes = havefibres && ~isempty(mc.FibreTypeWeights);
     
@@ -26,7 +26,7 @@ function duvw = evaluate(this, uvwdof, t)
         forceargs = [this.muprep; t*ones(1,size(this.muprep,2))];
         % This is the learned 
 %         FibreForces = this.APExp.evaluate(forceargs)';
-        FibreForces = alphaconst*min(1,.1*t*ones(size(this.muprep,2),1));
+        FibreForces = alphaconst*ones(size(this.muprep,2),1);
     end
 
     % Include dirichlet values to state vector
@@ -125,7 +125,7 @@ function duvw = evaluate(this, uvwdof, t)
     duvw(sys.bc_dir_idx) = [];
 
     %% If direct mass matrix inversion is used
-    if sys.UseDirectMassInversion
+    if this.usemassinv
         duvw(sys.dof_idx_velo) = sys.Minv * duvw(sys.dof_idx_velo);
     end
 end

@@ -1,16 +1,12 @@
-classdef fembase < handle
+classdef BaseFEM < handle
     %FEMBASE Summary of this class goes here
     %   Detailed explanation goes here
     
     properties
         Geometry;
         
-        N;
-        
         % Values of basis functions on gauss points
         Ngp;
-        
-        gradN;
         
         % The mass matrix
         M;
@@ -27,8 +23,9 @@ classdef fembase < handle
     end
         
     methods
-        function this = fembase(geometry)
+        function this = BaseFEM(geometry)
             this.Geometry = geometry;
+            this.init;
         end
         
         function init(this)
@@ -165,6 +162,33 @@ classdef fembase < handle
         end
     end
     
+    methods(Abstract)
+        % Evaluates the elementary basis functions on the geometry master
+        % element
+        %
+        % Parameters:
+        % x: A 3xn matrix with points `x_i` in columns @type matrix<double>
+        %
+        % Return values:
+        % nx: The values `N_i(x_j)` of each elementary basis function `N_i` per
+        % row on all given points `x_i` @type matrix<double>
+        nx = N(this, x);
+        
+        % Evaluates the gradients of the elementary basis functions on the
+        % master element
+        %
+        % Parameters:
+        % x: A 3xn matrix with points `x_i` in columns @type matrix<double>
+        %
+        % Return values:
+        % nx: The values `[\frac{\partial N}{x_1} N_i(x_j), \frac{\partial
+        % N}{x_3} N_i(x_j), \frac{\partial N}{x_3} N_i(x_j)]` of each
+        % elementary basis function `N_i` per row on all given points
+        % `x_j`. If `x` is only a 3x1 column vector, this corresponds to
+        % `\nabla N_i(x)` @type matrix<double>
+        dnx = gradN(this, x);
+    end
+    
     methods(Static,Access=protected)
         function res = test_BasisFun(subclass)
             h = 1e-8;
@@ -187,8 +211,8 @@ classdef fembase < handle
             for k = 1:length(ranges)
                 [pts, cubes] = geometry.Cube8Node.DemoGrid(ranges{k},ranges{k});
                 g = geometry.Cube8Node(pts, cubes);
-                tl = trilinear(g);
-                tq = triquadratic(g.toCube20);
+                tl = fem.HexahedronTrilinear(g);
+                tq = fem.HexahedronTriquadratic(g.toCube20);
                 res = res && norm(tl.elem_detjac-tq.elem_detjac,'inf') < 1e-14;
             end
         end

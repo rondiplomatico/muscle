@@ -1,15 +1,17 @@
 classdef Cube20Node < geometry.BaseGeometry
-%% Cube indexing:
+% Hexahedral geometry with 20 position nodes on each basic hexahedron/cube.
+%
+% Cube indexing on [-1, 1]³:
 %
 %           18---19---20 
 %          / |       / |
-%        /   |     /   |        Z+
-%       /    16   /    17       |     Y+
-%      6----7+---8     |        |    /
+%        16  |    17  |        Z+
+%       /    11   /    12       |     Y+
+%      13--14+---15    |        |    /
 %      |     |   |     |        |   /
-%      |     6--+7---8       |  /
+%      |     6---+7----8        |  /
 %      |    /    |    /         | / 
-%      4   4     5  5          |/
+%      9   4    10   5          |/
 %      | /       | /            +---------X+
 %      |/        |/
 %      1----2----3 
@@ -99,16 +101,21 @@ classdef Cube20Node < geometry.BaseGeometry
     
     methods(Static)
         function [pts, cubes] = DemoGrid(varargin)
-            [pts, cubes] = geometry.Cube8Node.DemoGrid(varargin{:});
-            
-            % Slightly deviate the grid
-%             s = RandStream('mt19937ar','Seed',1);
-%             pts = pts + s.rand(size(pts))*.1;
-
+            devperc = 0;
+            if length(varargin) > 3
+                devperc = varargin{4};
+            end
+            [pts, cubes] = geometry.Cube8Node.DemoGrid(varargin{1:min(length(varargin),3)});
             g8 = geometry.Cube8Node(pts, cubes);
             g20 = g8.toCube20Node;
             pts = g20.Nodes;
             cubes = g20.Elements;
+            
+            % Slightly deviate the grid
+            if devperc > 0
+                s = RandStream('mt19937ar','Seed',1);
+                pts = pts + s.rand(size(pts))*devperc;
+            end
         end
     end
     

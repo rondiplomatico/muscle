@@ -58,19 +58,6 @@ classdef System < models.BaseDynSystem
        dof_idx_displ;
        dof_idx_velo;
        
-       % Flag to invert the velocity mass matrix before simulations.
-       %
-       % If this is set to true, the mass matrix for the velocity part will
-       % be assembled, the boundary condition rows removed and the inverse
-       % of the remaining matrix will be pre-computed.
-       % This inverse will be pre-multiplied to the velocity-dofs inside
-       % the muscle.Dynamics evaluate and getStateJacobian functions.
-       %
-       % This in general results in higher simulation speed but it remains
-       % open to see how well reduced modeling will work with that scheme.
-       %
-       % @type logical @default false
-       UseDirectMassInversion = false;
        Minv;
        
        % Fibre stuff
@@ -83,6 +70,26 @@ classdef System < models.BaseDynSystem
     
     properties(Transient, SetAccess=private)
         LastRunBCResiduals;
+    end
+    
+    properties(Dependent)
+       % Flag to invert the velocity mass matrix before simulations.
+       %
+       % If this is set to true, the mass matrix for the velocity part will
+       % be assembled, the boundary condition rows removed and the inverse
+       % of the remaining matrix will be pre-computed.
+       % This inverse will be pre-multiplied to the velocity-dofs inside
+       % the muscle.Dynamics evaluate and getStateJacobian functions.
+       %
+       % This in general results in higher simulation speed but it remains
+       % open to see how well reduced modeling will work with that scheme.
+       %
+       % @type logical @default false
+       UseDirectMassInversion;
+    end
+    
+    properties(SetAccess=private)
+        fUseDirectMassInversion = false;
     end
     
     methods
@@ -117,13 +124,16 @@ classdef System < models.BaseDynSystem
             %% Construct B matrix
             % Collect neumann forces
             [B, this.bc_neum_forces_nodeidx] = this.getSpatialExternalForces;
-            this.bc_neum_forces_val = B(this.bc_neum_forces_nodeidx + g.NumNodes * 3);
-            % Remove dirichlet DoFs
-            B(this.bc_dir_idx) = [];
-            % Set as constant input conversion matrix
-            this.B = dscomponents.LinearInputConv(B);
-            % Set constant input function
-            this.Inputs{1} = @(t)1;
+            % Only set up forces if present
+            if ~isempty(this.bc_neum_forces_nodeidx)
+                this.bc_neum_forces_val = B(this.bc_neum_forces_nodeidx + g.NumNodes * 3);
+                % Remove dirichlet DoFs
+                B(this.bc_dir_idx) = [];
+                % Set as constant input conversion matrix
+                this.B = dscomponents.LinearInputConv(B);
+                % Set constant input function
+                this.Inputs{1} = @(t)1;
+            end
             
             % Init fibre directions and precomputable values
             this.inita0;
@@ -356,6 +366,20 @@ classdef System < models.BaseDynSystem
             x0 = this.x0.evaluate([]);
             diff = repmat(x0,1,length(t)) + (uvw1-uvw2)*fac;
             pm = this.plot(t,diff,varargin{:});
+        end
+        
+        function set.UseDirectMassInversion(this, value)
+            if ~islogical(value) || ~isscalar(value)
+                error('UseDirectMassInversion must be true or false');
+            end
+            if this.fUseDirectMassInversion ~= value
+                this.fUseDirectMassInversion = value;
+                this.configUpdated;
+            end
+        end
+        
+        function value = get.UseDirectMassInversion(this)
+            value = this.fUseDirectMassInversion;
         end
     end
     

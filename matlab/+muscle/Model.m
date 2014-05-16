@@ -108,11 +108,33 @@ classdef Model < models.BaseFullModel
         function test_ModelVersions
             % @TODO
             %
-            % with direct inversion
-            % with viscosity
-            % with fibres
             % deformed reference geom
             % dirichlet nodes with not all 3 directions fixed, plotting
+            
+            
+            m = muscle.Model(muscle.DebugConfig);
+            mu = m.getRandomParam;
+            [t,y] = m.simulate(mu);
+            m.System.UseDirectMassInversion = true;
+            [t,y] = m.simulate(mu);
+            
+            % Version with "constant" fibre activation forces
+            m = muscle.Model(muscle.DebugConfig(2));
+            [t,y] = m.simulate(mu);
+            m.System.UseDirectMassInversion = true;
+            [t,y] = m.simulate(mu);
+            
+            % Version with "neurophysiological" fibre activation forces
+            m = muscle.Model(muscle.DebugConfig(3));
+            [t,y] = m.simulate(mu);
+            m.System.UseDirectMassInversion = true;
+            [t,y] = m.simulate(mu);
+            m.System.UseDirectMassInversion = false;
+            f = m.System.f;
+            f.Viscosity = 1;
+            [t,y] = m.simulate(mu);
+            m.System.UseDirectMassInversion = true;
+            [t,y] = m.simulate(mu);
         end
     end
     

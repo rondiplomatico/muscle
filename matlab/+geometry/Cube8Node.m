@@ -67,13 +67,16 @@ classdef Cube8Node < geometry.BaseGeometry
     end
     
     methods(Static)
-        function [pts, cubes] = DemoGrid(xr,yr,zr)
-            if nargin < 3
-                zr = -1:1;
-                if nargin < 2
-                    yr = -1:1;
-                    if nargin < 1
-                        xr = -1:1;
+        function [pts, cubes] = DemoGrid(xr,yr,zr,devperc)
+            if nargin < 4
+                devperc = 0;
+                if nargin < 3
+                    zr = -1:1;
+                    if nargin < 2
+                        yr = -1:1;
+                        if nargin < 1
+                            xr = -1:1;
+                        end
                     end
                 end
             end
@@ -94,8 +97,10 @@ classdef Cube8Node < geometry.BaseGeometry
             end
             
             % Slightly deviate the grid
-%             s = RandStream('mt19937ar','Seed',1);
-%             pts = pts + s.rand(size(pts))*.1;
+            if devperc > 0
+                s = RandStream('mt19937ar','Seed',1);
+                pts = pts + s.rand(size(pts))*devperc;
+            end
         end
     end
     

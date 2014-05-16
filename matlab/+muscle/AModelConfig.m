@@ -1,6 +1,5 @@
 classdef AModelConfig < handle
-    %MODELCONFIG Summary of this class goes here
-    %   Detailed explanation goes here
+    %AModelConfig
     
     properties(SetAccess=private)
         PosFE;
@@ -31,8 +30,8 @@ classdef AModelConfig < handle
             if ~isa(pos_geo,'geometry.Cube20Node') || ~isa(press_geo,'geometry.Cube8Node')
                 error('Scenario not yet implemented.');
             end
-            this.PosFE = triquadratic(pos_geo);
-            this.PressFE = trilinear(press_geo);
+            this.PosFE = fem.HexahedronTriquadratic(pos_geo);
+            this.PressFE = fem.HexahedronTrilinear(press_geo);
         end
         
         function configureModel(this, model)

@@ -16,6 +16,11 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     
     properties(SetAccess=private)
         APExp;
+        
+        % The fraction of the total simulation time T, over which the
+        % activation is linearly increased from 0 to the actually set alpha
+        % value. This is included for stability.
+        rampFraction = 0.1;
     end
     
     properties(Transient, SetAccess=private)
@@ -23,6 +28,20 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         muprep;
         
         LastBCResiduals;
+        
+        % Automatically computed factor for current "constant alpha"
+        % activation value.
+        %
+        % Corresponds to rampFraction*T for each simulation, so that
+        % `alpha(t) = alpha * t/fullActivationTime` increases linearly in
+        % `[0 alpha]` over `[0 fullActivationTime]`.
+        fullActivationTime;
+    end
+    
+    properties(Transient, Access=private)
+        % Cached quantity from this.System.UseDirectMassInversion for
+        % faster evaluation of dynamics.
+        usemassinv;
     end
     
     properties(Dependent)
@@ -66,6 +85,9 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             if ~isempty(mc.FibreTypes)
                 this.muprep = [mc.FibreTypes; ones(size(mc.FibreTypes))*mu];
             end
+            
+            this.fullActivationTime = this.rampFraction*this.System.Model.scaledTimes(end);
+            this.usemassinv = this.System.UseDirectMassInversion;
         end
         
         function evaluateCoreFun(varargin)

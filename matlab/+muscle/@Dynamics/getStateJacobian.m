@@ -14,7 +14,7 @@ function J = getStateJacobian(this, uvwdof, t)
     d1 = this.d1;
     lfopt = this.lambdafopt;
     Pmax = this.Pmax;
-    alphaconst = this.alpha;
+    alphaconst = min(1,t/this.fullActivationTime)*this.alpha;
     havefibres = sys.HasFibres;
     havefibretypes = havefibres && ~isempty(mc.FibreTypeWeights);
     
@@ -24,7 +24,7 @@ function J = getStateJacobian(this, uvwdof, t)
         forceargs = [this.muprep; t*ones(1,size(this.muprep,2))];
         % This is the learned 
 %         FibreForces = this.APExp.evaluate(forceargs)';
-        FibreForces = min(1,.1*t*ones(size(this.muprep,2),1));
+        FibreForces = alphaconst*ones(size(this.muprep,2),1);
     end
 
     %% -I part in u'(t) = -v(t)
@@ -209,7 +209,7 @@ function J = getStateJacobian(this, uvwdof, t)
     J(:,sys.bc_dir_idx) = [];
     J(sys.bc_dir_idx,:) = [];
 
-    if sys.UseDirectMassInversion
+    if this.usemassinv
         % Multiply with inverse of Mass matrix!
         J(sys.dof_idx_velo,:) = sys.Minv*J(sys.dof_idx_velo,:);
     end

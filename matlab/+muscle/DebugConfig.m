@@ -42,7 +42,13 @@ classdef DebugConfig < muscle.AModelConfig
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             %% Dirichlet conditions: Position (fix one side)
             geo = this.PosFE.Geometry;
-            displ_dir(:,geo.Elements(1,[6:8 11 12 18:20])) = true;
+            %displ_dir(:,geo.Elements(1,[6:8 11 12 18:20])) = true;
+            
+            % Fix left nodes completely
+            displ_dir(:,geo.Elements(1,[6 7 11 18 19])) = true;
+            
+            % Only fix the right back corner nodes in yz-direction
+            displ_dir([2 3],geo.Elements(1,[8 12 20])) = true;
         end
         
         function anull = seta0(this, anull)
