@@ -3,7 +3,8 @@ classdef Model < models.BaseFullModel
     %
     % The global time unit for this model is milliseconds [ms] and the
     % spatial quantities are in [mm].
-    % This results in pressure values of [kPa].
+    % This results in pressure values of [kPa] and the forces K(u,v,w) are
+    % measured in [mN] (milliNewton).
     %
     % @author Daniel Wirtz @date 2012-11-22
     
@@ -90,7 +91,7 @@ classdef Model < models.BaseFullModel
                 dyall(sys.dof_idx_global,:) = dy;
                 % Select nodes that are exposed to neumann conditions (the
                 % index is in global positions and not effective DoFs)
-                residuals_neumann(:,k) = dyall(pos_dofs+sys.bc_neum_forces_nodeidx);
+                residuals_neumann(:,k) = -dyall(pos_dofs+sys.bc_neum_forces_nodeidx);
                 
                 % Take only the first numdp ones - those are the first in
                 % the residual vector (see Dynamics.evaluate)
@@ -103,7 +104,9 @@ classdef Model < models.BaseFullModel
             pos = reshape(pos,[],1);
             % Augment to full 3dim quantities
             f = zeros(length(pos),length(t));
-            f(pos,:) = resi;
+            % Negative forces as f is implemented on "RHS" but formulation
+            % is having "K" on LHS
+            f(pos,:) = -resi;
         end
         
         function setConfig(this, value)

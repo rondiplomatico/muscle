@@ -1,11 +1,9 @@
-classdef MSprengerTestLarge < muscle.AModelConfig
+classdef Sprenger32Elem < muscle.AModelConfig
     
     methods
-        function this = MSprengerTestLarge
-            % Single cube with same config as reference element
-            s = load(fullfile(fileparts(which(mfilename)),'CMISS','3Elem_sprenger.mat'));
+        function this = Sprenger32Elem
+            s = load(fullfile(fileparts(which(mfilename)),'..','CMISS','Sprenger32Elem.mat'));
             this = this@muscle.AModelConfig(s.geo20,s.geo8);
-            %geo = s.geo20;
         end
         
         function configureModel(~, model)
@@ -58,14 +56,14 @@ classdef MSprengerTestLarge < muscle.AModelConfig
             displ_dir(1,geo.Elements(4,[6 11 13 16 18])) = true;
             displ_dir(:,geo.Elements(4,[1 4 9])) = true;
             % 29:32 other side
-            displ_dir(1,geo.Elements(29,[3 5 8 10 15])) = true;
-            displ_dir(:,geo.Elements(29,[12 17 20])) = true;
-            displ_dir(1,geo.Elements(30,[3 5 8 12 20])) = true;
-            displ_dir(:,geo.Elements(30,[10 13 17])) = true;
-            displ_dir(1,geo.Elements(31,[3 10 15 17 20])) = true;
-            displ_dir(:,geo.Elements(31,[5 8 12])) = true;
-            displ_dir(1,geo.Elements(32,[8 12 15 17 20])) = true;
-            displ_dir(:,geo.Elements(32,[3 5 10])) = true;
+%             displ_dir(1,geo.Elements(29,[3 5 8 10 15])) = true;
+%             displ_dir(:,geo.Elements(29,[12 17 20])) = true;
+%             displ_dir(1,geo.Elements(30,[3 5 8 12 20])) = true;
+%             displ_dir(:,geo.Elements(30,[10 13 17])) = true;
+%             displ_dir(1,geo.Elements(31,[3 10 15 17 20])) = true;
+%             displ_dir(:,geo.Elements(31,[5 8 12])) = true;
+%             displ_dir(1,geo.Elements(32,[8 12 15 17 20])) = true;
+%             displ_dir(:,geo.Elements(32,[3 5 10])) = true;
         end
         
         function anull = seta0(~, anull)

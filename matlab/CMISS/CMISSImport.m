@@ -6,6 +6,12 @@ classdef CMISSImport < handle
         Dir = fileparts(which(mfilename));
     end
     
+    properties
+        % Flag that indicates if the nodes should be centered around 0
+        % after loading
+        CenterNodes = true;
+    end
+    
     methods(Static)
         function [geo8, geo20] = readEntireTA
             ci = CMISSImport;
@@ -61,7 +67,9 @@ classdef CMISSImport < handle
             nodes(1:10) = [];
             nodes(4:4:end) = [];
             nodes = reshape(nodes,3,[]);
-            nodes = nodes - repmat(mean(nodes,2),1,size(nodes,2));
+            if this.CenterNodes
+                nodes = nodes - repmat(mean(nodes,2),1,size(nodes,2));
+            end
             %% Swap yz directions
             nodes([2 3],:) = nodes([3 2],:);
         end

@@ -121,7 +121,7 @@ classdef BaseGeometry < handle
             view(h,[52 30]);
             daspect([1 1 1]);
                         
-            if nargin < 2
+            if nargin < 3
                 pm.done;
             end
         end

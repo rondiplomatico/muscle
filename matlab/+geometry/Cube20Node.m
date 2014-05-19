@@ -54,7 +54,7 @@ classdef Cube20Node < geometry.BaseGeometry
         
         function this = Cube20Node(pts, cubes)
             if nargin < 2
-                [pts, cubes] = Cube20Node.DemoGrid;
+                [pts, cubes] = geometry.Cube20Node.DemoGrid;
             elseif size(unique(pts','rows'),1) ~= size(pts,2);
                 error('Please provide unique points!');
             end

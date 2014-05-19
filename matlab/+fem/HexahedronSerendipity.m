@@ -1,10 +1,10 @@
-classdef HexahedronTriquadratic < fem.BaseFEM
+classdef HexahedronSerendipity < fem.BaseFEM
     % Triquatratic: Quadratic ansatz functions on cube with 20 nodes per
     % cube
     %
     
     methods
-        function this = HexahedronTriquadratic(geo)
+        function this = HexahedronSerendipity(geo)
             if nargin < 1
                 geo = geometry.Cube20Node;
             end

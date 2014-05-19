@@ -217,19 +217,12 @@ classdef System < models.BaseDynSystem
             mc = this.Model.Config;
             dfem = mc.PosFE;
             geo = dfem.Geometry;
-            pfem = mc.PressFE;
-            pgeo = pfem.Geometry;
             vstart = geo.NumNodes * 3+1;
             pstart = geo.NumNodes * 6+1;
             e = geo.Edges;
             
             %% Re-add the dirichlet nodes
-            yall = zeros(geo.NumNodes * 6 + pgeo.NumNodes, size(uvw,2));
-            yall(this.dof_idx_global,:) = uvw;
-            for k=1:length(this.bc_dir_idx)
-                yall(this.bc_dir_idx(k),:) = this.bc_dir_val(k);
-            end
-            uvw = yall;
+            uvw = this.includeDirichletValues(uvw);
             
             hlp = sum(this.bc_dir_displ,1);
             bc_dir_3pos_applies = hlp == 3;
@@ -286,7 +279,9 @@ classdef System < models.BaseDynSystem
             xpos = 1:3:geo.NumNodes*3;
             box = [min(min(uvw(xpos,:))) max(max(uvw(xpos,:)))...
                 min(min(uvw(xpos+1,:))) max(max(uvw(xpos+1,:)))...
-                min(min(uvw(xpos+2,:))) max(max(uvw(xpos+2,:)))]*1.05;
+                min(min(uvw(xpos+2,:))) max(max(uvw(xpos+2,:)))];
+            box([1 3 5]) = box([1 3 5])-.05*abs(box([1 3 5]));
+            box([2 4 6]) = box([2 4 6])+.05*abs(box([2 4 6]));
             for ts = 1:length(t)
                 % Quit if figure has been closed
                 if ~ishandle(h)
@@ -369,7 +364,7 @@ classdef System < models.BaseDynSystem
                         u = u(this.globidx_displ(:,:,m));
                         gps = u*Ngp;
                         anull = u*this.dNa0(:,:,m);
-                        quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'Color',[.5 .8 .5]);
+                        quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'.','Color',[.5 .8 .5]);
                     end
                 end
                 
@@ -471,10 +466,23 @@ classdef System < models.BaseDynSystem
                 uelem = u(:,geo.Elements(m,:));
                 gps = uelem*Ngp;
                 anull = uelem*this.dNa0(:,:,m);
-                quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'Color',[.5 .8 .5]);
+                quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'.','Color',[.4 .9 .4]);
             end
             
             pm.done;
+        end
+        
+        function uvwall = includeDirichletValues(this, uvw)
+            mc = this.Model.Config;
+            dfem = mc.PosFE;
+            geo = dfem.Geometry;
+            pfem = mc.PressFE;
+            pgeo = pfem.Geometry;
+            
+            %% Re-add the dirichlet nodes
+            uvwall = zeros(geo.NumNodes * 6 + pgeo.NumNodes, size(uvw,2));
+            uvwall(this.dof_idx_global,:) = uvw;
+            uvwall(this.bc_dir_idx,:) = repmat(this.bc_dir_val,1,size(uvw,2));
         end
         
         function set.UseDirectMassInversion(this, value)
@@ -644,7 +652,7 @@ classdef System < models.BaseDynSystem
                 for m = 1 : geo.NumElements
                     for gp = 1 : geo.GaussPointsPerElem
                         % a0 dyad a0
-                        pos = (m-1)*geo.NumElements+gp;
+                        pos = (m-1)*geo.GaussPointsPerElem+gp;
                         anulldyadanull(:,:,pos) = anull(:,gp,m)*anull(:,gp,m)';
 
                         % <grad phi_k, a0> scalar products

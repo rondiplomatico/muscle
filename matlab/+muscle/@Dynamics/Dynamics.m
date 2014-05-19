@@ -43,15 +43,15 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
        % Alternative
        % ForceLengthFunDeriv = @(ratio)(ratio<=1).*((1/.57)*(((1-ratio)/.57).^3).*exp(-((1-ratio)/.57).^4)) ...
        % - (ratio > 1) .* ((1/.14) .* (((ratio-1)/.14).^2) .* exp(-((ratio-1)/.14).^3));
+       
+       % The fraction of the total simulation time T, over which the
+       % activation is linearly increased from 0 to the actually set alpha
+       % value. This is included for stability.
+       rampFraction = 0.1;
     end
     
     properties(SetAccess=private)
         APExp;
-        
-        % The fraction of the total simulation time T, over which the
-        % activation is linearly increased from 0 to the actually set alpha
-        % value. This is included for stability.
-        rampFraction = 0.1;
     end
     
     properties(Transient, SetAccess=private)
