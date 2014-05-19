@@ -69,8 +69,8 @@ classdef HexahedronSerendipity < fem.BaseFEM
     
     methods(Static)
         function res = test_QuadraticBasisFun
-            q = triquadratic;
-            res = fembase.test_BasisFun(q);
+            q = fem.HexahedronSerendipity;
+            res = fem.BaseFEM.test_BasisFun(q);
             
             % test for correct basis function values on nodes
             [X,Y,Z] = ndgrid(-1:1:1,-1:1:1,-1:1:1);

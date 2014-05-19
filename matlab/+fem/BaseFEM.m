@@ -212,7 +212,7 @@ classdef BaseFEM < handle
                 [pts, cubes] = geometry.Cube8Node.DemoGrid(ranges{k},ranges{k});
                 g = geometry.Cube8Node(pts, cubes);
                 tl = fem.HexahedronTrilinear(g);
-                tq = fem.HexahedronTriquadratic(g.toCube20);
+                tq = fem.HexahedronTriquadratic(g.toCube27Node);
                 res = res && norm(tl.elem_detjac-tq.elem_detjac,'inf') < 1e-14;
             end
         end
