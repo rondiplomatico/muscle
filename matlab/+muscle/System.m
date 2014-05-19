@@ -12,6 +12,10 @@ classdef System < models.BaseDynSystem
        globidx_pressure;
        
        Plota0 = true;
+       
+       % Set this to a double value to apply velocity dirichlet conditions
+       % only up to a certain time (zero after that)
+       ApplyVelocityBCUntil = Inf;
     end
     
     properties(SetAccess=private)
@@ -40,6 +44,8 @@ classdef System < models.BaseDynSystem
        bc_dir_displ_idx;
        bc_dir_displ_val; % [mm]
        
+       bc_dir_velo_direct;
+       bc_dir_velo_direct_idx;
        bc_dir_velo;
        bc_dir_velo_idx;
        bc_dir_velo_val; % [mm/ms]
@@ -222,7 +228,7 @@ classdef System < models.BaseDynSystem
             e = geo.Edges;
             
             %% Re-add the dirichlet nodes
-            uvw = this.includeDirichletValues(uvw);
+            uvw = this.includeDirichletValues(t, uvw);
             
             hlp = sum(this.bc_dir_displ,1);
             bc_dir_3pos_applies = hlp == 3;
@@ -294,8 +300,6 @@ classdef System < models.BaseDynSystem
                 
                 % Velocities
                 if r.Velo
-                    %quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'k.','MarkerSize',14);
-%                     quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),0,'r','MarkerSize',10);
                     quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'b', 'MarkerSize',14);
                 end
                 
@@ -472,7 +476,7 @@ classdef System < models.BaseDynSystem
             pm.done;
         end
         
-        function uvwall = includeDirichletValues(this, uvw)
+        function uvwall = includeDirichletValues(this, t, uvw)
             mc = this.Model.Config;
             dfem = mc.PosFE;
             geo = dfem.Geometry;
@@ -483,6 +487,10 @@ classdef System < models.BaseDynSystem
             uvwall = zeros(geo.NumNodes * 6 + pgeo.NumNodes, size(uvw,2));
             uvwall(this.dof_idx_global,:) = uvw;
             uvwall(this.bc_dir_idx,:) = repmat(this.bc_dir_val,1,size(uvw,2));
+            
+            sys = this.Model.System;
+            zerovel = t > sys.ApplyVelocityBCUntil;
+            uvwall(sys.bc_dir_velo_direct_idx,zerovel) = 0;
         end
         
         function set.UseDirectMassInversion(this, value)
@@ -567,10 +575,12 @@ classdef System < models.BaseDynSystem
             % Incorporate zero velocity conditions from fixed node
             % dirichlet conditions first
             this.bc_dir_velo_val = zeros(size(this.bc_dir_displ_val));
-            this.bc_dir_velo_idx = num_position_dofs+this.bc_dir_displ_idx;
             % Add any user-defines values (cannot conflict with position
             % dirichlet conditions, this is checked in AModelConfig.getBC)
-            this.bc_dir_velo_idx = int32([this.bc_dir_velo_idx; num_position_dofs + find(velo_dir(:))]);
+            this.bc_dir_velo_direct = velo_dir;
+            this.bc_dir_velo_direct_idx = num_position_dofs + find(velo_dir(:));
+            
+            this.bc_dir_velo_idx = int32([num_position_dofs+this.bc_dir_displ_idx; this.bc_dir_velo_direct_idx]);
             this.bc_dir_velo_val = [this.bc_dir_velo_val; velo_dir_val(velo_dir)];
             this.bc_dir_velo = velo_dir | pos_dir;
             

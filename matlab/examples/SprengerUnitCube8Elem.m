@@ -13,7 +13,7 @@ classdef SprengerUnitCube8Elem < muscle.AModelConfig
                 variant = 1;
             end
             s = load(fullfile(fileparts(which(mfilename)),'..','CMISS','Sprenger8Elem.mat'));
-            this = this@muscle.AModelConfig(s.geo20,s.geo8);
+            this = this@muscle.AModelConfig(s.geo27,s.geo8);
             this.Variant = variant;
         end
         
@@ -78,10 +78,11 @@ classdef SprengerUnitCube8Elem < muscle.AModelConfig
 %                 displ_dir(1,geo.Elements(6,[3 10 15 17 20])) = true;
 %                 displ_dir(1,geo.Elements(8,[8 12 15 17 20])) = true;
             else
-                displ_dir(:,geo.Elements(1,[1 4 6 9 11 13 16 18])) = true;
-                displ_dir(:,geo.Elements(3,[1 4 6 9 11 13 16 18])) = true;
-                displ_dir(:,geo.Elements(5,[1 4 6 9 11 13 16 18])) = true;
-                displ_dir(:,geo.Elements(7,[1 4 6 9 11 13 16 18])) = true;
+                pos = geo.MasterFaces(1,:);
+                displ_dir(:,geo.Elements(1,pos)) = true;
+                displ_dir(:,geo.Elements(3,pos)) = true;
+                displ_dir(:,geo.Elements(5,pos)) = true;
+                displ_dir(:,geo.Elements(7,pos)) = true;
             end
             
         end

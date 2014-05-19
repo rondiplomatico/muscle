@@ -91,7 +91,7 @@ classdef Model < models.BaseFullModel
                 dyall(sys.dof_idx_global,:) = dy;
                 % Select nodes that are exposed to neumann conditions (the
                 % index is in global positions and not effective DoFs)
-                residuals_neumann(:,k) = -dyall(pos_dofs+sys.bc_neum_forces_nodeidx);
+                residuals_neumann(:,k) = dyall(pos_dofs+sys.bc_neum_forces_nodeidx);
                 
                 % Take only the first numdp ones - those are the first in
                 % the residual vector (see Dynamics.evaluate)
@@ -104,9 +104,7 @@ classdef Model < models.BaseFullModel
             pos = reshape(pos,[],1);
             % Augment to full 3dim quantities
             f = zeros(length(pos),length(t));
-            % Negative forces as f is implemented on "RHS" but formulation
-            % is having "K" on LHS
-            f(pos,:) = -resi;
+            f(pos,:) = resi;
         end
         
         function setConfig(this, value)

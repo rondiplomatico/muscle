@@ -34,6 +34,10 @@ function duvw = evaluate(this, uvwdof, t)
     uvwcomplete = zeros(2*dofs_pos + pgeo.NumNodes,1);
     uvwcomplete(sys.dof_idx_global) = uvwdof;
     uvwcomplete(sys.bc_dir_idx) = sys.bc_dir_val;
+    % Check if velocity bc's should still be applied
+    if t > sys.ApplyVelocityBCUntil
+        uvwcomplete(sys.bc_dir_velo_direct_idx) = 0;
+    end
 
     % Init duv
     duvw = zeros(size(uvwcomplete));

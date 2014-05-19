@@ -13,7 +13,7 @@ classdef CMISSImport < handle
     end
     
     methods(Static)
-        function [geo8, geo20] = readEntireTA
+        function [geo8, geo20, geo27] = readEntireTA
             ci = CMISSImport;
             name = 'EntireTA';
             [nodes, nodeidx] = ci.readNodes(name);
@@ -37,22 +37,26 @@ classdef CMISSImport < handle
             
             [nodes8, elems8] = ci.merge(nodes, nodeidx, elems8);
             [nodes20, elems20] = ci.merge(nodes, nodeidx, elems20);
+            [nodes27, elems27] = ci.merge(nodes, nodeidx, elems27);
             geo8 = geometry.Cube8Node(nodes8, elems8);
             geo20 = geometry.Cube20Node(nodes20, elems20);
-            save(fullfile(CMISSImport.Dir,name),'geo8','geo20');
+            geo27 = geometry.Cube27Node(nodes27, elems27);
+            save(fullfile(CMISSImport.Dir,name),'geo8','geo20','geo27');
         end
     end
     
     methods
         
-        function [geo8, geo20] = import(this, name)
+        function [geo8, geo20, geo27] = import(this, name)
             [nodes, nodeidx] = this.readNodes(name);
-            [elems8, elems20] = this.readElems(name);
+            [elems8, elems20, elems27] = this.readElems(name);
             [nodes8, elems8] = this.merge(nodes, nodeidx, elems8);
             [nodes20, elems20] = this.merge(nodes, nodeidx, elems20);
+            [nodes27, elems27] = this.merge(nodes, nodeidx, elems27);
             geo8 = geometry.Cube8Node(nodes8, elems8);
             geo20 = geometry.Cube20Node(nodes20, elems20);
-            save(fullfile(CMISSImport.Dir,name),'geo8','geo20');
+            geo27 = geometry.Cube27Node(nodes27, elems27);
+            save(fullfile(CMISSImport.Dir,name),'geo8','geo20','geo27');
         end
         
         function [nodes, nodeidx] = readNodes(this, name)
@@ -74,7 +78,7 @@ classdef CMISSImport < handle
             nodes([2 3],:) = nodes([3 2],:);
         end
         
-        function [elems8, elems20] = readElems(this, name)
+        function [elems8, elems20, elems27] = readElems(this, name)
             filename = fullfile(CMISSImport.Dir,[name '.ipelem']);
             data = this.rawReadElems(filename);
             data(1:5,:) = [];
@@ -82,11 +86,12 @@ classdef CMISSImport < handle
             
             %% Read 27 points for quadratic case
             
-%             elems20 = [data(6:9:end,9:end) data(7:9:end,1:11)];
+            elems27 = [data(6:9:end,9:end) data(7:9:end,1:11)];
             % Modified read for ip data from M. Sprenger
-            elems20 = [data(6:9:end,9:end-1) data(7:9:end,1:12)];
+%             elems27 = [data(6:9:end,9:end-1) data(7:9:end,1:12)];
             
             % Remove the inner/face points
+            elems20 = elems27;
             elems20(:,[5 11 13:15 17 23]) = [];
             
             %% Read 8 points for linear case

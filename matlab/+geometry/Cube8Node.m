@@ -95,7 +95,7 @@ classdef Cube8Node < geometry.BaseGeometry
                 nodes27(:,pos) = nodes8(:,cube)*T';
             end
             [nodes27, ~, elems27] = unique(nodes27','rows','stable');
-            cube27 = geometry.Cube20Node(nodes27',reshape(elems27,27,[])');
+            cube27 = geometry.Cube27Node(nodes27',reshape(elems27,27,[])');
         end
 
     end

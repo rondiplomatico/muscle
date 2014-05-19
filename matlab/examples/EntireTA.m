@@ -3,9 +3,9 @@ classdef EntireTA < muscle.AModelConfig
     methods
         function this = EntireTA
             % Single cube with same config as reference element
-            s = load(fullfile(fileparts(which(mfilename)),'CMISS','EntireTA.mat'));
-            this = this@muscle.AModelConfig(s.geo20,s.geo8);
-            geo = s.geo20;
+            s = load(fullfile(fileparts(which(mfilename)),'..','CMISS','EntireTA.mat'));
+            this = this@muscle.AModelConfig(s.geo27,s.geo8);
+            geo = s.geo27;
             
             %% Muscle fibre weights
             types = [0 .2 .4 .6 .8 1];
@@ -35,8 +35,8 @@ classdef EntireTA < muscle.AModelConfig
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             %% Dirichlet conditions: Position (fix one side)
             geo = this.PosFE.Geometry;
-            displ_dir(:,geo.Elements(6,1:8)) = true;
-            displ_dir(:,geo.Elements(8,13:20)) = true;
+            displ_dir(:,geo.Elements(6,1:9)) = true;
+            displ_dir(:,geo.Elements(8,19:27)) = true;
         end
         
         function [velo_dir, velo_dir_val] = setVelocityDirichletBC(this, velo_dir, velo_dir_val)

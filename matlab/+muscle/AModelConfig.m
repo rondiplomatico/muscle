@@ -18,7 +18,7 @@ classdef AModelConfig < handle
                 if isa(geo,'geometry.Cube8Node')
                     pos_geo = geo.toCube20Node;
                     press_geo = geo;
-                elseif isa(geo,'geometry.Cube20Node')
+                elseif isa(geo,'geometry.Cube20Node') || isa(geo,'geometry.Cube27Node')
                     pos_geo = geo;
                     press_geo = geo.toCube8Node;
                 else
@@ -27,10 +27,14 @@ classdef AModelConfig < handle
             else
                 pos_geo = geo;
             end
-            if ~isa(pos_geo,'geometry.Cube20Node') || ~isa(press_geo,'geometry.Cube8Node')
+            if (~isa(pos_geo,'geometry.Cube20Node') && ~isa(pos_geo,'geometry.Cube27Node')) || ~isa(press_geo,'geometry.Cube8Node')
                 error('Scenario not yet implemented.');
             end
-            this.PosFE = fem.HexahedronTriquadratic(pos_geo);
+            if isa(geo,'geometry.Cube27Node')
+                this.PosFE = fem.HexahedronTriquadratic(pos_geo);
+            else
+                this.PosFE = fem.HexahedronSerendipity(pos_geo);
+            end
             this.PressFE = fem.HexahedronTrilinear(press_geo);
         end
         
