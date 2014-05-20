@@ -122,7 +122,7 @@ function J = getStateJacobian(this, uvwdof, t)
                 e3_dyad_dPhik = [0 0 0; 0 0 0; dtn(k,:)];
 
                 dI1duk = 2*sum([1; 1; 1] * (dtn(k,:) * dtn') .* u, 2);
-                fac1 = 2*(this.c10 + dI1duk*this.c01);
+                fac1 = 2*dI1duk*this.c01;
                 fac2 = 2*(this.c10 + I1*this.c01);
 
                 % correct! :-)

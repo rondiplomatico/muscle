@@ -156,17 +156,22 @@ classdef Model < models.BaseFullModel
             [t,y] = m.simulate(mu);
         end
         
-        function test_JacobianApproxGaussRules
+        function test_JacobianApproxGaussRules(full)
             % Tests the precision of the analytical jacobian computation
             % using different gauss integration rules
-            m = muscle.Model(muscle.DebugConfig(1));
-%             mu = m.getRandomParam;
+            if nargin < 1
+                full = false;
+            end
+            m = muscle.Model(muscle.DebugConfig(2));
+            m.simulate(1);
             f = m.System.f;
-            f.test_Jacobian;
+            m.T = 1;
+            m.dt = .2;
+            f.test_Jacobian(full);
             m.setGaussIntegrationRule(4);
             f.test_Jacobian;
             m.setGaussIntegrationRule(5);
-            f.test_Jacobian;
+            f.test_Jacobian(full);
         end
     end
     

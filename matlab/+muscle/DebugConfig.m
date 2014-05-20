@@ -34,7 +34,9 @@ classdef DebugConfig < muscle.AModelConfig
             % Single cube with same config as reference element
             [pts, cubes] = geometry.Cube8Node.DemoGrid([0 1],[0 1],[0 1]);
             geo = geometry.Cube8Node(pts, cubes);
-            this = this@muscle.AModelConfig(geo.toCube27Node,geo);
+            g27 = geo.toCube27Node;
+%             g27 = geometry.Cube27Node(fliplr(g27.Nodes),fliplr(g27.Elements));
+            this = this@muscle.AModelConfig(g27,geo);
             
             this.Version = version;
         end
