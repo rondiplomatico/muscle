@@ -36,7 +36,7 @@ function duvw = evaluate(this, uvwdof, t)
     uvwcomplete(sys.bc_dir_idx) = sys.bc_dir_val;
     % Check if velocity bc's should still be applied
     if t > sys.ApplyVelocityBCUntil
-        uvwcomplete(sys.bc_dir_velo_direct_idx) = 0;
+        uvwcomplete(sys.bc_dir_velo_idx) = 0;
     end
 
     % Init duv
@@ -50,6 +50,7 @@ function duvw = evaluate(this, uvwdof, t)
     num_elements = geo.NumElements;
     for m = 1:num_elements
         elemidx_pos = globidx_disp(:,:,m);
+        elemidx_velo = elemidx_pos+dofs_pos;
         elemidx_pressure = globidx_press(:,m);
         
         if havefibretypes 
@@ -101,7 +102,7 @@ function duvw = evaluate(this, uvwdof, t)
             
             % Viscosity
             if visc > 0
-                v = uvwcomplete(elemidx_pos+dofs_pos);
+                v = uvwcomplete(elemidx_velo);
                 P = P + visc* v * dtn;
             end
             
@@ -112,19 +113,18 @@ function duvw = evaluate(this, uvwdof, t)
             integrand_press = integrand_press + weight * (det(F)-1) * fe_press.Ngp(:,gp,m);
         end
         % We have v' + K(u) = 0, so the values of K(u) must be
-        % written at the according locations of v'; those are the
-        % same but +fielddofs later each
-        outidx = elemidx_pos + dofs_pos;
+        % written at the according locations of v', i.e. elemidx_velo
+        %
         % Have MINUS here as the equation satisfies Mu'' + K(u,w) =
         % 0, but KerMor implements Mu'' = -K(u,w)
-        duvw(outidx) = duvw(outidx) - integrand_pos;
+        duvw(elemidx_velo) = duvw(elemidx_velo) - integrand_pos;
 
         % Update pressure value at according positions
         duvw(elemidx_pressure) = duvw(elemidx_pressure) + integrand_press;
     end
     
     %% Save & remove values at dirichlet pos/velo nodes
-    this.LastBCResiduals = duvw(sys.bc_dir_idx);
+    this.LastBCResiduals = duvw([sys.bc_dir_displ_idx+dofs_pos; sys.bc_dir_velo_idx]);
     duvw(sys.bc_dir_idx) = [];
 
     %% If direct mass matrix inversion is used

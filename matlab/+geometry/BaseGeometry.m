@@ -55,9 +55,20 @@ classdef BaseGeometry < handle
     methods
         
         function this = BaseGeometry
-            % Init 27 Gauss points for 3-rule
-            g = [-sqrt(3/5) 0 sqrt(3/5)];
-            w = [5/9 8/9 5/9];
+            %% Init Gauss points
+            % 3-point-rule
+%             g = [-sqrt(3/5) 0 sqrt(3/5)];
+%             w = [5/9 8/9 5/9];
+            % 4-point-rule
+            g = [-sqrt(3/7 + 2/7*sqrt(6/5)) -sqrt(3/7 - 2/7*sqrt(6/5)) sqrt(3/7 - 2/7*sqrt(6/5)) sqrt(3/7 + 2/7*sqrt(6/5))];
+            w = [(18-sqrt(30))/36 (18+sqrt(30))/36 (18+sqrt(30))/36 (18-sqrt(30))/36];
+            % 5-point rule
+%             a = 2*sqrt(10/7);
+%             g = [-sqrt(5+a)/3 -sqrt(5-a)/3 0 sqrt(5-a)/3 sqrt(5+a)/3];
+%             a = 13*sqrt(70);
+%             w = [(322-a)/900 (322+a)/900 128/225 (322+a)/900 (322-a)/900];
+            
+            %% Transfer to 3D
             [WX,WY,WZ] = meshgrid(w);
             [GX,GY,GZ] = meshgrid(g);
             W = WX.*WY.*WZ;
@@ -68,7 +79,7 @@ classdef BaseGeometry < handle
             [WX,WY] = meshgrid(w);
             [GX,GY] = meshgrid(g);
             W = WX.*WY;
-            fgp = zeros(3,9,6);
+            fgp = zeros(3,length(g)^2,6);
             faceremainingdim = [-1 1 -1 1 -1 1];
             for faceidx = 1:6
                 fgp(this.FaceDims(:,faceidx),:,faceidx) = [GX(:) GY(:)]';

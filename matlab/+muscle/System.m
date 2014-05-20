@@ -44,8 +44,6 @@ classdef System < models.BaseDynSystem
        bc_dir_displ_idx;
        bc_dir_displ_val; % [mm]
        
-       bc_dir_velo_direct;
-       bc_dir_velo_direct_idx;
        bc_dir_velo;
        bc_dir_velo_idx;
        bc_dir_velo_val; % [mm/ms]
@@ -223,8 +221,9 @@ classdef System < models.BaseDynSystem
             mc = this.Model.Config;
             dfem = mc.PosFE;
             geo = dfem.Geometry;
-            vstart = geo.NumNodes * 3+1;
-            pstart = geo.NumNodes * 6+1;
+            posdofs = geo.NumNodes * 3;
+            vstart = posdofs+1;
+            pstart = 2*posdofs+1;
             e = geo.Edges;
             
             %% Re-add the dirichlet nodes
@@ -235,11 +234,14 @@ classdef System < models.BaseDynSystem
             bc_dir_2pos_applies = hlp == 2;
             bc_dir_1pos_applies = hlp == 1;
             bc_dir_pos_applies = hlp >= 1; 
-            bc_dir_velo_applies = sum(this.bc_dir_velo,1) >= 1 & ~bc_dir_pos_applies;
+            bc_dir_velo_applies = sum(this.bc_dir_velo,1) >= 1;
             no_bc = ~bc_dir_pos_applies & ~bc_dir_velo_applies;
             
             if ~isempty(r.PDF)
-                pdf_xpos = 1:3:size(r.PDF,1);
+                have_residuals = bc_dir_pos_applies | bc_dir_velo_applies;
+                residuals_pos = this.bc_dir_displ | this.bc_dir_velo;
+                residuals = zeros(size(residuals_pos));
+                [~, sortidx] = sort([this.bc_dir_displ_idx; this.bc_dir_velo_idx-posdofs]);
             end
             
             if r.Vid
@@ -316,9 +318,10 @@ classdef System < models.BaseDynSystem
                 
                 %% Position Dirichlet Forces
                 if ~isempty(r.PDF)
-                    udir = u(:,bc_dir_pos_applies);
+                    udir = u(:,have_residuals);
+                    residuals(residuals_pos) = r.PDF(sortidx,ts);
                     quiver3(h,udir(1,:),udir(2,:),udir(3,:),...
-                        r.PDF(1:3:end,ts)',r.PDF(2:3:end,ts)',r.PDF(3:3:end,ts)','k', 'MarkerSize',14);
+                        residuals(1,have_residuals),residuals(2,have_residuals),residuals(3,have_residuals),'k', 'MarkerSize',14);
                 end
                 
                 %% Neumann condition forces
@@ -366,6 +369,9 @@ classdef System < models.BaseDynSystem
                     for m = 1:geo.NumElements
                         u = uvw(1:vstart-1,ts);
                         u = u(this.globidx_displ(:,:,m));
+                        
+                        %dtna0 = this.dtna0(:,gp,m);
+                        %lambdafsq = sum(sum((u'*u) .* (dtna0*dtna0')));
                         gps = u*Ngp;
                         anull = u*this.dNa0(:,:,m);
                         quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'.','Color',[.5 .8 .5]);
@@ -490,7 +496,7 @@ classdef System < models.BaseDynSystem
             
             sys = this.Model.System;
             zerovel = t > sys.ApplyVelocityBCUntil;
-            uvwall(sys.bc_dir_velo_direct_idx,zerovel) = 0;
+            uvwall(sys.bc_dir_velo_idx,zerovel) = 0;
         end
         
         function set.UseDirectMassInversion(this, value)
@@ -563,35 +569,25 @@ classdef System < models.BaseDynSystem
             this.bc_dir_displ = pos_dir;
             % Set values to node positions
             this.bc_dir_displ_val = geo.Nodes(pos_dir);
-            % Add zeros for respective velocities
-            %this.bc_dir_displ_val = [this.bc_dir_displ_val; zeros(size(this.bc_dir_displ_val))];
-            % Collect indices of dirichlet values per 3-set of x,y,z values
-%             relpos = find(pos_dir(:));
-            % Same positions for points and velocity
-%             this.bc_dir_displ_idx = [relpos; num_position_dofs + relpos];
             this.bc_dir_displ_idx = int32(find(pos_dir(:)));
             
             %% Velocity
-            % Incorporate zero velocity conditions from fixed node
-            % dirichlet conditions first
-            this.bc_dir_velo_val = zeros(size(this.bc_dir_displ_val));
             % Add any user-defines values (cannot conflict with position
             % dirichlet conditions, this is checked in AModelConfig.getBC)
-            this.bc_dir_velo_direct = velo_dir;
-            this.bc_dir_velo_direct_idx = num_position_dofs + find(velo_dir(:));
-            
-            this.bc_dir_velo_idx = int32([num_position_dofs+this.bc_dir_displ_idx; this.bc_dir_velo_direct_idx]);
-            this.bc_dir_velo_val = [this.bc_dir_velo_val; velo_dir_val(velo_dir)];
-            this.bc_dir_velo = velo_dir | pos_dir;
+            this.bc_dir_velo = velo_dir;
+            this.bc_dir_velo_idx = int32(num_position_dofs + find(velo_dir(:)));
+            this.bc_dir_velo_val = velo_dir_val(velo_dir);
             
             %% Hydrostatic Pressure Dirichlet conditions
 %             press_dir = false(1,tl.NumNodes);
 %             press_dir(1) = true;
 %             this.bc_dir = [displ_dir; press_dir];
 
-            % The according velocities are all zero for dirichlet points
-            this.bc_dir_val = [this.bc_dir_displ_val; this.bc_dir_velo_val];
-            this.bc_dir_idx = [this.bc_dir_displ_idx; this.bc_dir_velo_idx];
+            % Compile the global dirichlet values index and value vectors.
+            % Here we add zero velocities for each point with fixed position, too.
+            [this.bc_dir_idx, sortidx] = sort([this.bc_dir_displ_idx; this.bc_dir_displ_idx+num_position_dofs; this.bc_dir_velo_idx]);
+            alldirvals = [this.bc_dir_displ_val; zeros(size(this.bc_dir_displ_val)); this.bc_dir_velo_val];
+            this.bc_dir_val = alldirvals(sortidx);
             
             % Compute dof positions in global state space vector
             total = geo.NumNodes * 6 + pgeo.NumNodes;
@@ -672,7 +668,7 @@ classdef System < models.BaseDynSystem
 
                         % forward transformation of a0 at gauss points
                         % (plotting only so far)
-                        pos = [0 27 54]+gp;
+                        pos = [0 geo.GaussPointsPerElem 2*geo.GaussPointsPerElem]+gp;
                         dNanull(:,gp,m) = dNgp(:,pos) * this.a0(:,gp,m);
                     end
                 end

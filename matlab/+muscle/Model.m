@@ -77,12 +77,11 @@ classdef Model < models.BaseFullModel
             this.System.plotGeometrySetup;
         end
         
-        function [f, residuals_neumann] = getResidualForces(this, t, uvw)
-            mt = this.scaledTimes;
+        function [residuals_dirichlet, residuals_neumann] = getResidualForces(this, t, uvw)
             sys = this.System;
-            numdp = length(sys.bc_dir_displ_idx);
-            resi = zeros(numdp,length(mt));
-            residuals_neumann = zeros(length(sys.bc_neum_forces_nodeidx),length(mt));
+            posvals = length(sys.bc_dir_displ_idx);
+            residuals_dirichlet = zeros(posvals+length(sys.bc_dir_velo_idx),length(t));
+            residuals_neumann = zeros(length(sys.bc_neum_forces_nodeidx),length(t));
             pos_dofs = this.Config.PosFE.Geometry.NumNodes * 3;
             dyall = zeros(2*pos_dofs + this.Config.PressFE.Geometry.NumNodes,1);
             for k=1:length(t)
@@ -93,18 +92,26 @@ classdef Model < models.BaseFullModel
                 % index is in global positions and not effective DoFs)
                 residuals_neumann(:,k) = dyall(pos_dofs+sys.bc_neum_forces_nodeidx);
                 
-                % Take only the first numdp ones - those are the first in
-                % the residual vector (see Dynamics.evaluate)
-                resi(:,k) = sys.f.LastBCResiduals(numdp + (1:numdp));
+                residuals_dirichlet(:,k) = sys.f.LastBCResiduals;
             end
             
-            pos = sys.bc_dir_displ;
-            nodehasdirvals = sum(pos,1) > 0;
-            pos(:,~nodehasdirvals) = [];
-            pos = reshape(pos,[],1);
-            % Augment to full 3dim quantities
-            f = zeros(length(pos),length(t));
-            f(pos,:) = resi;
+%             % Position values first
+%             pos = sys.bc_dir_displ;
+%             nodehasdirvals = sum(pos,1) > 0;
+%             pos(:,~nodehasdirvals) = [];
+%             pos = reshape(pos,[],1);
+%             % Augment to full 3dim quantities
+%             fp = zeros(length(pos),length(t));
+%             fp(pos,:) = residuals_dirichlet(1:posvals,:);
+%             % Velocity values second
+%             pos = sys.bc_dir_velo;
+%             nodehasdirvals = sum(pos,1) > 0;
+%             pos(:,~nodehasdirvals) = [];
+%             pos = reshape(pos,[],1);
+%             % Augment to full 3dim quantities
+%             fv = zeros(length(pos),length(t));
+%             fv(pos,:) = residuals_dirichlet(posvals+1:end,:);
+%             f = [fp; fv];
         end
         
         function setConfig(this, value)
