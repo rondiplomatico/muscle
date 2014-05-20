@@ -153,30 +153,30 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % Use nonzero t to have an effect
             res = test_Jacobian@dscomponents.ACoreFun(this, y, t, mu);
             
-%             % Check if sparsity pattern and jacobian matrices match
-%             Jp = this.JSparsityPattern;
-%             Jeff = Jp;
-%             for k=1:length(t)
-%                 J = this.getStateJacobian(y(:,k),t(k));
-%                 Jeff(:) = false;
-%                 Jeff(logical(J)) = true;
-%                 check = (Jp | Jeff) & ~Jp;
-%                 res = res && ~any(check(:));
-%             end
-%             
-%             this.Viscosity = 1;
-%             res = res && test_Jacobian@dscomponents.ACoreFun(this, x0, t, mu);
-%             
-%             % Check if sparsity pattern and jacobian matrices match
-%             for k=1:length(t)
-%                 J = this.getStateJacobian(y(:,k),t(k));
-%                 Jeff(:) = false;
-%                 Jeff(logical(J)) = true;
-%                 check = (Jp | Jeff) & ~Jp;
-%                 res = res && ~any(check(:));
-%             end
-%             
-%             this.Viscosity = oldvisc;
+            % Check if sparsity pattern and jacobian matrices match
+            Jp = this.JSparsityPattern;
+            Jeff = Jp;
+            for k=1:length(t)
+                J = this.getStateJacobian(y(:,k),t(k));
+                Jeff(:) = false;
+                Jeff(logical(J)) = true;
+                check = (Jp | Jeff) & ~Jp;
+                res = res && ~any(check(:));
+            end
+            
+            this.Viscosity = 1;
+            res = res && test_Jacobian@dscomponents.ACoreFun(this, y, t, mu);
+            
+            % Check if sparsity pattern and jacobian matrices match
+            for k=1:length(t)
+                J = this.getStateJacobian(y(:,k),t(k));
+                Jeff(:) = false;
+                Jeff(logical(J)) = true;
+                check = (Jp | Jeff) & ~Jp;
+                res = res && ~any(check(:));
+            end
+            
+            this.Viscosity = oldvisc;
         end
         
         function copy = clone(this)
