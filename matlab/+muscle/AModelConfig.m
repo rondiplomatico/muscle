@@ -94,8 +94,9 @@ classdef AModelConfig < handle
         end
         
         function anull = geta0(this)
-            g = this.PosFE.Geometry;
-            anull = zeros(3,g.GaussPointsPerElem,g.NumElements);
+            fe = this.PosFE;
+            g = fe.Geometry;
+            anull = zeros(3,fe.GaussPointsPerElem,g.NumElements);
             anull = this.seta0(anull);
             % Normalize anull vectors
             for m = 1:g.NumElements

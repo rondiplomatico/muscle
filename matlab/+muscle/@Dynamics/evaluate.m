@@ -46,7 +46,7 @@ function duvw = evaluate(this, uvwdof, t)
 
     dofsperelem_pos = geo.DofsPerElement;
     dofsperelem_press = pgeo.DofsPerElement;
-    num_gausspoints = geo.GaussPointsPerElem;
+    num_gausspoints = fe_pos.GaussPointsPerElem;
     num_elements = geo.NumElements;
     for m = 1:num_elements
         elemidx_pos = globidx_disp(:,:,m);
@@ -106,7 +106,7 @@ function duvw = evaluate(this, uvwdof, t)
                 P = P + visc* v * dtn;
             end
             
-            weight = geo.gaussw(gp) * fe_pos.elem_detjac(m,gp);
+            weight = fe_pos.GaussWeights(gp) * fe_pos.elem_detjac(m,gp);
 
             integrand_pos = integrand_pos + weight * P * dtn';
 

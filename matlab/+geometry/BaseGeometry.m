@@ -25,16 +25,12 @@ classdef BaseGeometry < handle
     properties(Dependent)
         NumElements;
         NumNodes;
-        GaussPointsPerElem;
-        GaussPointsPerElemFace;
         NumFaces;
         NodesPerFace;
     end
     
     properties(SetAccess=private)
-        gaussp;
         
-        gaussw;
         
         % Faces are:
         % Idx : 1     2      3      4    5      6
@@ -48,45 +44,12 @@ classdef BaseGeometry < handle
         FaceDims = logical([0 0 1 1 1 1
                             1 1 0 0 1 1
                             1 1 1 1 0 0]);
-        facegaussp;
-        facegaussw;
     end
     
     methods
         
         function this = BaseGeometry
-            %% Init Gauss points
-            % 3-point-rule
-%             g = [-sqrt(3/5) 0 sqrt(3/5)];
-%             w = [5/9 8/9 5/9];
-            % 4-point-rule
-            g = [-sqrt(3/7 + 2/7*sqrt(6/5)) -sqrt(3/7 - 2/7*sqrt(6/5)) sqrt(3/7 - 2/7*sqrt(6/5)) sqrt(3/7 + 2/7*sqrt(6/5))];
-            w = [(18-sqrt(30))/36 (18+sqrt(30))/36 (18+sqrt(30))/36 (18-sqrt(30))/36];
-            % 5-point rule
-%             a = 2*sqrt(10/7);
-%             g = [-sqrt(5+a)/3 -sqrt(5-a)/3 0 sqrt(5-a)/3 sqrt(5+a)/3];
-%             a = 13*sqrt(70);
-%             w = [(322-a)/900 (322+a)/900 128/225 (322+a)/900 (322-a)/900];
-            
-            %% Transfer to 3D
-            [WX,WY,WZ] = meshgrid(w);
-            [GX,GY,GZ] = meshgrid(g);
-            W = WX.*WY.*WZ;
-            this.gaussp = [GX(:) GY(:) GZ(:)]';
-            this.gaussw = W(:);
-            
-            % Faces Gauss points
-            [WX,WY] = meshgrid(w);
-            [GX,GY] = meshgrid(g);
-            W = WX.*WY;
-            fgp = zeros(3,length(g)^2,6);
-            faceremainingdim = [-1 1 -1 1 -1 1];
-            for faceidx = 1:6
-                fgp(this.FaceDims(:,faceidx),:,faceidx) = [GX(:) GY(:)]';
-                fgp(~this.FaceDims(:,faceidx),:,faceidx) = faceremainingdim(faceidx);
-            end
-            this.facegaussp = fgp;
-            this.facegaussw = W(:);
+            % 
         end
         
         function plot(this, withdofnr, pm)
@@ -200,13 +163,7 @@ classdef BaseGeometry < handle
             nf = size(this.Faces,2);
         end
         
-        function nc = get.GaussPointsPerElem(this)
-            nc = size(this.gaussp,2);
-        end
-        
-        function nc = get.GaussPointsPerElemFace(this)
-            nc = size(this.facegaussp,2);
-        end
+       
         
         function npf = get.NodesPerFace(this)
             npf = size(this.MasterFaces,2);

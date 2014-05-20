@@ -365,7 +365,7 @@ classdef System < models.BaseDynSystem
                 
                 %% a0 fibres
                 if this.HasFibres && this.Plota0
-                    Ngp = dfem.N(geo.gaussp);
+                    Ngp = dfem.N(dfem.GaussPoints);
                     for m = 1:geo.NumElements
                         u = uvw(1:vstart-1,ts);
                         u = u(this.globidx_displ(:,:,m));
@@ -471,7 +471,7 @@ classdef System < models.BaseDynSystem
             end
             
             %% Fibres
-            Ngp = dfem.N(geo.gaussp);
+            Ngp = dfem.N(dfem.GaussPoints);
             for m = 1:geo.NumElements
                 uelem = u(:,geo.Elements(m,:));
                 gps = uelem*Ngp;
@@ -610,7 +610,7 @@ classdef System < models.BaseDynSystem
             mc = this.Model.Config;
             fe_displ = mc.PosFE;
             geo = fe_displ.Geometry;
-            ngp = geo.GaussPointsPerElemFace;
+            ngp = fe_displ.GaussPointsPerElemFace;
             force = zeros(geo.NumNodes * 3,1);
             faceswithforce = false(1,geo.NumFaces);
             for fn = 1:geo.NumFaces
@@ -624,7 +624,7 @@ classdef System < models.BaseDynSystem
                     integrand = zeros(3,geo.NodesPerFace);
                     for gi = 1:ngp
                         PN = (P * fe_displ.NormalsOnFaceGP(:,gi,fn)) * fe_displ.Ngpface(:,gi,fn)';
-                        integrand = integrand + geo.facegaussw(gi)*PN*fe_displ.face_detjac(fn,gi);
+                        integrand = integrand + fe_displ.FaceGaussWeights(gi)*PN*fe_displ.face_detjac(fn,gi);
                     end
                     facenodeidx = geo.Elements(elemidx,masterfacenodeidx);
                     facenodeidx = (facenodeidx-1)*3+1;
@@ -651,14 +651,14 @@ classdef System < models.BaseDynSystem
                 this.a0 = anull;
 
                 % Precomputations
-                dNgp = fe.gradN(geo.gaussp);
-                anulldyadanull = zeros(3,3,geo.GaussPointsPerElem*geo.NumElements);
-                dtnanull = zeros(geo.DofsPerElement,geo.GaussPointsPerElem,geo.NumElements);
-                dNanull = zeros(geo.DofsPerElement,geo.GaussPointsPerElem,geo.NumElements);
+                dNgp = fe.gradN(fe.GaussPoints);
+                anulldyadanull = zeros(3,3,fe.GaussPointsPerElem*geo.NumElements);
+                dtnanull = zeros(geo.DofsPerElement,fe.GaussPointsPerElem,geo.NumElements);
+                dNanull = zeros(geo.DofsPerElement,fe.GaussPointsPerElem,geo.NumElements);
                 for m = 1 : geo.NumElements
-                    for gp = 1 : geo.GaussPointsPerElem
+                    for gp = 1 : fe.GaussPointsPerElem
                         % a0 dyad a0
-                        pos = (m-1)*geo.GaussPointsPerElem+gp;
+                        pos = (m-1)*fe.GaussPointsPerElem+gp;
                         anulldyadanull(:,:,pos) = anull(:,gp,m)*anull(:,gp,m)';
 
                         % <grad phi_k, a0> scalar products
@@ -668,7 +668,7 @@ classdef System < models.BaseDynSystem
 
                         % forward transformation of a0 at gauss points
                         % (plotting only so far)
-                        pos = [0 geo.GaussPointsPerElem 2*geo.GaussPointsPerElem]+gp;
+                        pos = [0 fe.GaussPointsPerElem 2*fe.GaussPointsPerElem]+gp;
                         dNanull(:,gp,m) = dNgp(:,pos) * this.a0(:,gp,m);
                     end
                 end

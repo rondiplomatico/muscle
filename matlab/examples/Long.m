@@ -42,15 +42,15 @@ classdef Long < muscle.AModelConfig
 %         end
         
         function anull = seta0(this, anull)
-            geo = this.PosFE.Geometry;
-            if geo.GaussPointsPerElem ~= 27
+            fe = this.PosFE;
+            if fe.GaussPointsPerElem ~= 27
                 warning('a0 designed for 27 gauss points!');
             end
             x = linspace(0,1,8*3);
             basea0 = [sin(x*pi); cos(x*pi)]; %; zeros(size(x))
-            front = geo.gaussp(2,:) < 0;
-            mid = geo.gaussp(2,:) == 0;
-            back = geo.gaussp(2,:) > 0;
+            front = fe.GaussPoints(2,:) < 0;
+            mid = fe.GaussPoints(2,:) == 0;
+            back = fe.GaussPoints(2,:) > 0;
             % Direction is x
             for m = 1:8
                 off = (m-1)*3;

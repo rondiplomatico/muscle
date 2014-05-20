@@ -94,24 +94,6 @@ classdef Model < models.BaseFullModel
                 
                 residuals_dirichlet(:,k) = sys.f.LastBCResiduals;
             end
-            
-%             % Position values first
-%             pos = sys.bc_dir_displ;
-%             nodehasdirvals = sum(pos,1) > 0;
-%             pos(:,~nodehasdirvals) = [];
-%             pos = reshape(pos,[],1);
-%             % Augment to full 3dim quantities
-%             fp = zeros(length(pos),length(t));
-%             fp(pos,:) = residuals_dirichlet(1:posvals,:);
-%             % Velocity values second
-%             pos = sys.bc_dir_velo;
-%             nodehasdirvals = sum(pos,1) > 0;
-%             pos(:,~nodehasdirvals) = [];
-%             pos = reshape(pos,[],1);
-%             % Augment to full 3dim quantities
-%             fv = zeros(length(pos),length(t));
-%             fv(pos,:) = residuals_dirichlet(posvals+1:end,:);
-%             f = [fp; fv];
         end
         
         function setConfig(this, value)
@@ -120,6 +102,17 @@ classdef Model < models.BaseFullModel
             end
             this.Config = value;
             this.System.configUpdated;
+        end
+        
+        function setGaussIntegrationRule(this, value)
+            % Sets the gauss integration rule for the model.
+            % 
+            % See fem.BaseFEM for possible values. Currently 3,4,5 are
+            % implemented.
+            mc = this.Config;
+            mc.PosFE.GaussPointRule = value;
+            mc.PressFE.GaussPointRule = value;
+            this.setConfig(mc);
         end
         
         function varargout = plot(this, varargin)
@@ -161,6 +154,19 @@ classdef Model < models.BaseFullModel
             [t,y] = m.simulate(mu);
             m.System.UseDirectMassInversion = true;
             [t,y] = m.simulate(mu);
+        end
+        
+        function test_JacobianApproxGaussRules
+            % Tests the precision of the analytical jacobian computation
+            % using different gauss integration rules
+            m = muscle.Model(muscle.DebugConfig(1));
+%             mu = m.getRandomParam;
+            f = m.System.f;
+            f.test_Jacobian;
+            m.setGaussIntegrationRule(4);
+            f.test_Jacobian;
+            m.setGaussIntegrationRule(5);
+            f.test_Jacobian;
         end
     end
     

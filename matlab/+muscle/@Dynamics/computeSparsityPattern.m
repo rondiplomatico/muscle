@@ -21,7 +21,7 @@ function computeSparsityPattern(this)
 
     dofsperelem_displ = geo.DofsPerElement;
     dofsperelem_press = pgeo.DofsPerElement;
-    num_gausspoints = geo.GaussPointsPerElem;
+    num_gausspoints = fe_pos.GaussPointsPerElem;
     num_elements = geo.NumElements;
     pones = ones(dofsperelem_press,1,'int32');
     for m = 1:num_elements

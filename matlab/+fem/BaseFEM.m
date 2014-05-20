@@ -2,7 +2,13 @@ classdef BaseFEM < handle
     %FEMBASE Summary of this class goes here
     %   Detailed explanation goes here
     
-    properties
+    properties(Dependent)
+        GaussPointRule;
+        GaussPointsPerElem;
+        GaussPointsPerElemFace;
+    end
+    
+    properties(SetAccess=private)
         Geometry;
         
         % Values of basis functions on gauss points
@@ -15,11 +21,21 @@ classdef BaseFEM < handle
         face_detjac;
         Ngpface;
         dN_facenormals;
-        NormalsOnFaceGP;
         
         % transformed basis function gradients, stored in eldofs x gp*3
         % x element matrix (accessible in 20x3-chunks for each gauss point and element)
         transgrad;
+        
+        %% Gauss integration related properties
+        GaussPoints;
+        GaussWeights;
+        FaceGaussPoints;
+        FaceGaussWeights;
+        NormalsOnFaceGP;
+    end
+    
+    properties(Access=private)
+        fGaussPointRule = 3;
     end
         
     methods
@@ -33,11 +49,12 @@ classdef BaseFEM < handle
             el = g.Elements;
             np = g.NumNodes;
             
+            % Get the right gauss points
+            this.initGaussPoints;
+            
             %% Precomputations
-            % Iterate each cube
-            gp = g.gaussp;
             % Number of gauss points
-            ngp = g.GaussPointsPerElem;
+            ngp = this.GaussPointsPerElem;
             Mass = zeros(np,np);
             % Number of elements
             nel = size(el,1);
@@ -58,7 +75,7 @@ classdef BaseFEM < handle
                 % Iterate all gauss points
                 for gi = 1:ngp
                     % gauss point \xi
-                    xi = gp(:,gi);
+                    xi = this.GaussPoints(:,gi);
                     
                     %% N on gauss points
                     Ngpval(:,gi,m) = this.N(xi);
@@ -77,7 +94,7 @@ classdef BaseFEM < handle
                     Nxi = this.N(xi);
                     % Add up [basis function values at xi] times [volume
                     % ratio at xi] times [gauss weight for xi]
-                    bval = bval + g.gaussw(gi)*(Nxi*Nxi')*eljac(m,gi);
+                    bval = bval + this.GaussWeights(gi)*(Nxi*Nxi')*eljac(m,gi);
                     
                     %% Transformed Basis function gradients at xi
                     dtnall(:,3*(gi-1)+1:3*gi,m) = dNxi / Jac;
@@ -94,7 +111,7 @@ classdef BaseFEM < handle
             
             %% Boundary/Face precomputations
             nf = g.NumFaces;
-            ngp = g.GaussPointsPerElemFace;
+            ngp = this.GaussPointsPerElemFace;
             npf = g.NodesPerFace;
             Ngpval = zeros(npf,ngp,nf);
             facejac = zeros(nf,ngp);
@@ -106,21 +123,19 @@ classdef BaseFEM < handle
                 masterfacenodeidx = g.MasterFaces(faceidx,:);
                 % Get N values on all gauss points of the face, returning a
                 % DofsPerElem x ngp vector.
-                Nall = this.N(g.facegaussp(:,:,faceidx));
+                Nall = this.N(this.FaceGaussPoints(:,:,faceidx));
                 % From that, we only need the values on the face nodes
                 Ngpval(:,:,fn) = Nall(masterfacenodeidx,:);
                 
-                dNxi = this.gradN(g.facegaussp(:,:,faceidx));    
+                dNxi = this.gradN(this.FaceGaussPoints(:,:,faceidx));    
                 for gi = 1:ngp
-                    dNxipos = [0 9 18]+gi;
-%                     facenodeidx = g.Elements(elemidx,masterfacenodeidx);
+                    dNxipos = [0 ngp 2*ngp]+gi;
                     
                     % Get full transformation jacobian
                     Jac = g.Nodes(:,g.Elements(elemidx,:))*dNxi(:,dNxipos);
 
                     % Precompute transformed normals
                     transNormals(:,gi,fn) = Jac*g.FaceNormals(:,faceidx);
-%                     transNormals(:,gi,fn) = g.FaceNormals(:,faceidx);
                     
                     % Take only the restriction of the jacobian to the
                     % face-dimensions for transformation theorem
@@ -160,6 +175,26 @@ classdef BaseFEM < handle
                 pm.done;
             end
         end
+        
+        function value = get.GaussPointRule(this)
+            value = this.fGaussPointRule;
+        end
+        
+        function set.GaussPointRule(this, value)
+            if ~isequal(this.fGaussPointRule, value)
+                
+                this.fGaussPointRule = value;
+                this.init;
+            end
+        end
+        
+        function nc = get.GaussPointsPerElem(this)
+            nc = size(this.GaussPoints,2);
+        end
+        
+        function nc = get.GaussPointsPerElemFace(this)
+            nc = size(this.FaceGaussPoints,2);
+        end
     end
     
     methods(Abstract)
@@ -187,6 +222,48 @@ classdef BaseFEM < handle
         % `x_j`. If `x` is only a 3x1 column vector, this corresponds to
         % `\nabla N_i(x)` @type matrix<double>
         dnx = gradN(this, x);
+    end
+    
+    methods(Access=private)
+        function initGaussPoints(this)
+            %% Init Gauss points
+            switch this.fGaussPointRule
+                case 3 % 3-point-rule            
+                    g = [-sqrt(3/5) 0 sqrt(3/5)];
+                    w = [5/9 8/9 5/9];
+                case 4 % 4-point-rule
+                    g = [-sqrt(3/7 + 2/7*sqrt(6/5)) -sqrt(3/7 - 2/7*sqrt(6/5)) sqrt(3/7 - 2/7*sqrt(6/5)) sqrt(3/7 + 2/7*sqrt(6/5))];
+                    w = [(18-sqrt(30))/36 (18+sqrt(30))/36 (18+sqrt(30))/36 (18-sqrt(30))/36];
+                case 5 % 5-point rule
+                    a = 2*sqrt(10/7);
+                    g = [-sqrt(5+a)/3 -sqrt(5-a)/3 0 sqrt(5-a)/3 sqrt(5+a)/3];
+                    a = 13*sqrt(70);
+                    w = [(322-a)/900 (322+a)/900 128/225 (322+a)/900 (322-a)/900];
+                otherwise
+                    error('Quadrature rule for %d points per dimension not implemented',this.fGaussPointRule);
+            end
+            
+            %% Transfer to 3D
+            [WX,WY,WZ] = meshgrid(w);
+            [GX,GY,GZ] = meshgrid(g);
+            W = WX.*WY.*WZ;
+            this.GaussPoints = [GX(:) GY(:) GZ(:)]';
+            this.GaussWeights = W(:);
+            
+            % Faces Gauss points
+            [WX,WY] = meshgrid(w);
+            [GX,GY] = meshgrid(g);
+            W = WX.*WY;
+            fgp = zeros(3,length(g)^2,6);
+            faceremainingdim = [-1 1 -1 1 -1 1];
+            g = this.Geometry;
+            for faceidx = 1:6
+                fgp(g.FaceDims(:,faceidx),:,faceidx) = [GX(:) GY(:)]';
+                fgp(~g.FaceDims(:,faceidx),:,faceidx) = faceremainingdim(faceidx);
+            end
+            this.FaceGaussPoints = fgp;
+            this.FaceGaussWeights = W(:);
+        end
     end
     
     methods(Static,Access=protected)

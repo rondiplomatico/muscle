@@ -11,7 +11,7 @@ function J = getStateJacobian(this, uvwdof, t)
     dofs_pos = 3*N;
     dofsperelem_pos = geo.DofsPerElement;
     dofsperelem_press = pgeo.DofsPerElement;
-    num_gausspoints = geo.GaussPointsPerElem;
+    num_gausspoints = fe_pos.GaussPointsPerElem;
     num_elements = geo.NumElements;
     
     % Cache variables instead of accessing them via "this." in loops
@@ -114,7 +114,7 @@ function J = getStateJacobian(this, uvwdof, t)
 
             %% Main node loop
             % Precompute weight
-            weight = geo.gaussw(gp) * fe_pos.elem_detjac(m, gp);
+            weight = fe_pos.GaussWeights(gp) * fe_pos.elem_detjac(m, gp);
 
             for k = 1:dofsperelem_pos
                 e1_dyad_dPhik = [dtn(k,:); 0 0 0; 0 0 0];

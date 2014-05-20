@@ -37,15 +37,6 @@ classdef DebugConfig < muscle.AModelConfig
             this = this@muscle.AModelConfig(geo.toCube27Node,geo);
             
             this.Version = version;
-            switch this.Version    
-            case 3
-                types = [0 .2 .4 .6 .8 1];
-                ftw = zeros(geo.GaussPointsPerElem,length(types),geo.NumElements);
-                % Test: Use only slow-twitch muscles
-                ftw(:,1,:) = 1;
-                this.FibreTypeWeights = ftw;
-                this.FibreTypes = types;
-            end
         end
         
         function configureModel(this, model)
@@ -58,6 +49,15 @@ classdef DebugConfig < muscle.AModelConfig
             switch this.Version
             case 1
                 f.alpha = 0;
+            case 3
+                types = [0 .2 .4 .6 .8 1];
+                fe = this.PosFE;
+                geo = fe.Geometry;
+                ftw = zeros(fe.GaussPointsPerElem,length(types),geo.NumElements);
+                % Test: Use only slow-twitch muscles
+                ftw(:,1,:) = 1;
+                this.FibreTypeWeights = ftw;
+                this.FibreTypes = types;
             case {4,5,6}
                 %% Material configuration from CMISS/3Elem_sprenger.xml
                 % c1M = 3.56463903963e-02 MPa
@@ -148,10 +148,13 @@ classdef DebugConfig < muscle.AModelConfig
             % 4: Force at T=12, x-position (center node) 1.5: -89.4587mN
             % 5: Force at T=12, x-position (center node) 1.5: -222.511mN
             % 6: Force at T=12, x-position (center node) 1.5: -89.458mN
+            %
             % 7: Force at T=15, x-position (center node) 1.40088: -5.11973mN
-            % with 4^3 gaussp:  -5.12226mN, 5^3 gaussp: -5.12224mN
+            % with  4^3 gaussp:  -5.12226mN
+            %       5^3 gaussp: -5.12224mN
             % 8: Force at T=15, x-position (center node) 1.4: -98.0233mN
-            % with 4^3 gaussp:  -101.762mN, 5^3 gaussp: -102.297mN
+            % with  4^3 gaussp:  -101.762mN
+            %       5^3 gaussp: -102.297mN
             % 9: Force at T=15, x-position (center node) 1.4: -5.11482mN
             % with 4^3 gaussp:  -5.12227mN, 5^3 gaussp: -5.11725mN
             if nargin < 1

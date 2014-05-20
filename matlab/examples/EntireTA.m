@@ -9,7 +9,7 @@ classdef EntireTA < muscle.AModelConfig
             
             %% Muscle fibre weights
             types = [0 .2 .4 .6 .8 1];
-            ftw = zeros(geo.GaussPointsPerElem,length(types),geo.NumElements);
+            ftw = zeros(this.PosFE.GaussPointsPerElem,length(types),geo.NumElements);
             % Test: Use only slow-twitch muscles
             ftw(:,1,:) = 1;
             this.FibreTypeWeights = ftw;
