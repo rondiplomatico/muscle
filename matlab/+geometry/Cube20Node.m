@@ -81,6 +81,13 @@ classdef Cube20Node < geometry.BaseGeometry
                             6:8 11 12 18:20
                             1:8
                             13:20];
+             this.PatchFacesIdx = [ 1 4 6 11 18 16 13 9
+                                    3 5 8 12 20 17 15 10
+                                    1 2 3 10 15 14 13 9
+                                    6 7 8 12 20 19 18 11
+                                    1 2 3 5 8 7 6 4
+                                    13 14 15 17 20 19 18 16];
+            this.PatchesPerFace = 1;
             this.Faces = this.computeFaces;
         end
         

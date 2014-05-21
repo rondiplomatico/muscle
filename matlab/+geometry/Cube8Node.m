@@ -32,12 +32,19 @@ classdef Cube8Node < geometry.BaseGeometry
             this.Edges = e;
             
             %% Set Face indices
-            this.MasterFaces = [  1 3 5 7
+            this.MasterFaces = [1 3 5 7
                             2 4 6 8
                             1 2 5 6
                             3 4 7 8
                             1 2 3 4
                             5 6 7 8];
+            this.PatchFacesIdx = [1 3 7 5
+                            2 4 8 6
+                            1 2 6 5
+                            3 4 8 7
+                            1 2 4 3
+                            5 6 8 7];
+            this.PatchesPerFace = 1;
             this.Faces = this.computeFaces;
         end
         

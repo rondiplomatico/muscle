@@ -5,7 +5,7 @@ classdef Cube2ForceBC < muscle.AModelConfig
             % Single cube with same config as reference element
             [pts, cubes] = geometry.Cube8Node.DemoGrid(0:1,-1:2,0:1);
             geo = geometry.Cube8Node(pts, cubes);
-            this = this@muscle.AModelConfig(geo);
+            this = this@muscle.AModelConfig(geo.toCube27Node, geo);
         end
         
         function configureModel(~, model)
@@ -15,8 +15,8 @@ classdef Cube2ForceBC < muscle.AModelConfig
             f.alpha = 0;
             f.Viscosity = .1;
             os = model.ODESolver;
-            os.RelTol = .1;
-            os.AbsTol = .1;
+            os.RelTol = .0001;
+            os.AbsTol = .05;
             % Ramp up the external pressure
             model.System.Inputs{1} = @(t)min(1,t);
         end
@@ -51,8 +51,8 @@ classdef Cube2ForceBC < muscle.AModelConfig
             geo = this.PosFE.Geometry;
             % Fix all on left and only the y,z directions of the back right
             % nodes
-            displ_dir(:,geo.Elements(3,[6 7 11 18 19])) = true;
-            displ_dir([2 3],geo.Elements(3,[8 12 20])) = true;
+            displ_dir(:,geo.Elements(3,geo.MasterFaces(4,:))) = true;
+            displ_dir(1,geo.Elements(3,[9 18 27])) = false;
         end
         
         function anull = seta0(~, anull)

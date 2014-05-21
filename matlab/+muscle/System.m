@@ -206,11 +206,15 @@ classdef System < models.BaseDynSystem
             i.addParamValue('Forces',false,@(v)islogical(v));
             i.addParamValue('Velo',false,@(v)islogical(v));
             i.addParamValue('Pressure',false,@(v)islogical(v));
+            i.addParamValue('Skel',false,@(v)islogical(v));
             i.addParamValue('pm',[],@(v)isa(v,'PlotManager'));
-            i.addParamValue('PDF',[]);
-            i.addParamValue('RNF',[]);
+            i.addParamValue('DF',[]);
+            i.addParamValue('NF',[]);
             i.parse(varargin{:});
             r = i.Results;
+            if ~isempty(r.NF)
+                r.Forces = true;
+            end
             
             if isempty(r.pm)
                 pm = PlotManager;
@@ -237,7 +241,7 @@ classdef System < models.BaseDynSystem
             bc_dir_velo_applies = sum(this.bc_dir_velo,1) >= 1;
             no_bc = ~bc_dir_pos_applies & ~bc_dir_velo_applies;
             
-            if ~isempty(r.PDF)
+            if ~isempty(r.DF)
                 have_residuals = bc_dir_pos_applies | bc_dir_velo_applies;
                 residuals_pos = this.bc_dir_displ | this.bc_dir_velo;
                 residuals = zeros(size(residuals_pos));
@@ -272,7 +276,7 @@ classdef System < models.BaseDynSystem
                 forces_apply = sum(abs(forces),1) ~= 0;
                 forces = forces(:,forces_apply);
                 
-                if ~isempty(r.RNF)
+                if ~isempty(r.NF)
                     residual_neumann_forces = zeros(size(this.bc_dir_displ));
                 end
             end
@@ -283,6 +287,10 @@ classdef System < models.BaseDynSystem
             daspect([1 1 1]);
             zlabel(h,'z [mm]');
             hold(h,'on');
+            if ~r.Skel
+                light('Position',[1 1 1],'Style','infinite','Parent',h);
+                musclecol = [0.854688, 0.201563, 0.217188];
+            end
             
             xpos = 1:3:geo.NumNodes*3;
             box = [min(min(uvw(xpos,:))) max(max(uvw(xpos,:)))...
@@ -298,7 +306,16 @@ classdef System < models.BaseDynSystem
                 u = reshape(uvw(1:vstart-1,ts),3,[]);
                 v = reshape(uvw(vstart:pstart-1,ts),3,[]);
                 cla(h);
-                plot3(h,u(1,no_bc),u(2,no_bc),u(3,no_bc),'r.','MarkerSize',14);
+                
+                if r.Skel
+                    plot3(h,u(1,no_bc),u(2,no_bc),u(3,no_bc),'r.','MarkerSize',14);
+                    for k=1:size(e,1)
+                        plot3(h,u(1,[e(k,1) e(k,2)]),u(2,[e(k,1) e(k,2)]),u(3,[e(k,1) e(k,2)]),'r');
+                    end
+                else
+                    p = patch('Faces',geo.PatchFaces,'Vertices',u');
+                    set(p,'EdgeColor',.5*musclecol,'FaceColor',musclecol,'FaceAlpha',.3);
+                end
                 
                 % Velocities
                 if r.Velo
@@ -310,16 +327,14 @@ classdef System < models.BaseDynSystem
                 plot3(h,u(1,bc_dir_3pos_applies),u(2,bc_dir_3pos_applies),u(3,bc_dir_3pos_applies),'.','MarkerSize',20,'Color',[0 0 0]);
                 plot3(h,u(1,bc_dir_2pos_applies),u(2,bc_dir_2pos_applies),u(3,bc_dir_2pos_applies),'.','MarkerSize',20,'Color',[.5 .5 .5]);
                 plot3(h,u(1,bc_dir_1pos_applies),u(2,bc_dir_1pos_applies),u(3,bc_dir_1pos_applies),'.','MarkerSize',20,'Color',[.7 .7 .7]);
-                for k=1:size(e,1)
-                    plot3(h,u(1,[e(k,1) e(k,2)]),u(2,[e(k,1) e(k,2)]),u(3,[e(k,1) e(k,2)]),'r');
-                end
+                
                 % Velocity
                 plot3(h,u(1,bc_dir_velo_applies),u(2,bc_dir_velo_applies),u(3,bc_dir_velo_applies),'g.','MarkerSize',20);
                 
-                %% Position Dirichlet Forces
-                if ~isempty(r.PDF)
+                %% Dirichlet Forces
+                if ~isempty(r.DF)
                     udir = u(:,have_residuals);
-                    residuals(residuals_pos) = r.PDF(sortidx,ts);
+                    residuals(residuals_pos) = r.DF(sortidx,ts);
                     quiver3(h,udir(1,:),udir(2,:),udir(3,:),...
                         residuals(1,have_residuals),residuals(2,have_residuals),residuals(3,have_residuals),'k', 'MarkerSize',14);
                 end
@@ -337,13 +352,13 @@ classdef System < models.BaseDynSystem
                         
                         facecenter = mean(u(:,facenodeidx),2);
                         quiver3(h,facecenter(1),facecenter(2),facecenter(3),...
-                            meanforces(1,k),meanforces(2,k),meanforces(3,k),0,'LineWidth',2,'Color','b','MaxHeadSize',1);
+                            meanforces(1,k),meanforces(2,k),meanforces(3,k),4,'LineWidth',2,'Color','b','MaxHeadSize',1);
                         
-                        if ~isempty(r.RNF)
-                            residual_neumann_forces(this.bc_neum_forces_nodeidx) = r.RNF(:,ts);
+                        if ~isempty(r.NF)
+                            residual_neumann_forces(this.bc_neum_forces_nodeidx) = r.NF(:,ts);
                             meanforce = mean(residual_neumann_forces(:,facenodeidx),2);
                             quiver3(h,facecenter(1),facecenter(2),facecenter(3),...
-                            meanforce(1),meanforce(2),meanforce(3),0,'LineWidth',2,'Color','k','MaxHeadSize',1);
+                            meanforce(1),meanforce(2),meanforce(3),4,'LineWidth',2,'Color','k','MaxHeadSize',1);
                         end
                     end
                 end
@@ -467,16 +482,18 @@ classdef System < models.BaseDynSystem
 
                 facecenter = mean(u(:,facenodeidx),2);
                 quiver3(h,facecenter(1),facecenter(2),facecenter(3),...
-                    meanforces(1,k),meanforces(2,k),meanforces(3,k),0,'LineWidth',2,'Color','b','MaxHeadSize',1);
+                    meanforces(1,k),meanforces(2,k),meanforces(3,k),.5,'LineWidth',2,'Color','b','MaxHeadSize',1);
             end
             
             %% Fibres
-            Ngp = dfem.N(dfem.GaussPoints);
-            for m = 1:geo.NumElements
-                uelem = u(:,geo.Elements(m,:));
-                gps = uelem*Ngp;
-                anull = uelem*this.dNa0(:,:,m);
-                quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'.','Color',[.4 .9 .4]);
+            if ~isempty(this.dNa0)
+                Ngp = dfem.N(dfem.GaussPoints);
+                for m = 1:geo.NumElements
+                    uelem = u(:,geo.Elements(m,:));
+                    gps = uelem*Ngp;
+                    anull = uelem*this.dNa0(:,:,m);
+                    quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'.','Color',[.4 .9 .4]);
+                end
             end
             
             pm.done;
@@ -629,7 +646,7 @@ classdef System < models.BaseDynSystem
                     facenodeidx = geo.Elements(elemidx,masterfacenodeidx);
                     facenodeidx = (facenodeidx-1)*3+1;
                     facenodeidx = [facenodeidx; facenodeidx+1; facenodeidx+2];%#ok
-                    force(facenodeidx(:)) = integrand(:);
+                    force(facenodeidx(:)) = force(facenodeidx(:)) + integrand(:);
                 end
             end
             % Augment to u,v,w vector

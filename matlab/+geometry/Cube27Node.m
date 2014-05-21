@@ -56,8 +56,8 @@ classdef Cube27Node < geometry.BaseGeometry
                     4 13 13 22 7 16 16 25 10 13 13 16 19 22 22 25 ... % left side
                     8 17 17 26 16 17 17 18 25 26 26 27 ... % back side
                     20 23 23 26 22 23 23 24 ... % top
-                    5 14 13 14 11 14 14 15 14 17 14 23]); % inner
-                e(end+1:end+54,:) = reshape(hlp',2,[])';
+                    ]); % inner 5 14 13 14 11 14 14 15 14 17 14 23
+                e(end+1:end+48,:) = reshape(hlp',2,[])';
             end
             e = unique(e,'rows','stable');
             this.Edges = e;
@@ -69,6 +69,14 @@ classdef Cube27Node < geometry.BaseGeometry
                             7:9 16:18 25:27
                             1:9
                             19:27];
+            % Face node indices for patch objects
+            this.PatchFacesIdx = [1 4 13 10; 4 7 16 13; 13 16 25 22; 10 13 22 19;
+                3 6 15 12; 6 9 18 15; 12 15 24 21; 15 18 27 24;
+                1 2 11 10; 2 3 12 11; 10 11 20 19; 11 12 21 20;
+                7 8 17 16; 8 9 18 17; 16 17 26 25; 17 18 27 26;
+                1 2 5 4; 4 5 8 7; 2 3 6 5; 5 6 9 8;
+                19 20 23 22; 20 21 24 23; 22 23 26 25; 23 24 27 26];
+            this.PatchesPerFace = 4;
             this.Faces = this.computeFaces;
         end
         

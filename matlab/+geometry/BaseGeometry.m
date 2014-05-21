@@ -15,11 +15,14 @@ classdef BaseGeometry < handle
         
         MasterFaces;
         
+        % The indices of the nodes suitable for creating a patch surface
+        % object
+        PatchFacesIdx;
+        PatchesPerFace;
+        
         % A 2 x N_F vector containing the element number in the first row
         % and the face number on that element in the second row.
         Faces;
-        
-        %CornerIndices;
     end
     
     properties(Dependent)
@@ -44,6 +47,8 @@ classdef BaseGeometry < handle
         FaceDims = logical([0 0 1 1 1 1
                             1 1 0 0 1 1
                             1 1 1 1 0 0]);
+                        
+        PatchFaces;
     end
     
     methods
@@ -147,6 +152,23 @@ classdef BaseGeometry < handle
             end
             [elemnr, facenr] = find(inner == 0);
             faces = [elemnr facenr]';
+            
+            %% Also compute the PatchFaces index matrix
+            if ~isempty(this.PatchFacesIdx)
+                nf = size(faces,2);
+                ppf = this.PatchesPerFace;
+                np = size(this.PatchFacesIdx,1);
+                newf = zeros(ppf,size(this.PatchFacesIdx,2));
+                pf = repmat(newf,nf,1);
+                for k=1:nf
+                    elem = faces(1,k);
+                    face = faces(2,k);
+                    pos = (face-1)*ppf + (1:ppf);
+                    patchidx = this.PatchFacesIdx(pos,:);
+                    pf((k-1)*ppf+(1:ppf),:) = this.Elements(elem,patchidx);
+                end
+                this.PatchFaces = pf;
+            end
         end
     end
     

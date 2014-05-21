@@ -6,7 +6,7 @@ classdef Cube12 < muscle.AModelConfig
             [pts, cubes] = geometry.Cube8Node.DemoGrid(-1:1,-1:2,-1:1);
             
             geo = geometry.Cube8Node(pts, cubes);
-            this = this@muscle.AModelConfig(geo);
+            this = this@muscle.AModelConfig(geo.toCube20Node,geo);
         end
         
         function configureModel(~, model)
@@ -24,7 +24,7 @@ classdef Cube12 < muscle.AModelConfig
             %% Dirichlet conditions: Position (fix one side)
             geo = this.PosFE.Geometry;
             for k = [5 6 11 12]
-                displ_dir(:,geo.Elements(k,[6:8 11 12 18:20])) = true;
+                displ_dir(:,geo.Elements(k,geo.MasterFaces(4,:))) = true;
             end
         end
         

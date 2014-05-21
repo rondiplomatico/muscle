@@ -16,7 +16,7 @@ classdef AModelConfig < handle
         function this = AModelConfig(geo, press_geo)
             if nargin < 2
                 if isa(geo,'geometry.Cube8Node')
-                    pos_geo = geo.toCube20Node;
+                    pos_geo = geo.toCube27Node;
                     press_geo = geo;
                 elseif isa(geo,'geometry.Cube20Node') || isa(geo,'geometry.Cube27Node')
                     pos_geo = geo;
@@ -30,7 +30,7 @@ classdef AModelConfig < handle
             if (~isa(pos_geo,'geometry.Cube20Node') && ~isa(pos_geo,'geometry.Cube27Node')) || ~isa(press_geo,'geometry.Cube8Node')
                 error('Scenario not yet implemented.');
             end
-            if isa(geo,'geometry.Cube27Node')
+            if isa(pos_geo,'geometry.Cube27Node')
                 this.PosFE = fem.HexahedronTriquadratic(pos_geo);
             else
                 this.PosFE = fem.HexahedronSerendipity(pos_geo);
