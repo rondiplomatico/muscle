@@ -5,7 +5,7 @@ classdef Cube2ForceBC < muscle.AModelConfig
             % Single cube with same config as reference element
             [pts, cubes] = geometry.Cube8Node.DemoGrid(0:1,-1:2,0:1);
             geo = geometry.Cube8Node(pts, cubes);
-            this = this@muscle.AModelConfig(geo.toCube27Node, geo);
+            this = this@muscle.AModelConfig(geo.toCube20Node, geo);
         end
         
         function configureModel(~, model)
@@ -52,7 +52,8 @@ classdef Cube2ForceBC < muscle.AModelConfig
             % Fix all on left and only the y,z directions of the back right
             % nodes
             displ_dir(:,geo.Elements(3,geo.MasterFaces(4,:))) = true;
-            displ_dir(1,geo.Elements(3,[9 18 27])) = false;
+            %displ_dir(1,geo.Elements(3,[9 18 27])) = false;
+            displ_dir(1,geo.Elements(3,[8 16 20])) = false;
         end
         
         function anull = seta0(~, anull)

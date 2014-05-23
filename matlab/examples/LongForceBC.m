@@ -1,22 +1,24 @@
 classdef LongForceBC < muscle.AModelConfig
+    % Demo class with a long beam, diagonal fibre direction and two-point
+    % boundary face forces in opposing directions.
     
     methods
         function this = LongForceBC
             % Single cube with same config as reference element
-            [pts, cubes] = geometry.Cube8Node.DemoGrid([0 20],-10:10:10,[0 15],.1);
+            [pts, cubes] = geometry.Cube8Node.DemoGrid([0 20],-40:10:40,[0 15],.1);
             geo = geometry.Cube8Node(pts, cubes);
-            this = this@muscle.AModelConfig(geo);
+            this = this@muscle.AModelConfig(geo.toCube20Node,geo);
         end
         
         function configureModel(~, model)
-            model.T = 5;
-            model.dt = .1;
+            model.T = 40;
+            model.dt = .2;
             f = model.System.f;
-            f.alpha = .3;
-            f.Viscosity = 0;
+            f.alpha = 0;
+            model.System.Viscosity = .1;
             os = model.ODESolver;
-            os.RelTol = .1;
-            os.AbsTol = .1;
+            os.RelTol = .001;
+            os.AbsTol = .05;
             model.System.Inputs{1} = @(t)min(1,t);
         end
         
@@ -28,8 +30,14 @@ classdef LongForceBC < muscle.AModelConfig
             % In the default implementation there are no force boundary
             % conditions.
             P = [];
-            if elemidx == 1 && faceidx == 3
-                P = -.1;
+            if elemidx == 1 && faceidx == 1
+                P = [1 0 0
+                     0 0 0;
+                     0 0 0];
+            elseif elemidx == 5 && faceidx == 2
+                P = 3*[1 0 0
+                     0 0 0;
+                    .5 0 0];
             end
         end
     end
@@ -39,7 +47,7 @@ classdef LongForceBC < muscle.AModelConfig
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             %% Dirichlet conditions: Position (fix one side)
             geo = this.PosFE.Geometry;
-            displ_dir(:,geo.Elements(2,[6:8 11 12 18:20])) = true;
+            displ_dir(:,geo.Elements(8,geo.MasterFaces(4,:))) = true;
         end
         
         function anull = seta0(~, anull)

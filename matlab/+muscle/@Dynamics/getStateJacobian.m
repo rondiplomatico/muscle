@@ -19,7 +19,7 @@ function J = getStateJacobian(this, uvwdof, t)
     d1 = this.d1;
     lfopt = this.lambdafopt;
     Pmax = this.Pmax;
-    visc = this.fViscosity;
+%     visc = this.fViscosity;
     alphaconst = min(1,t/this.fullActivationTime)*this.alpha;
     havefibres = sys.HasFibres;
     havefibretypes = havefibres && ~isempty(mc.FibreTypeWeights);
@@ -27,10 +27,11 @@ function J = getStateJacobian(this, uvwdof, t)
     if havefibretypes
         fibretypeweights = mc.FibreTypeWeights;
         % Input data is x1: fibre type, x2: mean current, x3: time
-        forceargs = [this.muprep; t*ones(1,size(this.muprep,2))];
+%         forceargs = [this.muprep; t*ones(1,size(this.muprep,2))];
         % This is the learned 
 %         FibreForces = this.APExp.evaluate(forceargs)';
-        FibreForces = alphaconst*ones(size(this.muprep,2),1);
+%         FibreForces = alphaconst*ones(size(this.muprep,2),1);
+        FibreForces = mc.Pool.getActivation(t);
     end
     
     %% Precompute the size of i,j,s for speed
@@ -39,9 +40,9 @@ function J = getStateJacobian(this, uvwdof, t)
     relidx_press = 1:dofsperelem_press;
     % 3x for grad_u K(u,v,w), 1x for Grad_w K(u,v,w), 3 x pressure
     numparts = (3+1)*numXYZDofs_pos + dofsperelem_press;
-    if visc > 0
-        numparts = numparts+3*numXYZDofs_pos;
-    end
+%     if visc > 0
+%         numparts = numparts+3*numXYZDofs_pos;
+%     end
     totalsize = dofs_pos + num_elements*num_gausspoints*numparts;
     i = zeros(totalsize,1);
     j = zeros(totalsize,1);
@@ -142,10 +143,6 @@ function J = getStateJacobian(this, uvwdof, t)
                 if havefibres
                     dPx = dPx + (dgdlam*dlambdaf(1)*F + gval*e1_dyad_dPhik)*a0;
                 end
-%                 i = [i; i_veloidx]; %#ok<*AGROW>
-%                 j = [j; one*elemidx_pos(1,k)];
-%                 snew = -weight * dPx * dtn';
-%                 s = [s; snew(:)];
                 i(cur_off + relidx_pos) = elemidx_velo_linear;
                 j(cur_off + relidx_pos) = elemidx_pos_XYZ(1,k);
                 snew = -weight * dPx * dtn';
@@ -160,10 +157,6 @@ function J = getStateJacobian(this, uvwdof, t)
                 if havefibres
                     dPy = dPy + (dgdlam*dlambdaf(2)*F + gval*e2_dyad_dPhik)*a0;
                 end
-%                 i = [i; i_veloidx];
-%                 j = [j; one*elemidx_pos(2,k)];
-%                 snew = -weight * dPy * dtn';
-%                 s = [s; snew(:)];
                 i(cur_off + relidx_pos) = elemidx_velo_linear;
                 j(cur_off + relidx_pos) = elemidx_pos_XYZ(2,k);
                 snew = -weight * dPy * dtn';
@@ -178,10 +171,6 @@ function J = getStateJacobian(this, uvwdof, t)
                 if havefibres
                     dPz = dPz + (dgdlam*dlambdaf(3)*F + gval*e3_dyad_dPhik)*a0;
                 end
-%                 i = [i; i_veloidx];
-%                 j = [j; one*elemidx_pos(3,k)];
-%                 snew = -weight * dPz * dtn';
-%                 s = [s; snew(:)];
                 i(cur_off + relidx_pos) = elemidx_velo_linear;
                 j(cur_off + relidx_pos) = elemidx_pos_XYZ(3,k);
                 snew = -weight * dPz * dtn';
@@ -190,39 +179,27 @@ function J = getStateJacobian(this, uvwdof, t)
                 
                 %% grad_v K(u,v,w)
                 % Viscosity part
-                if visc > 0
-%                     i = [i; i_veloidx];
-%                     j = [j; one*elemidx_velo(1,k)];
+%                 if visc > 0
+%                     i(cur_off + relidx_pos) = elemidx_velo_linear;
+%                     j(cur_off + relidx_pos) = elemidx_velo_XYZ(1,k);
 %                     snew = -weight * visc * e1_dyad_dPhik * dtn';
-%                     s = [s; snew(:)];
-                    i(cur_off + relidx_pos) = elemidx_velo_linear;
-                    j(cur_off + relidx_pos) = elemidx_velo_XYZ(1,k);
-                    snew = -weight * visc * e1_dyad_dPhik * dtn';
-                    s(cur_off + relidx_pos) = snew(:);
-                    cur_off = cur_off + numXYZDofs_pos;
-                    
-                    % ydim
-%                     i = [i; i_veloidx];
-%                     j = [j; one*elemidx_velo(2,k)];
+%                     s(cur_off + relidx_pos) = snew(:);
+%                     cur_off = cur_off + numXYZDofs_pos;
+%                     
+%                     % ydim
+%                     i(cur_off + relidx_pos) = elemidx_velo_linear;
+%                     j(cur_off + relidx_pos) = elemidx_velo_XYZ(2,k);
 %                     snew = -weight * visc * e2_dyad_dPhik * dtn';
-%                     s = [s; snew(:)];
-                    i(cur_off + relidx_pos) = elemidx_velo_linear;
-                    j(cur_off + relidx_pos) = elemidx_velo_XYZ(2,k);
-                    snew = -weight * visc * e2_dyad_dPhik * dtn';
-                    s(cur_off + relidx_pos) = snew(:);
-                    cur_off = cur_off + numXYZDofs_pos;
-                    
-                    % zdim
-%                     i = [i; i_veloidx];
-%                     j = [j; one*elemidx_velo(3,k)];
+%                     s(cur_off + relidx_pos) = snew(:);
+%                     cur_off = cur_off + numXYZDofs_pos;
+%                     
+%                     % zdim
+%                     i(cur_off + relidx_pos) = elemidx_velo_linear;
+%                     j(cur_off + relidx_pos) = elemidx_velo_XYZ(3,k);
 %                     snew = -weight * visc * e3_dyad_dPhik * dtn';
-%                     s = [s; snew(:)];
-                    i(cur_off + relidx_pos) = elemidx_velo_linear;
-                    j(cur_off + relidx_pos) = elemidx_velo_XYZ(3,k);
-                    snew = -weight * visc * e3_dyad_dPhik * dtn';
-                    s(cur_off + relidx_pos) = snew(:);
-                    cur_off = cur_off + numXYZDofs_pos;
-                end
+%                     s(cur_off + relidx_pos) = snew(:);
+%                     cur_off = cur_off + numXYZDofs_pos;
+%                 end
 
                 %% grad u g(u)
                 precomp = weight * detF * fe_press.Ngp(:,gp,m);

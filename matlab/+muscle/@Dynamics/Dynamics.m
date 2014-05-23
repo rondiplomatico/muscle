@@ -75,19 +75,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         usemassinv;
     end
     
-    properties(Dependent)
-        % The model's viscosity.
-        %
-        % Set to zero to disable.
-        %
-        % @type double @default 0
-        Viscosity;
-    end
-    
-    properties(Access=protected)
-        fViscosity = 0;
-    end
-    
     methods
         function this = Dynamics(sys)
             this = this@dscomponents.ACompEvalCoreFun(sys);
@@ -115,8 +102,11 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         function prepareSimulation(this, mu)
             prepareSimulation@dscomponents.ACompEvalCoreFun(this, mu);
             mc = this.System.Model.Config;
-            if ~isempty(mc.FibreTypes)
-                this.muprep = [mc.FibreTypes; ones(size(mc.FibreTypes))*mu];
+%             if ~isempty(mc.FibreTypes)
+%                 this.muprep = [mc.FibreTypes; ones(size(mc.FibreTypes))*mu];
+%             end
+            if ~isempty(mc.Pool)
+                mc.Pool.prepareSimulation(this.System.Model.T,mu);
             end
             
             this.fullActivationTime = this.rampFraction*this.System.Model.scaledTimes(end);
@@ -135,12 +125,12 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                 full = false;
             end
             
-            oldvisc = this.fViscosity;
-            
-            %res = test_Jacobian@dscomponents.ACoreFun(this, varargin{:});
-            if oldvisc ~= 0
-                this.Viscosity = 0;
-            end
+%             oldvisc = this.fViscosity;
+%             
+%             %res = test_Jacobian@dscomponents.ACoreFun(this, varargin{:});
+%             if oldvisc ~= 0
+%                 this.Viscosity = 0;
+%             end
             m = this.System.Model;
             mu = m.getRandomParam;
             if full
@@ -164,19 +154,19 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                 res = res && ~any(check(:));
             end
             
-            this.Viscosity = 1;
-            res = res && test_Jacobian@dscomponents.ACoreFun(this, y, t, mu);
-            
-            % Check if sparsity pattern and jacobian matrices match
-            for k=1:length(t)
-                J = this.getStateJacobian(y(:,k),t(k));
-                Jeff(:) = false;
-                Jeff(logical(J)) = true;
-                check = (Jp | Jeff) & ~Jp;
-                res = res && ~any(check(:));
-            end
-            
-            this.Viscosity = oldvisc;
+%             this.Viscosity = 1;
+%             res = res && test_Jacobian@dscomponents.ACoreFun(this, y, t, mu);
+%             
+%             % Check if sparsity pattern and jacobian matrices match
+%             for k=1:length(t)
+%                 J = this.getStateJacobian(y(:,k),t(k));
+%                 Jeff(:) = false;
+%                 Jeff(logical(J)) = true;
+%                 check = (Jp | Jeff) & ~Jp;
+%                 res = res && ~any(check(:));
+%             end
+%             
+%             this.Viscosity = oldvisc;
         end
         
         function copy = clone(this)
@@ -190,16 +180,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % No local properties are to be copied here, as so far everything is done in the
             % constructor.
         end
-        
-        function set.Viscosity(this, value)
-            this.fViscosity = value;
-            this.configUpdated;
-        end
-        
-        function value = get.Viscosity(this)
-            value = this.fViscosity;
-        end
-
     end
  
     methods(Access=protected)

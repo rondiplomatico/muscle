@@ -132,40 +132,44 @@ classdef BaseGeometry < handle
             % inner: A NumElements x 6 matrix with the indices of elements
             % whose faces are opposing each other. Each column corresponds
             % to the face number 1 to 6, sorted as given in FaceNormals.
-            inner = zeros(this.NumElements,6);
-            for faceidx = 1:3
-                Aside = (faceidx-1)*2+1;
-                Bside = Aside+1;
-                
-                % Also sort the element node indices in case of
-                % nonidentical numbering within each element
-                A = sort(this.Elements(:,this.MasterFaces(Aside,:)),2);
-                B = sort(this.Elements(:,this.MasterFaces(Bside,:)),2);
-                for l = 1:this.NumElements
-                    opposing = sum(abs(A - circshift(B,l-1)),2) == 0;
-                    if any(opposing)
-                        opposedto = circshift(opposing,-(l-1));
-                        inner(opposing, Aside) = find(opposedto);
-                        inner(opposedto, Bside) = find(opposing);
+            if this.NumElements > 1
+                inner = zeros(this.NumElements,6);
+                for faceidx = 1:3
+                    Aside = (faceidx-1)*2+1;
+                    Bside = Aside+1;
+
+                    % Also sort the element node indices in case of
+                    % nonidentical numbering within each element
+                    A = sort(this.Elements(:,this.MasterFaces(Aside,:)),2);
+                    B = sort(this.Elements(:,this.MasterFaces(Bside,:)),2);
+                    for l = 1:this.NumElements
+                        opposing = sum(abs(A - circshift(B,l-1)),2) == 0;
+                        if any(opposing)
+                            opposedto = circshift(opposing,-(l-1));
+                            inner(opposing, Aside) = find(opposedto);
+                            inner(opposedto, Bside) = find(opposing);
+                        end
                     end
                 end
+                [elemnr, facenr] = find(inner == 0);
+                faces = [elemnr facenr]';
+            else
+                mf = size(this.MasterFaces,1);
+                faces = [ones(1,mf); 1:mf];
             end
-            [elemnr, facenr] = find(inner == 0);
-            faces = [elemnr facenr]';
             
             %% Also compute the PatchFaces index matrix
             if ~isempty(this.PatchFacesIdx)
                 nf = size(faces,2);
                 ppf = this.PatchesPerFace;
                 np = size(this.PatchFacesIdx,1);
-                newf = zeros(ppf,size(this.PatchFacesIdx,2));
-                pf = repmat(newf,nf,1);
+                pf = zeros(nf*ppf,size(this.PatchFacesIdx,2));
                 for k=1:nf
                     elem = faces(1,k);
                     face = faces(2,k);
                     pos = (face-1)*ppf + (1:ppf);
                     patchidx = this.PatchFacesIdx(pos,:);
-                    pf((k-1)*ppf+(1:ppf),:) = this.Elements(elem,patchidx);
+                    pf((k-1)*ppf+(1:ppf),:) = reshape(this.Elements(elem,patchidx),ppf,[]);
                 end
                 this.PatchFaces = pf;
             end

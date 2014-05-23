@@ -71,11 +71,7 @@ classdef System < models.BaseDynSystem
        a0oa0;
        dNa0;
     end
-    
-    properties(Transient, SetAccess=private)
-        LastRunBCResiduals;
-    end
-    
+   
     properties(Dependent)
        % Flag to invert the velocity mass matrix before simulations.
        %
@@ -90,10 +86,19 @@ classdef System < models.BaseDynSystem
        %
        % @type logical @default false
        UseDirectMassInversion;
+       
+       % The model's viscosity.
+       %
+       % Set to zero to disable.
+       %
+       % @type double @default 0
+       Viscosity;
     end
     
-    properties(SetAccess=private)
+    properties(Access=private)
+        fViscosity = 0;
         fUseDirectMassInversion = false;
+        fD;
     end
     
     methods
@@ -166,37 +171,24 @@ classdef System < models.BaseDynSystem
             this.globidx_pressure = globalpressuredofs;
             
             %% Compile Mass Matrix
-            % Augment mass matrix for all 3 displacement directions
-            nd = g.NumNodes;
-            [i, j, s] = find(tq.M);
-            I = [3*(i'-1)+1; 3*(i'-1)+2; 3*(i'-1)+3];
-            J = [3*(j'-1)+1; 3*(j'-1)+2; 3*(j'-1)+3];
-            S = repmat(1:length(s),3,1);
-            MM = sparse(I(:),J(:),s(S(:)),3*nd,3*nd);
-            % Insert identity for velocity and zeros for pressure
-            MM = blkdiag(speye(size(MM)),...
-                this.Model.MuscleDensity*MM,sparse(gp.NumNodes,gp.NumNodes));
+            this.M = this.assembleMassMatrix;
             
-            % Strip out the entries of dirichlet nodes
-            MM(this.bc_dir_idx,:) = [];
-            MM(:,this.bc_dir_idx) = [];
-            
-            % See description of property
-            if this.UseDirectMassInversion
-                this.Minv = inv(MM(this.dof_idx_velo,this.dof_idx_velo));
-                MM = sparse(I(:),J(:),s(S(:)),3*nd,3*nd);
-                % Use identity on left hand side
-                MM = blkdiag(speye(size(MM)),...
-                    speye(size(MM)),sparse(gp.NumNodes,gp.NumNodes));
-                MM(this.bc_dir_idx,:) = [];
-                MM(:,this.bc_dir_idx) = [];
-            end
-            this.M = dscomponents.ConstMassMatrix(MM);
+            %% Compile Damping Matrix
+            this.fD = this.assembleDampingMatrix;
             
             %% Initial value
             this.x0 = this.assembleX0;
             
             this.f.configUpdated;
+        end
+        
+        function prepareSimulation(this, mu, inputidx)
+            this.A = [];
+            prepareSimulation@models.BaseDynSystem(this, mu, inputidx);
+            if this.fViscosity > 0
+               this.fD.prepareSimulation(this.fViscosity);
+               this.A = this.fD;
+            end
         end
         
         function pm = plot(this, t, uvw, varargin)
@@ -216,13 +208,19 @@ classdef System < models.BaseDynSystem
                 r.Forces = true;
             end
             
+            mc = this.Model.Config;
+            
             if isempty(r.pm)
-                pm = PlotManager;
+                if ~isempty(mc.Pool)
+                    pm = PlotManager(false,1,2);
+                else
+                    pm = PlotManager;
+                end
                 pm.LeaveOpen = true;
             else
                 pm = r.pm;
             end
-            mc = this.Model.Config;
+            
             dfem = mc.PosFE;
             geo = dfem.Geometry;
             posdofs = geo.NumNodes * 3;
@@ -243,9 +241,13 @@ classdef System < models.BaseDynSystem
             
             if ~isempty(r.DF)
                 have_residuals = bc_dir_pos_applies | bc_dir_velo_applies;
+                % By sorting and combining the pos/velo Dir BC, the
+                % plotting of mixed BCs on one node is plotted correctly.
                 residuals_pos = this.bc_dir_displ | this.bc_dir_velo;
-                residuals = zeros(size(residuals_pos));
                 [~, sortidx] = sort([this.bc_dir_displ_idx; this.bc_dir_velo_idx-posdofs]);
+                % Preallocate the residuals matrix
+                residuals = zeros(size(residuals_pos));
+                maxdfval = max(abs(r.DF(:)))/10;
             end
             
             if r.Vid
@@ -282,6 +284,11 @@ classdef System < models.BaseDynSystem
             end
             
             %% Loop over time
+            if ~isempty(mc.Pool)
+                pool = mc.Pool;
+                ha = pm.nextPlot('force','Activation force','t [ms]','alpha');
+            end
+            
             h = pm.nextPlot('geo','Output','x [mm]','y [mm]');
             view(h, [46 30]);
             daspect([1 1 1]);
@@ -314,7 +321,7 @@ classdef System < models.BaseDynSystem
                     end
                 else
                     p = patch('Faces',geo.PatchFaces,'Vertices',u');
-                    set(p,'EdgeColor',.5*musclecol,'FaceColor',musclecol,'FaceAlpha',.3);
+                    set(p,'EdgeColor',.8*musclecol,'FaceColor',musclecol,'FaceAlpha',.3);
                 end
                 
                 % Velocities
@@ -334,9 +341,9 @@ classdef System < models.BaseDynSystem
                 %% Dirichlet Forces
                 if ~isempty(r.DF)
                     udir = u(:,have_residuals);
-                    residuals(residuals_pos) = r.DF(sortidx,ts);
+                    residuals(residuals_pos) = r.DF(sortidx,ts)/maxdfval;
                     quiver3(h,udir(1,:),udir(2,:),udir(3,:),...
-                        residuals(1,have_residuals),residuals(2,have_residuals),residuals(3,have_residuals),'k', 'MarkerSize',14);
+                        residuals(1,have_residuals),residuals(2,have_residuals),residuals(3,have_residuals),0,'k', 'MarkerSize',14);
                 end
                 
                 %% Neumann condition forces
@@ -352,13 +359,13 @@ classdef System < models.BaseDynSystem
                         
                         facecenter = mean(u(:,facenodeidx),2);
                         quiver3(h,facecenter(1),facecenter(2),facecenter(3),...
-                            meanforces(1,k),meanforces(2,k),meanforces(3,k),4,'LineWidth',2,'Color','b','MaxHeadSize',1);
+                            meanforces(1,k),meanforces(2,k),meanforces(3,k),'LineWidth',2,'Color','b','MaxHeadSize',1);
                         
                         if ~isempty(r.NF)
                             residual_neumann_forces(this.bc_neum_forces_nodeidx) = r.NF(:,ts);
                             meanforce = mean(residual_neumann_forces(:,facenodeidx),2);
                             quiver3(h,facecenter(1),facecenter(2),facecenter(3),...
-                            meanforce(1),meanforce(2),meanforce(3),4,'LineWidth',2,'Color','k','MaxHeadSize',1);
+                            meanforce(1),meanforce(2),meanforce(3),'LineWidth',2,'Color','k','MaxHeadSize',1);
                         end
                     end
                 end
@@ -399,6 +406,12 @@ classdef System < models.BaseDynSystem
 %                view(h, [46 30]);
                 title(h,sprintf('Deformation at t=%g',t(ts)));
 %                 hold(h,'off');
+
+                if ~isempty(mc.Pool)
+                    alpha = pool.getActivation(1:ts);
+                    plot(ha,1:ts,alpha);
+                    axis(ha,[0 t(end) 0 1]);
+                end
                 
                 if r.Vid
                     vw.writeVideo(getframe(gcf));
@@ -516,6 +529,9 @@ classdef System < models.BaseDynSystem
             uvwall(sys.bc_dir_velo_idx,zerovel) = 0;
         end
         
+    end
+    
+    methods
         function set.UseDirectMassInversion(this, value)
             if ~islogical(value) || ~isscalar(value)
                 error('UseDirectMassInversion must be true or false');
@@ -528,6 +544,20 @@ classdef System < models.BaseDynSystem
         
         function value = get.UseDirectMassInversion(this)
             value = this.fUseDirectMassInversion;
+        end
+        
+        function set.Viscosity(this, value)
+            if ~isreal(value) || ~isscalar(value)
+                error('UseDirectMassInversion must be a real scalar');
+            end
+            if this.fViscosity ~= value
+                this.fViscosity = value;
+                %this.configUpdated;
+            end
+        end
+        
+        function value = get.Viscosity(this)
+            value = this.fViscosity;
         end
     end
     
@@ -568,6 +598,67 @@ classdef System < models.BaseDynSystem
             x0(this.bc_dir_idx) = [];
             
             x0 = dscomponents.ConstInitialValue(x0);
+        end
+        
+        function M = assembleMassMatrix(this)
+            %% Compile Mass Matrix
+            
+            mc = this.Model.Config;
+            fe_pos = mc.PosFE;
+            g = fe_pos.Geometry;
+            gp = mc.PressFE.Geometry;
+            
+            % Augment mass matrix for all 3 displacement directions
+            nd = g.NumNodes;
+            [i, j, s] = find(fe_pos.M);
+            I = [3*(i'-1)+1; 3*(i'-1)+2; 3*(i'-1)+3];
+            J = [3*(j'-1)+1; 3*(j'-1)+2; 3*(j'-1)+3];
+            S = repmat(1:length(s),3,1);
+            MM = sparse(I(:),J(:),s(S(:)),3*nd,3*nd);
+            % Insert identity for velocity and zeros for pressure
+            MM = blkdiag(speye(size(MM)),...
+                this.Model.MuscleDensity*MM,sparse(gp.NumNodes,gp.NumNodes));
+            
+            % Strip out the entries of dirichlet nodes
+            MM(this.bc_dir_idx,:) = [];
+            MM(:,this.bc_dir_idx) = [];
+            
+            % See description of property
+            if this.UseDirectMassInversion
+                this.Minv = inv(MM(this.dof_idx_velo,this.dof_idx_velo));
+                MM = sparse(I(:),J(:),s(S(:)),3*nd,3*nd);
+                % Use identity on left hand side
+                MM = blkdiag(speye(size(MM)),...
+                    speye(size(MM)),sparse(gp.NumNodes,gp.NumNodes));
+                MM(this.bc_dir_idx,:) = [];
+                MM(:,this.bc_dir_idx) = [];
+            end
+            M = dscomponents.ConstMassMatrix(MM);
+        end
+        
+        function Daff = assembleDampingMatrix(this)
+            %% Compile Damping/Viscosity Matrix
+            mc = this.Model.Config;
+            fe_pos = mc.PosFE;
+            g = fe_pos.Geometry;
+            gp = mc.PressFE.Geometry;
+            
+            % Augment mass matrix for all 3 displacement directions
+            nd = g.NumNodes;
+            [i, j, s] = find(fe_pos.D);
+            I = [3*(i'-1)+1; 3*(i'-1)+2; 3*(i'-1)+3];
+            J = [3*(j'-1)+1; 3*(j'-1)+2; 3*(j'-1)+3];
+            S = repmat(1:length(s),3,1);
+            D = sparse(I(:),J(:),s(S(:)),3*nd,3*nd);
+            % Insert identity for position and zeros for pressure
+            D = blkdiag(sparse(3*nd,3*nd),D,sparse(gp.NumNodes,gp.NumNodes));
+            
+            % Strip out the entries of dirichlet nodes
+            D(this.bc_dir_idx,:) = [];
+            D(:,this.bc_dir_idx) = [];
+            
+            Daff = dscomponents.AffLinCoreFun(this);
+            Daff.addMatrix('mu(1)',-D);
         end
         
         function computeDirichletBC(this)

@@ -17,7 +17,7 @@ function computeSparsityPattern(this)
     globidx_press = sys.globidx_pressure;
 
     dofs_displ = N*3;
-    visc = this.fViscosity;
+%     visc = this.fViscosity;
 
     dofsperelem_displ = geo.DofsPerElement;
     dofsperelem_press = pgeo.DofsPerElement;
@@ -44,17 +44,17 @@ function computeSparsityPattern(this)
                 j = [j; one*elemidx_displ(3,k)]; 
 
                 %% Grad_v K(u,v,w)
-                if visc > 0
-                    % xdim
-                    i = [i; inew]; %#ok<*AGROW>
-                    j = [j; one*elemidx_velo(1,k)];
-                    % ydim
-                    i = [i; inew]; 
-                    j = [j; one*elemidx_velo(2,k)]; 
-                    % zdim
-                    i = [i; inew]; 
-                    j = [j; one*elemidx_velo(3,k)]; 
-                end
+%                 if visc > 0
+%                     % xdim
+%                     i = [i; inew]; %#ok<*AGROW>
+%                     j = [j; one*elemidx_velo(1,k)];
+%                     % ydim
+%                     i = [i; inew]; 
+%                     j = [j; one*elemidx_velo(2,k)]; 
+%                     % zdim
+%                     i = [i; inew]; 
+%                     j = [j; one*elemidx_velo(3,k)]; 
+%                 end
 
                 %% grad u g(u)
                 % dx

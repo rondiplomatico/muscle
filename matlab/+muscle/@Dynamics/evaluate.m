@@ -18,16 +18,17 @@ function duvw = evaluate(this, uvwdof, t)
     flfun = this.ForceLengthFun;
     alphaconst = min(1,t/this.fullActivationTime)*this.alpha;
     havefibres = sys.HasFibres;
-    havefibretypes = havefibres && ~isempty(mc.FibreTypeWeights);
+    havefibretypes = havefibres && ~isempty(mc.Pool);
     
-    visc = this.fViscosity;
+%     visc = this.fViscosity;
     if havefibretypes
         fibretypeweights = mc.FibreTypeWeights;
         % Input data is x1: fibre type, x2: mean current, x3: time
-        forceargs = [this.muprep; t*ones(1,size(this.muprep,2))];
+%         forceargs = [this.muprep; t*ones(1,size(this.muprep,2))];
         % This is the learned 
 %         FibreForces = this.APExp.evaluate(forceargs)';
-        FibreForces = alphaconst*ones(size(this.muprep,2),1);
+        FibreForces = mc.Pool.getActivation(t);
+%         FibreForces = alphaconst*ones(size(this.muprep,2),1);
     end
 
     % Include dirichlet values to state vector
@@ -101,10 +102,11 @@ function duvw = evaluate(this, uvwdof, t)
             end
             
             % Viscosity
-            if visc > 0
-                v = uvwcomplete(elemidx_velo);
-                P = P + visc* v * dtn;
-            end
+%             if visc > 0
+%                 v = uvwcomplete(elemidx_velo);
+% %                 P = P + visc * v * dtn;
+%                 P = P + visc * 2 * F' * (v * dtn);
+%             end
             
             weight = fe_pos.GaussWeights(gp) * fe_pos.elem_detjac(m,gp);
 

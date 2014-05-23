@@ -9,7 +9,7 @@ classdef AModelConfig < handle
     
     properties(SetAccess=protected)
         FibreTypeWeights = [];
-        FibreTypes = [];
+        Pool;
     end
     
     methods

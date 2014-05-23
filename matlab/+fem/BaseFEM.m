@@ -16,6 +16,9 @@ classdef BaseFEM < handle
         
         % The mass matrix
         M;
+        
+        % The damping matrix (for linear damping)
+        D;
                 
         elem_detjac;
         face_detjac;
@@ -56,6 +59,7 @@ classdef BaseFEM < handle
             % Number of gauss points
             ngp = this.GaussPointsPerElem;
             Mass = zeros(np,np);
+            Damp = Mass;
             % Number of elements
             nel = size(el,1);
             % nodes per Element
@@ -70,7 +74,8 @@ classdef BaseFEM < handle
             dtnall = zeros(eldofs,ngp*3,nel);
             % Iterate all volumes
             for m = 1:nel
-                bval = zeros(eldofs,eldofs);
+                mass_gp = zeros(eldofs,eldofs);
+                damp_gp = zeros(eldofs,eldofs);
                 elem = el(m,:);
                 % Iterate all gauss points
                 for gi = 1:ngp
@@ -94,19 +99,24 @@ classdef BaseFEM < handle
                     Nxi = this.N(xi);
                     % Add up [basis function values at xi] times [volume
                     % ratio at xi] times [gauss weight for xi]
-                    bval = bval + this.GaussWeights(gi)*(Nxi*Nxi')*eljac(m,gi);
+                    mass_gp = mass_gp + this.GaussWeights(gi)*(Nxi*Nxi')*eljac(m,gi);
+                    
+                    % Add up damping values
+                    damp_gp = damp_gp + this.GaussWeights(gi)*(dNxi*dNxi')*eljac(m,gi);
                     
                     %% Transformed Basis function gradients at xi
                     dtnall(:,3*(gi-1)+1:3*gi,m) = dNxi / Jac;
                 end
                 % Build up upper right part of symmetric mass matrix
                 for j=1:eldofs
-                    Mass(elem(j),elem(j:end)) = Mass(elem(j),elem(j:end)) + bval(j,j:end);
+                    Mass(elem(j),elem(j:end)) = Mass(elem(j),elem(j:end)) + mass_gp(j,j:end);
+                    Damp(elem(j),elem(j:end)) = Damp(elem(j),elem(j:end)) + damp_gp(j,j:end);
                 end
             end
             this.Ngp = Ngpval;
             this.transgrad = dtnall;
             this.M = sparse(Mass + Mass' - diag(diag(Mass)));
+            this.D = sparse(Damp + Damp' - diag(diag(Damp)));
             this.elem_detjac = eljac;
             
             %% Boundary/Face precomputations
@@ -161,7 +171,7 @@ classdef BaseFEM < handle
                 
         function plot(this, pm)
             if nargin < 2
-                pm = PlotManager;%(false,1,2);
+                pm = PlotManager(false,2,2);
                 pm.LeaveOpen = true;
             end
             
@@ -170,6 +180,12 @@ classdef BaseFEM < handle
             
             pm.nextPlot('mass_pattern','Mass matrix pattern','dof','dof');
             spy(this.M);
+            
+            h = pm.nextPlot('damp','Damping matrix','node','node');
+            mesh(h,full(this.D));
+            
+            pm.nextPlot('damp_pattern','Damping matrix pattern','dof','dof');
+            spy(this.D);
             
             if nargin < 2
                 pm.done;

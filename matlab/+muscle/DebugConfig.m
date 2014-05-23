@@ -50,14 +50,25 @@ classdef DebugConfig < muscle.AModelConfig
             case 1
                 f.alpha = 0;
             case 3
+                model.T = 400;
+                model.dt = 1;
                 types = [0 .2 .4 .6 .8 1];
                 fe = this.PosFE;
                 geo = fe.Geometry;
                 ftw = zeros(fe.GaussPointsPerElem,length(types),geo.NumElements);
                 % Test: Use only slow-twitch muscles
-                ftw(:,1,:) = 1;
+                ftw(:,1,:) = .4;
+                ftw(:,2,:) = .05;
+                ftw(:,3,:) = .05;
+                ftw(:,4,:) = .1;
+                ftw(:,5,:) = .2;
+                ftw(:,6,:) = .2;
                 this.FibreTypeWeights = ftw;
-                this.FibreTypes = types;
+                p = motorunit.Pool;
+                p.FibreTypes = types;
+                this.Pool = p;
+                model.ODESolver.RelTol = .01;
+                model.ODESolver.AbsTol = .1;
             case {4,5,6}
                 %% Material configuration from CMISS/3Elem_sprenger.xml
                 % c1M = 3.56463903963e-02 MPa
@@ -103,7 +114,7 @@ classdef DebugConfig < muscle.AModelConfig
             
                 % Only fix the right back corner nodes in yz-direction
     %             displ_dir([2 3],geo.Elements(1,[9 18 27])) = true;
-                displ_dir(:,geo.Elements(1,[9 18 27])) = true;
+%                 displ_dir(:,geo.Elements(1,[9 18 27])) = true;
             end
             
         end
