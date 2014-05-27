@@ -49,6 +49,10 @@ classdef DebugConfig < muscle.AModelConfig
             switch this.Version
             case 1
                 f.alpha = 0;
+            case 2
+                f.alpha = .1;
+                model.ODESolver.RelTol = .001;
+                model.ODESolver.AbsTol = .02;
             case 3
                 model.T = 400;
                 model.dt = 1;

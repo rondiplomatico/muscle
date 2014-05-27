@@ -91,12 +91,12 @@ classdef BaseFEM < handle
                     Jac = g.Nodes(:,elem)*dNxi;
                     
                     %% Mass matrix related
-                    % Jacobian at gauss point: get coordinates of nodes (8
-                    % for trilinear, 20 for triquadratic) and multiply with
-                    % gradient
-                    eljac(m,gi) = det(Jac);
+                    % Jacobian at gauss point
+                    eljac(m,gi) = abs(det(Jac));
+                    
                     % Evaluate basis functions at xi
                     Nxi = this.N(xi);
+                    
                     % Add up [basis function values at xi] times [volume
                     % ratio at xi] times [gauss weight for xi]
                     mass_gp = mass_gp + this.GaussWeights(gi)*(Nxi*Nxi')*eljac(m,gi);

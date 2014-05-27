@@ -36,21 +36,21 @@ classdef Cube27Node < geometry.BaseGeometry
 
     methods
         
-        function this = Cube27Node(pts, cubes)
+        function this = Cube27Node(nodes, elems)
             if nargin < 2
-                [pts, cubes] = geometry.Cube27Node.DemoGrid;
-            elseif size(unique(pts','rows'),1) ~= size(pts,2);
+                [nodes, elems] = geometry.Cube27Node.DemoGrid;
+            elseif size(unique(nodes','rows'),1) ~= size(nodes,2);
                 error('Please provide unique points!');
             end
-            this.Nodes = pts;
-            this.Elements = cubes;
+            this.Nodes = nodes;
+            this.Elements = elems;
             this.DofsPerElement = 27;
             %EdgeIndices = [1 3 7 9 19 21 25 27];
             
             %% Compute edges
             e = int16.empty(0,2);
-            for i=1:size(cubes,1)
-                hlp = cubes(i,[1 2 4 5 7 8 2 3 5 6 8 9 1 4 2 5 3 6 4 7 5 8 6 9 ... % bottom
+            for i=1:size(elems,1)
+                hlp = elems(i,[1 2 4 5 7 8 2 3 5 6 8 9 1 4 2 5 3 6 4 7 5 8 6 9 ... % bottom
                     1 10 2 11 3 12 10 19 11 20 12 21 10 11 11 12 19 20 20 21 ... % front 
                     12 15 15 18 21 24 24 27 6 15 15 24 9 18 18 27 ... % right side
                     4 13 13 22 7 16 16 25 10 13 13 16 19 22 22 25 ... % left side
@@ -78,6 +78,15 @@ classdef Cube27Node < geometry.BaseGeometry
                 19 20 23 22; 20 21 24 23; 22 23 26 25; 23 24 27 26];
             this.PatchesPerFace = 4;
             this.Faces = this.computeFaces;
+            
+            this.ReverseAxesIndices = [3 2 1 6 5 4 9 8 7 12 11 10 15 14 13 18 17 16 21 20 19 24 23 22 27 26 25
+                                       7:9 4:6 1:3 16:18 13:15 10:12 25:27 22:24 19:21
+                                       19:27 10:18 1:9];
+            
+            this.OrientationCheckIndices(:,:,1) = [1:3; 4:6; 7:9; 10:12; 13:15; 16:18; 19:21; 22:24; 25:27];
+            this.OrientationCheckIndices(:,:,2) = [1 4 7; 2 5 8; 3 6 9; 10 13 16; 11 14 17;12 15 18; 19 22 25; 20 23 26; 21 24 27];
+            this.OrientationCheckIndices(:,:,3) = [1 10 19; 2 11 20; 3 12 21; 4 13 22; 5 14 23; 6 15 24; 7 16 25; 8 17 26; 9 18 27];
+            this.checkOrientation;
         end
         
         function cube8 = toCube8Node(this)
@@ -93,8 +102,15 @@ classdef Cube27Node < geometry.BaseGeometry
             cube8 = geometry.Cube8Node(nodes8,elems8);
         end
         
+        function swapYZ(this)
+            n = this.Nodes;
+            n([2 3],:) = n([3 2],:);
+            this.Nodes = n;
+            this.Elements = this.Elements(:,[1:3 10:12 19:21 4:6 13:15 22:24 7:9 16:18 25:27]);
+        end
+        
     end
-    
+   
     methods(Static)
         function [pts, cubes] = DemoGrid(varargin)
             devperc = 0;

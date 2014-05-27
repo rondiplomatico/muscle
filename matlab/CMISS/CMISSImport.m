@@ -31,6 +31,13 @@ classdef CMISSImport < handle
             elems27(11,:) = [129,153,130,170,172,181,131,154,132,206,207,226,208,209,227,242,243,252,101,147,107,165,167,178,102,148,108];
             elems27(12,:) = [133,143,134,160,162,176,135,144,136,210,211,228,212,213,229,244,245,253,111,145,115,163,164,177,112,146,116];
             
+            % Re-index the nodes so that x,y,z master element order is
+            % preserved
+%             repos = [1:3 10:12 19:21 4:6 13:15 22:24 7:9 16:18 25:27];
+%             elems27([1:5 7:11],:) = elems27([1:5 7:11],repos);
+%             repos = [3 6 9 12 15 18 21 24 27 2 5 8 11 14 17 20 23 26 1 4 7 10 13 16 19 22 25];
+%             elems27([6 12],:) = elems27([6 12],repos);
+            
             elems8 = elems27(:,[1 3 7 9 19 21 25 27]);
             elems20 = elems27;
             elems20(:,[5 11 13:15 17 23]) = [];
@@ -74,8 +81,6 @@ classdef CMISSImport < handle
             if this.CenterNodes
                 nodes = nodes - repmat(mean(nodes,2),1,size(nodes,2));
             end
-            %% Swap yz directions
-            nodes([2 3],:) = nodes([3 2],:);
         end
         
         function [elems8, elems20, elems27] = readElems(this, name)
@@ -86,9 +91,9 @@ classdef CMISSImport < handle
             
             %% Read 27 points for quadratic case
             
-%             elems27 = [data(6:9:end,9:end) data(7:9:end,1:11)];
+            elems27 = [data(6:9:end,9:end) data(7:9:end,1:11)];
             % Modified read for ip data from M. Sprenger
-            elems27 = [data(6:9:end,9:end-1) data(7:9:end,1:12)];
+%             elems27 = [data(6:9:end,9:end-1) data(7:9:end,1:12)];
             
             % Remove the inner/face points
             elems20 = elems27;

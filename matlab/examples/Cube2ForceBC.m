@@ -13,7 +13,7 @@ classdef Cube2ForceBC < muscle.AModelConfig
             model.dt = .01;
             f = model.System.f;
             f.alpha = 0;
-            f.Viscosity = .1;
+            model.System.Viscosity = .1;
             os = model.ODESolver;
             os.RelTol = .0001;
             os.AbsTol = .05;

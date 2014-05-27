@@ -23,6 +23,9 @@ classdef BaseGeometry < handle
         % A 2 x N_F vector containing the element number in the first row
         % and the face number on that element in the second row.
         Faces;
+        
+        OrientationCheckIndices;
+        ReverseAxesIndices;
     end
     
     properties(Dependent)
@@ -57,10 +60,14 @@ classdef BaseGeometry < handle
             % 
         end
         
-        function plot(this, withdofnr, pm)
-            if nargin < 3
-                if nargin < 2
-                    withdofnr = false;
+        function plot(this, withdofnr, elem, pm)
+            
+            if nargin < 4
+                if nargin < 3
+                    elem = 1:this.NumElements;
+                    if nargin < 2
+                        withdofnr = false;
+                    end
                 end
                 pm = PlotManager;%(false,1,2);
                 pm.LeaveOpen = true;
@@ -70,10 +77,10 @@ classdef BaseGeometry < handle
             h = pm.nextPlot('geometry',sprintf('Geometry (%s)',class(this)), 'x [mm]', 'y [mm]');
             plot3(h,p(1,:),p(2,:),p(3,:),'k.','MarkerSize',14);
             hold(h,'on');
-            for k = 1:this.NumElements
-                el = this.Elements(k,:);
+            for k = 1:length(elem)
+                el = this.Elements(elem(k),:);
                 center = sum(p(:,el),2)/this.DofsPerElement;
-                text(center(1),center(2),center(3),sprintf('E_{%d}',k),'Parent',h,'Color','m');
+                text(center(1),center(2),center(3),sprintf('E_{%d}',elem(k)),'Parent',h,'Color','m');
                 % Plot local numbering for first element
                 if k == 1
                     off = .04;
@@ -116,6 +123,10 @@ classdef BaseGeometry < handle
         
         function commonidx = getCommonNodesWith(this, other)
             commonidx = Utils.findVecInMatrix(this.Nodes,other.Nodes);
+        end
+        
+        function swapYZ(this)
+            error('not implemented');
         end
            
     end
@@ -174,6 +185,52 @@ classdef BaseGeometry < handle
                 this.PatchFaces = pf;
             end
         end
+        
+        function checkOrientation(this)
+            oi = this.OrientationCheckIndices;
+            for dim = 1:3
+                for e = 1:this.NumElements
+                    chk = diff(reshape(this.Nodes(dim,this.Elements(e,oi(:,:,dim)')'),size(oi,2),[]),[],1);
+                    if any(chk <= 0)
+                        if all(chk < 0)
+                            this.reverseElementAxis(dim, e);
+%                             fprintf('Axis %d has negative orientation. Reversing element %d\n',dim,e);
+                        else
+                            [ip,jp] = find(chk > 0);
+                            [in,jn] = find(chk < 0);
+                            [is,js] = find(chk == 0);
+                            if ~isempty(is)
+                                errel = this.Elements(e,oi(js,[is is+1]',dim));
+                                fprintf('%s: Degenerate element nr %3d in dimension %d: %3d equal! Nodes %s (%s)\n',...
+                                    class(this),e,dim,length(is),int2str(errel),num2str(this.Nodes(dim,errel)));
+                            else
+                                if length(ip) > length(in)
+                                    i = in; j = jn;
+                                    str = 'positive';
+                                    reverse = false;
+                                else
+                                    i = ip; j = jp;
+                                    str = 'negative';
+                                    reverse = true;
+                                end
+                                errel = this.Elements(e,oi(j,[i i+1],dim));
+                                fprintf('%s: Opposite orientation in dimension %d in mainly %s oriented element nr %3d (%3d pos/%3d neg): Nodes %s (%s)\n',...
+                                    class(this),dim,str,e,length(ip),length(in),int2str(errel),num2str(this.Nodes(dim,errel)));
+                                if reverse
+                                    this.reverseElementAxis(dim, e);
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    methods(Access=private)
+        function reverseElementAxis(this, dim, e)
+            this.Elements(e,:) = this.Elements(e,this.ReverseAxesIndices(dim,:));
+        end
     end
     
     methods
@@ -187,9 +244,7 @@ classdef BaseGeometry < handle
         
         function nf = get.NumFaces(this)
             nf = size(this.Faces,2);
-        end
-        
-       
+        end       
         
         function npf = get.NodesPerFace(this)
             npf = size(this.MasterFaces,2);

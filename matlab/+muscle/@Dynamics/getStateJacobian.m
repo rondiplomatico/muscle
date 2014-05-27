@@ -22,7 +22,7 @@ function J = getStateJacobian(this, uvwdof, t)
 %     visc = this.fViscosity;
     alphaconst = min(1,t/this.fullActivationTime)*this.alpha;
     havefibres = sys.HasFibres;
-    havefibretypes = havefibres && ~isempty(mc.FibreTypeWeights);
+    havefibretypes = havefibres && ~isempty(mc.Pool);
     
     if havefibretypes
         fibretypeweights = mc.FibreTypeWeights;

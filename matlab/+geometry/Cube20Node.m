@@ -89,6 +89,15 @@ classdef Cube20Node < geometry.BaseGeometry
                                     13 14 15 17 20 19 18 16];
             this.PatchesPerFace = 1;
             this.Faces = this.computeFaces;
+            
+            % Sanity checks
+            this.ReverseAxesIndices = [3 2 1 5 4 8 7 6 10 9 12 11 15 14 13 17 16 20 19 18
+                                       6:8 4 5 1:3 11 12 9 10 18:20 16 17 13:15
+                                       13:20 9:12 1:8];
+            this.OrientationCheckIndices(:,:,1) = [1:3; 6:8; 13:15; 18:20];
+            this.OrientationCheckIndices(:,:,2) = [1 4 6; 3 5 8; 13 16 18; 15 17 20];
+            this.OrientationCheckIndices(:,:,3) = [1 9 13; 3 10 15; 6 11 18; 8 12 20];
+            this.checkOrientation;
         end
         
         function cube8 = toCube8Node(this)

@@ -14,7 +14,7 @@ classdef LongForceBC < muscle.AModelConfig
             model.T = 40;
             model.dt = .2;
             f = model.System.f;
-            f.alpha = 0;
+            f.alpha = 1;
             model.System.Viscosity = .1;
             os = model.ODESolver;
             os.RelTol = .001;
@@ -33,11 +33,11 @@ classdef LongForceBC < muscle.AModelConfig
             if elemidx == 1 && faceidx == 1
                 P = [1 0 0
                      0 0 0;
-                     0 0 0];
+                     0 0 0]*.1;
             elseif elemidx == 5 && faceidx == 2
                 P = 3*[1 0 0
                      0 0 0;
-                    .5 0 0];
+                    .5 0 0]*.1;
             end
         end
     end
@@ -52,7 +52,7 @@ classdef LongForceBC < muscle.AModelConfig
         
         function anull = seta0(~, anull)
            % Direction is xz
-           anull([1 3],:,:) = 1;
+           anull([1 3],:,:) = -1;
         end
     end
     

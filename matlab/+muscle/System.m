@@ -199,6 +199,7 @@ classdef System < models.BaseDynSystem
             i.addParamValue('Velo',false,@(v)islogical(v));
             i.addParamValue('Pressure',false,@(v)islogical(v));
             i.addParamValue('Skel',false,@(v)islogical(v));
+            i.addParamValue('Pool',true,@(v)islogical(v));
             i.addParamValue('pm',[],@(v)isa(v,'PlotManager'));
             i.addParamValue('DF',[]);
             i.addParamValue('NF',[]);
@@ -211,8 +212,8 @@ classdef System < models.BaseDynSystem
             mc = this.Model.Config;
             
             if isempty(r.pm)
-                if ~isempty(mc.Pool)
-                    pm = PlotManager(false,1,2);
+                if ~isempty(mc.Pool) && r.Pool
+                    pm = PlotManager(false,2,1);
                 else
                     pm = PlotManager;
                 end
@@ -284,9 +285,13 @@ classdef System < models.BaseDynSystem
             end
             
             %% Loop over time
-            if ~isempty(mc.Pool)
+            if ~isempty(mc.Pool) && r.Pool
                 pool = mc.Pool;
                 ha = pm.nextPlot('force','Activation force','t [ms]','alpha');
+                axis(ha,[0 t(end) 0 1]);
+                hold(ha,'on');
+                dt = this.Model.dt;
+                typeweights = mc.FibreTypeWeights(1,:,1);
             end
             
             h = pm.nextPlot('geo','Output','x [mm]','y [mm]');
@@ -401,16 +406,20 @@ classdef System < models.BaseDynSystem
                 end
                 
                 %% Misc
-                %axis(h,[-1.3 1.3 -1.3 1.3 -1.3 1.3]);
                 axis(h,box);
-%                view(h, [46 30]);
+%                view(h, [73 40]);
+%                 view(h, [0 90]);
+%                 view(h, [-90 0]);
                 title(h,sprintf('Deformation at t=%g',t(ts)));
 %                 hold(h,'off');
 
-                if ~isempty(mc.Pool)
-                    alpha = pool.getActivation(1:ts);
-                    plot(ha,1:ts,alpha);
-                    axis(ha,[0 t(end) 0 1]);
+                if ~isempty(mc.Pool) && r.Pool
+                    times = 0:dt:ts*dt;
+                    alpha = pool.getActivation(times);
+                    walpha = typeweights * alpha;
+                    cla(ha);
+                    plot(ha,times,alpha);
+                    plot(ha,times,walpha,'LineWidth',2);
                 end
                 
                 if r.Vid
