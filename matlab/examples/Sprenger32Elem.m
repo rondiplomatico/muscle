@@ -3,18 +3,18 @@ classdef Sprenger32Elem < muscle.AModelConfig
     methods
         function this = Sprenger32Elem
             s = load(fullfile(fileparts(which(mfilename)),'..','CMISS','Sprenger32Elem.mat'));
-            this = this@muscle.AModelConfig(s.geo20,s.geo8);
+            this = this@muscle.AModelConfig(s.geo20);
         end
         
-        function configureModel(~, model)
+        function configureModel(this, model)
             model.T = 1;
             model.dt = .01;
             f = model.System.f;
-            f.Viscosity = 1;
+            f.System.Viscosity = 1;
             
             %% Material configuration from CMISS/3Elem_sprenger.xml
             % malpha_calculation
-            f.alpha = 1; % [-]
+            f.alpha = @(t)1; % [-]
             
             % c1M = 3.56463903963e-02 MPa
             f.c10 = 35.6463903963; % [kPa]

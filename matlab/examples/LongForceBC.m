@@ -7,14 +7,14 @@ classdef LongForceBC < muscle.AModelConfig
             % Single cube with same config as reference element
             [pts, cubes] = geometry.Cube8Node.DemoGrid([0 20],-40:10:40,[0 15],.1);
             geo = geometry.Cube8Node(pts, cubes);
-            this = this@muscle.AModelConfig(geo.toCube20Node,geo);
+            this = this@muscle.AModelConfig(geo.toCube20Node);
         end
         
-        function configureModel(~, model)
+        function configureModel(this, model)
             model.T = 40;
             model.dt = .2;
             f = model.System.f;
-            f.alpha = 1;
+            f.alpha = this.getAlphaRamp(5,.4);
             model.System.Viscosity = .1;
             os = model.ODESolver;
             os.RelTol = .001;

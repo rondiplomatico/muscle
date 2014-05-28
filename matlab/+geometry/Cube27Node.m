@@ -92,14 +92,19 @@ classdef Cube27Node < geometry.BaseGeometry
         function cube8 = toCube8Node(this)
             % Creates a 8 node cube geometry from this 20 node cube
             % geometry by simply leaving out the on-edge nodes.
-            elems20 = this.Elements;
-            nodes20 = this.Nodes;
-            elems8 = elems20(:,[1 3 7 9 19 21 25 27]);
+            elems8 = this.Elements(:,[1 3 7 9 19 21 25 27]);
             usednodes = unique(elems8(:),'stable');
-            nodes8 = nodes20(:,usednodes);
             invidx(usednodes) = 1:length(usednodes);
             elems8 = invidx(elems8);
-            cube8 = geometry.Cube8Node(nodes8,elems8);
+            cube8 = geometry.Cube8Node(this.Nodes(:,usednodes),elems8);
+        end
+        
+        function cube20 = toCube20Node(this)
+            elems20 = this.Elements(:,[1:4 6:10 12 16 18:22 24:27]);
+            usednodes = unique(elems20(:),'stable');
+            invidx(usednodes) = 1:length(usednodes);
+            elems20 = invidx(elems20);
+            cube20 = geometry.Cube20Node(this.Nodes(:,usednodes),elems20);
         end
         
         function swapYZ(this)

@@ -31,23 +31,13 @@ classdef CMISSImport < handle
             elems27(11,:) = [129,153,130,170,172,181,131,154,132,206,207,226,208,209,227,242,243,252,101,147,107,165,167,178,102,148,108];
             elems27(12,:) = [133,143,134,160,162,176,135,144,136,210,211,228,212,213,229,244,245,253,111,145,115,163,164,177,112,146,116];
             
-            % Re-index the nodes so that x,y,z master element order is
-            % preserved
-%             repos = [1:3 10:12 19:21 4:6 13:15 22:24 7:9 16:18 25:27];
-%             elems27([1:5 7:11],:) = elems27([1:5 7:11],repos);
-%             repos = [3 6 9 12 15 18 21 24 27 2 5 8 11 14 17 20 23 26 1 4 7 10 13 16 19 22 25];
-%             elems27([6 12],:) = elems27([6 12],repos);
-            
-            elems8 = elems27(:,[1 3 7 9 19 21 25 27]);
-            elems20 = elems27;
-            elems20(:,[5 11 13:15 17 23]) = [];
-            
-            [nodes8, elems8] = ci.merge(nodes, nodeidx, elems8);
-            [nodes20, elems20] = ci.merge(nodes, nodeidx, elems20);
             [nodes27, elems27] = ci.merge(nodes, nodeidx, elems27);
-            geo8 = geometry.Cube8Node(nodes8, elems8);
-            geo20 = geometry.Cube20Node(nodes20, elems20);
             geo27 = geometry.Cube27Node(nodes27, elems27);
+            geo27.swapYZ;
+            
+            geo8 = geo27.toCube8Node;
+            geo20 = geo27.toCube20Node;
+            
             save(fullfile(CMISSImport.Dir,name),'geo8','geo20','geo27');
         end
     end

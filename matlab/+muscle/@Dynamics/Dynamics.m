@@ -12,8 +12,10 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
        
        lambdafopt = 1.2; % [-]
        
-       % The activation of the muscle
-       alpha = 0; % [-]
+       % The activation of the muscle at time t
+       %
+       % @type function_handle @default @(t).3
+       alpha = @(t).3; % [-]
        
        % The force-length function as function handle
        %
@@ -43,11 +45,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
        % Alternative
        % ForceLengthFunDeriv = @(ratio)(ratio<=1).*((1/.57)*(((1-ratio)/.57).^3).*exp(-((1-ratio)/.57).^4)) ...
        % - (ratio > 1) .* ((1/.14) .* (((ratio-1)/.14).^2) .* exp(-((ratio-1)/.14).^3));
-       
-       % The fraction of the total simulation time T, over which the
-       % activation is linearly increased from 0 to the actually set alpha
-       % value. This is included for stability.
-       rampFraction = 0.1;
     end
     
     properties(SetAccess=private)
@@ -56,17 +53,9 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     
     properties(Transient, SetAccess=private)
         % Prepared arguments for APExpansion
-        muprep;
+%         muprep;
         
         LastBCResiduals;
-        
-        % Automatically computed factor for current "constant alpha"
-        % activation value.
-        %
-        % Corresponds to rampFraction*T for each simulation, so that
-        % `alpha(t) = alpha * t/fullActivationTime` increases linearly in
-        % `[0 alpha]` over `[0 fullActivationTime]`.
-        fullActivationTime;
     end
     
     properties(Transient, Access=private)
@@ -80,10 +69,10 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             this = this@dscomponents.ACompEvalCoreFun(sys);
             
             %% Load AP expansion
-            d = fileparts(which('muscle.Dynamics'));
-            s = load(fullfile(d,'AP'));
-            s.kexp.Ma = s.kexp.Ma(1,:);
-            this.APExp = s.kexp;
+%             d = fileparts(which('muscle.Dynamics'));
+%             s = load(fullfile(d,'AP'));
+%             s.kexp.Ma = s.kexp.Ma(1,:);
+%             this.APExp = s.kexp;
         end
         
         function configUpdated(this)
@@ -108,8 +97,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             if ~isempty(mc.Pool)
                 mc.Pool.prepareSimulation(this.System.Model.T,mu);
             end
-            
-            this.fullActivationTime = this.rampFraction*this.System.Model.scaledTimes(end);
             this.usemassinv = this.System.UseDirectMassInversion;
         end
         
@@ -120,6 +107,10 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         function res = test_Jacobian(this, full)
             % Overrides the random argument jacobian test as restrictions
             % on the possible x values (detF = 1) hold.
+            %
+            % Currently the tests using viscosity are commented out as we
+            % assume linear damping, which is extracted as extra `A(t,\mu)`
+            % part in the models' system
             
             if nargin < 2
                 full = false;

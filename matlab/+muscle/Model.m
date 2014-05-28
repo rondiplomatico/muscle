@@ -73,8 +73,17 @@ classdef Model < models.BaseFullModel
             pm.done;
         end
         
-        function plotGeometrySetup(this)
-            this.System.plotGeometrySetup;
+        function plotGeometrySetup(this, pm)
+            args = {};
+            if nargin == 2
+                args = {'PM',pm};
+            end
+            x0 = this.System.x0.evaluate(1);
+            [~, nf] = this.getResidualForces(0, x0);
+            if ~isempty(nf)
+                args(end+1:end+2) = {'NF',nf};
+            end
+            this.System.plot(0,x0,args{:});
         end
         
         function [residuals_dirichlet, residuals_neumann] = getResidualForces(this, t, uvw)
@@ -94,6 +103,30 @@ classdef Model < models.BaseFullModel
                 
                 residuals_dirichlet(:,k) = sys.f.LastBCResiduals;
             end
+        end
+        
+        function idx = getFaceDofsGlobal(this, elem, faces, dim)
+            % Returns the indices in the global uvw vector (including
+            % dirichlet values) of the given faces in the given element.
+            %
+            % Parameters:
+            % elem: The element index @type integer
+            % faces: The faces whose indices to return. May also only be
+            % one face. @type rowvec<integer>
+            % dim: The dimensions which to select. @type rowvec<integer>
+            % @default [1 2 3]
+            %
+            % Return values:
+            % idx: The global indices of the face @type colvec<integer>
+            if nargin < 4
+                dim = 1:3;
+            end
+            geo = this.Config.PosFE.Geometry;
+            idxXYZ = false(3,geo.NumNodes);
+            for k=1:length(faces)
+                idxXYZ(dim,geo.Elements(elem,geo.MasterFaces(faces(k),:))) = true;
+            end
+            idx = find(idxXYZ(:));
         end
         
         function setConfig(this, value)

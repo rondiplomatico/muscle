@@ -5,14 +5,14 @@ classdef Cube2ForceBC < muscle.AModelConfig
             % Single cube with same config as reference element
             [pts, cubes] = geometry.Cube8Node.DemoGrid(0:1,-1:2,0:1);
             geo = geometry.Cube8Node(pts, cubes);
-            this = this@muscle.AModelConfig(geo.toCube20Node, geo);
+            this = this@muscle.AModelConfig(geo.toCube20Node);
         end
         
         function configureModel(~, model)
             model.T = 4;
             model.dt = .01;
             f = model.System.f;
-            f.alpha = 0;
+            f.alpha = @(t)0;
             model.System.Viscosity = .1;
             os = model.ODESolver;
             os.RelTol = .0001;

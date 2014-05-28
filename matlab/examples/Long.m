@@ -13,12 +13,12 @@ classdef Long < muscle.AModelConfig
             this = this@muscle.AModelConfig(geo);
         end
         
-        function configureModel(~, model)
+        function configureModel(this, model)
             model.T = 50;
             model.dt = 1;
             f = model.System.f;
-            f.alpha = 1;
-            f.Viscosity = 0;
+            f.alpha = this.getAlphaRamp(10,1);
+            f.System.Viscosity = 0;
         end
     end
     

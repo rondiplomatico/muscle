@@ -16,7 +16,7 @@ function duvw = evaluate(this, uvwdof, t)
     lfopt = this.lambdafopt;
     Pmax = this.Pmax;
     flfun = this.ForceLengthFun;
-    alphaconst = min(1,t/this.fullActivationTime)*this.alpha;
+    alphaconst = this.alpha(t);
     havefibres = sys.HasFibres;
     havefibretypes = havefibres && ~isempty(mc.Pool);
     
@@ -40,7 +40,7 @@ function duvw = evaluate(this, uvwdof, t)
         uvwcomplete(sys.bc_dir_velo_idx) = 0;
     end
 
-    % Init duv
+    % Init duvw
     duvw = zeros(size(uvwcomplete));
     % THIS ALREADY FULFILLS THE u' = v ODE PART!
     duvw(1:dofs_pos) = uvwcomplete(dofs_pos+1:2*dofs_pos);
@@ -80,7 +80,7 @@ function duvw = evaluate(this, uvwdof, t)
             %% Compile tensor
             P = p*inv(F)' + 2*(this.c10 + I1*this.c01)*F ...
                 - 2*this.c01*F*(F'*F);
-
+            
             %% Anisotropic part (Invariant I4 related)
             if havefibres
                 dtna0 = sys.dtna0(:,gp,m);
@@ -91,10 +91,9 @@ function duvw = evaluate(this, uvwdof, t)
                 % Using a subfunction is 20% slower!
                 % So: direct implementation here
                 fl = flfun(lambdaf/lfopt);
+                alpha = alphaconst;
                 if havefibretypes 
                     alpha = ftwelem(gp);
-                else
-                    alpha = alphaconst;
                 end
                 gval = (b1/lambdafsq)*(lambdaf^d1-1) + (Pmax/lambdaf)*fl*alpha;
                 a0 = sys.a0oa0(:,:,(m-1)*num_gausspoints + gp);

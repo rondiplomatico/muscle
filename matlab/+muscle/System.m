@@ -199,7 +199,7 @@ classdef System < models.BaseDynSystem
             i.addParamValue('Velo',false,@(v)islogical(v));
             i.addParamValue('Pressure',false,@(v)islogical(v));
             i.addParamValue('Skel',false,@(v)islogical(v));
-            i.addParamValue('Pool',true,@(v)islogical(v));
+            i.addParamValue('Pool',length(t)>1,@(v)islogical(v));
             i.addParamValue('pm',[],@(v)isa(v,'PlotManager'));
             i.addParamValue('DF',[]);
             i.addParamValue('NF',[]);
@@ -295,21 +295,18 @@ classdef System < models.BaseDynSystem
             end
             
             h = pm.nextPlot('geo','Output','x [mm]','y [mm]');
-            view(h, [46 30]);
-            daspect([1 1 1]);
             zlabel(h,'z [mm]');
-            hold(h,'on');
+            
             if ~r.Skel
-                light('Position',[1 1 1],'Style','infinite','Parent',h);
+%                 light('Position',[1 1 1],'Style','infinite','Parent',h);
                 musclecol = [0.854688, 0.201563, 0.217188];
             end
             
-            xpos = 1:3:geo.NumNodes*3;
-            box = [min(min(uvw(xpos,:))) max(max(uvw(xpos,:)))...
-                min(min(uvw(xpos+1,:))) max(max(uvw(xpos+1,:)))...
-                min(min(uvw(xpos+2,:))) max(max(uvw(xpos+2,:)))];
-            box([1 3 5]) = box([1 3 5])-.05*abs(box([1 3 5]));
-            box([2 4 6]) = box([2 4 6])+.05*abs(box([2 4 6]));
+            axis(h, this.getPlotBox(uvw));
+            daspect([1 1 1]);
+            view(h, [46 30]);
+            hold(h,'on');
+            
             for ts = 1:length(t)
                 % Quit if figure has been closed
                 if ~ishandle(h)
@@ -406,7 +403,7 @@ classdef System < models.BaseDynSystem
                 end
                 
                 %% Misc
-                axis(h,box);
+%                 axis(h,box);
 %                view(h, [73 40]);
 %                 view(h, [0 90]);
 %                 view(h, [-90 0]);
@@ -446,79 +443,6 @@ classdef System < models.BaseDynSystem
             x0 = this.x0.evaluate([]);
             diff = repmat(x0,1,length(t)) + (uvw1-uvw2)*fac;
             pm = this.plot(t,diff,varargin{:});
-        end
-        
-        function plotGeometrySetup(this)
-            pm = PlotManager;
-            pm.LeaveOpen = true;
-            
-            mc = this.Model.Config;
-            dfem = mc.PosFE;
-            geo = dfem.Geometry;
-            e = geo.Edges;
-            
-            hlp = sum(this.bc_dir_displ,1);
-            bc_dir_3pos_applies = hlp == 3;
-            bc_dir_2pos_applies = hlp == 2;
-            bc_dir_1pos_applies = hlp == 1;
-            bc_dir_pos_applies = hlp >= 1; 
-            no_bc = ~bc_dir_pos_applies;
-            
-            forces = zeros(size(this.bc_dir_displ));
-            forces(this.bc_neum_forces_nodeidx) = this.bc_neum_forces_val;
-            % Forces at face centers
-            force_elem_face_idx = geo.Faces(:,this.FacesWithForce);
-            numfaceswithforce = size(force_elem_face_idx,2);
-            meanforces = zeros(3,numfaceswithforce);
-            for k=1:numfaceswithforce
-                masterfacenodeidx = geo.MasterFaces(force_elem_face_idx(2,k),:);
-                facenodeidx = geo.Elements(force_elem_face_idx(1,k),masterfacenodeidx);
-                meanforces(:,k) = mean(forces(:,facenodeidx),2);
-            end
-            
-            h = pm.nextPlot('geometry',sprintf('Geometry for model %s',this.Model.Name),'x [mm]','y [mm]');
-            view(h, [46 30]);
-            daspect([1 1 1]);
-            zlabel(h,'z [mm]');
-            axis(h,geo.getBoundingBox*1.1);
-            hold(h,'on');
-            u = geo.Nodes;
-            
-            %% Nodes
-            plot3(h,u(1,no_bc),u(2,no_bc),u(3,no_bc),'r.','MarkerSize',14);
-            
-            %% Edges
-            for k=1:size(e,1)
-                plot3(h,u(1,[e(k,1) e(k,2)]),u(2,[e(k,1) e(k,2)]),u(3,[e(k,1) e(k,2)]),'r');
-            end
-            
-            %% Dirichlet position cond
-            plot3(h,u(1,bc_dir_3pos_applies),u(2,bc_dir_3pos_applies),u(3,bc_dir_3pos_applies),'.','MarkerSize',20,'Color',[0 0 0]);
-            plot3(h,u(1,bc_dir_2pos_applies),u(2,bc_dir_2pos_applies),u(3,bc_dir_2pos_applies),'.','MarkerSize',20,'Color',[.5 .5 .5]);
-            plot3(h,u(1,bc_dir_1pos_applies),u(2,bc_dir_1pos_applies),u(3,bc_dir_1pos_applies),'.','MarkerSize',20,'Color',[.7 .7 .7]);
-            
-            %% Neumann forces
-            for k=1:numfaceswithforce
-                masterfacenodeidx = geo.MasterFaces(force_elem_face_idx(2,k),:);
-                facenodeidx = geo.Elements(force_elem_face_idx(1,k),masterfacenodeidx);
-
-                facecenter = mean(u(:,facenodeidx),2);
-                quiver3(h,facecenter(1),facecenter(2),facecenter(3),...
-                    meanforces(1,k),meanforces(2,k),meanforces(3,k),.5,'LineWidth',2,'Color','b','MaxHeadSize',1);
-            end
-            
-            %% Fibres
-            if ~isempty(this.dNa0)
-                Ngp = dfem.N(dfem.GaussPoints);
-                for m = 1:geo.NumElements
-                    uelem = u(:,geo.Elements(m,:));
-                    gps = uelem*Ngp;
-                    anull = uelem*this.dNa0(:,:,m);
-                    quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'.','Color',[.4 .9 .4]);
-                end
-            end
-            
-            pm.done;
         end
         
         function uvwall = includeDirichletValues(this, t, uvw)
@@ -769,30 +693,49 @@ classdef System < models.BaseDynSystem
 
                 % Precomputations
                 dNgp = fe.gradN(fe.GaussPoints);
+                
                 anulldyadanull = zeros(3,3,fe.GaussPointsPerElem*geo.NumElements);
                 dtnanull = zeros(geo.DofsPerElement,fe.GaussPointsPerElem,geo.NumElements);
                 dNanull = zeros(geo.DofsPerElement,fe.GaussPointsPerElem,geo.NumElements);
                 for m = 1 : geo.NumElements
+                    u = geo.Nodes(:,geo.Elements(m,:));
                     for gp = 1 : fe.GaussPointsPerElem
-                        % a0 dyad a0
-                        pos = (m-1)*fe.GaussPointsPerElem+gp;
-                        anulldyadanull(:,:,pos) = anull(:,gp,m)*anull(:,gp,m)';
-
-                        % <grad phi_k, a0> scalar products
-                        pos = 3*(gp-1)+1:3*gp;
-                        dtn = fe.transgrad(:,pos,m);
-                        dtnanull(:,gp,m) = dtn*anull(:,gp,m);
-
+                        
+                        % Transform a0 to local fibre direction
+                        pos = [0 fe.GaussPointsPerElem 2*fe.GaussPointsPerElem]+gp;
+                        Jac = u*dNgp(:,pos);
+                        loc_anull = Jac * anull(:,gp,m);
+                        loc_anull = loc_anull/norm(loc_anull);
+                        
                         % forward transformation of a0 at gauss points
                         % (plotting only so far)
-                        pos = [0 fe.GaussPointsPerElem 2*fe.GaussPointsPerElem]+gp;
-                        dNanull(:,gp,m) = dNgp(:,pos) * this.a0(:,gp,m);
+                        dNanull(:,gp,m) = dNgp(:,pos) * anull(:,gp,m);
+                        
+                        % <grad phi_k, a0> scalar products
+                        pos = 3*(gp-1)+1:3*gp;
+%                         dtnanull(:,gp,m) = fe.transgrad(:,pos,m)*anull(:,gp,m);
+                        dtnanull(:,gp,m) = fe.transgrad(:,pos,m)*loc_anull;
+%                         dtnanull(:,gp,m) = dNgp(:,pos)*loc_anull;
+                        %dtnanull(:,gp,m) = dNgp(:,pos)*anull(:,gp,m);
+                        
+                        % a0 dyad a0
+                        pos = (m-1)*fe.GaussPointsPerElem+gp;
+                        anulldyadanull(:,:,pos) = loc_anull*loc_anull';%anull(:,gp,m)*anull(:,gp,m)';
                     end
                 end
                 this.dtna0 = dtnanull;
                 this.a0oa0 = anulldyadanull;
                 this.dNa0 = dNanull;
             end
+        end
+        
+        function box = getPlotBox(this, uvw)
+            xpos = 1:3:this.Model.Config.PosFE.Geometry.NumNodes*3;
+            box = [min(min(uvw(xpos,:))) max(max(uvw(xpos,:)))...
+                min(min(uvw(xpos+1,:))) max(max(uvw(xpos+1,:)))...
+                min(min(uvw(xpos+2,:))) max(max(uvw(xpos+2,:)))];
+            diam = diff(box)*.1;
+            box = box + [-diam(1) diam(1) -diam(3) diam(3) -diam(5) diam(5)];
         end
     end
     

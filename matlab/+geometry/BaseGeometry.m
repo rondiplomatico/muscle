@@ -128,6 +128,10 @@ classdef BaseGeometry < handle
         function swapYZ(this)
             error('not implemented');
         end
+        
+        function reverseAxis(this, dim)
+            this.reverseElementAxis(dim, 1:this.NumElements);
+        end
            
     end
     
@@ -188,20 +192,21 @@ classdef BaseGeometry < handle
         
         function checkOrientation(this)
             oi = this.OrientationCheckIndices;
+            pi = ProcessIndicator('%s: Checking orientation of %d elements in x,y,z directions',3*this.NumElements,false,class(this),this.NumElements);
             for dim = 1:3
                 for e = 1:this.NumElements
                     chk = diff(reshape(this.Nodes(dim,this.Elements(e,oi(:,:,dim)')'),size(oi,2),[]),[],1);
                     if any(chk <= 0)
                         if all(chk < 0)
                             this.reverseElementAxis(dim, e);
-%                             fprintf('Axis %d has negative orientation. Reversing element %d\n',dim,e);
+                            %fprintf('Axis %d has negative orientation. Reversing element %d\n',dim,e);
                         else
                             [ip,jp] = find(chk > 0);
                             [in,jn] = find(chk < 0);
                             [is,js] = find(chk == 0);
                             if ~isempty(is)
                                 errel = this.Elements(e,oi(js,[is is+1]',dim));
-                                fprintf('%s: Degenerate element nr %3d in dimension %d: %3d equal! Nodes %s (%s)\n',...
+                                fprintf('\n%s: Degenerate element nr %3d in dimension %d: %3d equal! Nodes %s (%s)\n',...
                                     class(this),e,dim,length(is),int2str(errel),num2str(this.Nodes(dim,errel)));
                             else
                                 if length(ip) > length(in)
@@ -214,7 +219,7 @@ classdef BaseGeometry < handle
                                     reverse = true;
                                 end
                                 errel = this.Elements(e,oi(j,[i i+1],dim));
-                                fprintf('%s: Opposite orientation in dimension %d in mainly %s oriented element nr %3d (%3d pos/%3d neg): Nodes %s (%s)\n',...
+                                fprintf('\n%s: Opposite orientation in dimension %d in mainly %s oriented element nr %3d (%3d pos/%3d neg): Nodes %s (%s)\n',...
                                     class(this),dim,str,e,length(ip),length(in),int2str(errel),num2str(this.Nodes(dim,errel)));
                                 if reverse
                                     this.reverseElementAxis(dim, e);
@@ -222,8 +227,10 @@ classdef BaseGeometry < handle
                             end
                         end
                     end
+                    pi.step;
                 end
             end
+            pi.stop;
         end
     end
     

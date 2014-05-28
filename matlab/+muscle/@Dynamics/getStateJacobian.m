@@ -20,7 +20,7 @@ function J = getStateJacobian(this, uvwdof, t)
     lfopt = this.lambdafopt;
     Pmax = this.Pmax;
 %     visc = this.fViscosity;
-    alphaconst = min(1,t/this.fullActivationTime)*this.alpha;
+    alphaconst = this.alpha(t);
     havefibres = sys.HasFibres;
     havefibretypes = havefibres && ~isempty(mc.Pool);
     
@@ -78,13 +78,12 @@ function J = getStateJacobian(this, uvwdof, t)
             pos = 3*(gp-1)+1:3*gp;
             dtn = fe_pos.transgrad(:,pos,m);
             u = uvwcomplete(elemidx_pos_XYZ);
+            
             % Deformation gradient
             F = u * dtn;
 
-            %detF = det(F);
             Finv = inv(F);
             C = F'*F;
-            detF = det(F);
 
             % Evaluate the pressure at gauss points
             w = uvwcomplete(elemidx_pressure);
@@ -102,10 +101,9 @@ function J = getStateJacobian(this, uvwdof, t)
                 ratio = lambdaf/lfopt;
                 fl = this.ForceLengthFun(ratio);
                 dfl = this.ForceLengthFunDeriv(ratio);
-                if havefibretypes 
+                alpha = alphaconst;
+                if havefibretypes
                     alpha = ftwelem(gp);
-                else
-                    alpha = alphaconst;
                 end
                 gval = (b1/lambdafsq)*(lambdaf^d1-1) + (Pmax/lambdaf)*fl*alpha;
                 dgdlam = (b1/lambdaf^3)*((d1-2)*lambdaf^d1 + 2)...
@@ -202,7 +200,7 @@ function J = getStateJacobian(this, uvwdof, t)
 %                 end
 
                 %% grad u g(u)
-                precomp = weight * detF * fe_press.Ngp(:,gp,m);
+                precomp = weight * det(F) * fe_press.Ngp(:,gp,m);
                 % dx
                 i(cur_off + relidx_press) = elemidx_pressure;
                 j(cur_off + relidx_press) = elemidx_pos_XYZ(1,k);

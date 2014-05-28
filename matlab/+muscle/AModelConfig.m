@@ -13,22 +13,15 @@ classdef AModelConfig < handle
     end
     
     methods
-        function this = AModelConfig(geo, press_geo)
-            if nargin < 2
-                if isa(geo,'geometry.Cube8Node')
-                    pos_geo = geo.toCube27Node;
-                    press_geo = geo;
-                elseif isa(geo,'geometry.Cube20Node') || isa(geo,'geometry.Cube27Node')
-                    pos_geo = geo;
-                    press_geo = geo.toCube8Node;
-                else
-                    error('Scenario not yet implemented for geometry class "%s"', class(geo));
-                end
-            else
+        function this = AModelConfig(geo)
+            if isa(geo,'geometry.Cube8Node')
+                pos_geo = geo.toCube27Node;
+                press_geo = geo;
+            elseif isa(geo,'geometry.Cube20Node') || isa(geo,'geometry.Cube27Node')
                 pos_geo = geo;
-            end
-            if (~isa(pos_geo,'geometry.Cube20Node') && ~isa(pos_geo,'geometry.Cube27Node')) || ~isa(press_geo,'geometry.Cube8Node')
-                error('Scenario not yet implemented.');
+                press_geo = geo.toCube8Node;
+            else
+                error('Scenario not yet implemented for geometry class "%s"', class(geo));
             end
             if isa(pos_geo,'geometry.Cube27Node')
                 this.PosFE = fem.HexahedronTriquadratic(pos_geo);
@@ -53,6 +46,13 @@ classdef AModelConfig < handle
             % In the default implementation there are no force boundary
             % conditions.
             P = [];
+        end
+        
+        function alpha = getAlphaRamp(~, ramptime, alphamax)
+            if nargin < 3
+                alphamax = 1;
+            end
+            alpha = @(t)alphamax * ((t<ramptime)*t/ramptime + (t>=ramptime));
         end
     end
     

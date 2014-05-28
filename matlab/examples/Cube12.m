@@ -6,15 +6,15 @@ classdef Cube12 < muscle.AModelConfig
             [pts, cubes] = geometry.Cube8Node.DemoGrid(-1:1,-1:2,-1:1);
             
             geo = geometry.Cube8Node(pts, cubes);
-            this = this@muscle.AModelConfig(geo.toCube20Node,geo);
+            this = this@muscle.AModelConfig(geo.toCube20Node);
         end
         
-        function configureModel(~, model)
+        function configureModel(this, model)
             model.T = 20;
             model.dt = .1;
             f = model.System.f;
-            f.alpha = .1;
-            f.Viscosity = 0;
+            f.alpha = this.getAlphaRamp(4,.1);
+            f.System.Viscosity = 0;
         end
     end
     

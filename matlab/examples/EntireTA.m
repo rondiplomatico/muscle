@@ -4,10 +4,11 @@ classdef EntireTA < muscle.AModelConfig
         function this = EntireTA
             % Single cube with same config as reference element
             s = load(fullfile(fileparts(which(mfilename)),'..','CMISS','EntireTA.mat'));
-            this = this@muscle.AModelConfig(s.geo27,s.geo8);
-            geo = s.geo27;
+            this = this@muscle.AModelConfig(s.geo27);
+
             
             %% Muscle fibre weights
+            geo = s.geo27;
             types = [0 .2 .4 .6 .8 1];
             ftw = zeros(this.PosFE.GaussPointsPerElem,length(types),geo.NumElements);
             % Test: Use only slow-twitch muscles
@@ -26,15 +27,14 @@ classdef EntireTA < muscle.AModelConfig
         function configureModel(this, model)
             % Overload this method to set model-specific quantities like
             % simulation time etc
-            
-            model.T = 50;
+            model.T = 200;
             model.dt = 1;
-            f = model.System.f;
-            f.alpha = .3;
+%             f = model.System.f;
+%             f.alpha = this.getAlphaRamp(30,1);
             model.System.Viscosity = .1;
             os = model.ODESolver;
-            os.RelTol = .001;
-            os.AbsTol = .05;
+            os.RelTol = .01;
+            os.AbsTol = .08;
         end
     end
     
@@ -42,25 +42,17 @@ classdef EntireTA < muscle.AModelConfig
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             %% Dirichlet conditions: Position (fix one side)
             geo = this.PosFE.Geometry;
+            % Front face
 %             displ_dir(:,geo.Elements(6,geo.MasterFaces(3,:))) = true;
+            % Back faces
             displ_dir(:,geo.Elements(8,geo.MasterFaces(4,:))) = true;
             displ_dir(:,geo.Elements(8,geo.MasterFaces(2,:))) = true;
+%             displ_dir(:,geo.Elements(1,geo.MasterFaces(4,:))) = true;
         end
                 
-        function anull = seta0(this, anull)
-            % One side
-%             anull(1,:,:) = 1;
-%             anull(2,:,:) = -1;
-
-            anull(1,:,[1:4 8]) = 2;
-            anull(2,:,[1:4 8]) = 1;
-% %             
-% %             % Other side
-            anull(1,:,[5 7 9:11]) = 1;
-            anull(2,:,[5 7 9:11]) = -2;
-% %             
-%             anull(1,:,[6 12]) = 0;
-            anull(2,:,[6 12]) = 1;
+        function anull = seta0(~, anull)
+            % The elements are aligned so that the fibres go in x-direction
+            anull(1,:,:) = 1;
         end
     end
     
