@@ -19,6 +19,9 @@ classdef DebugConfig < muscle.AModelConfig
     % Version 4/7: No fibres
     % Version 5/8: Fibres in x-direction
     % Version 6/9: Fibres in y-direction
+    %
+    % Version 10: One side is fixed and a certain pressure is applied to
+    % the other side's face
     
     properties(SetAccess=private)
         Version;
@@ -33,29 +36,32 @@ classdef DebugConfig < muscle.AModelConfig
             end
             % Single cube with same config as reference element
             [pts, cubes] = geometry.Cube8Node.DemoGrid([0 1],[0 1],[0 1]);
+%             if version == 10
+%                 [pts, cubes] = geometry.Cube8Node.DemoGrid([0 1],[0 2],[0 1]);
+%             end
             geo = geometry.Cube8Node(pts, cubes);
-            this = this@muscle.AModelConfig(geo.toCube27Node,geo);
+            this = this@muscle.AModelConfig(geo.toCube27Node);
             
             this.Version = version;
         end
         
-        function configureModel(this, model)
-            sys = model.System;
+        function configureModel(this, m)
+            sys = m.System;
             f = sys.f;
-            model.T = 1;
-            model.dt = .05;
-            model.ODESolver.RelTol = .00001;
-            model.ODESolver.AbsTol = .002;
+            m.T = 1;
+            m.dt = .05;
+            m.ODESolver.RelTol = .00001;
+            m.ODESolver.AbsTol = .002;
             switch this.Version
             case 1
-                f.alpha = 0;
+                f.alpha = @(t)0;
             case 2
-                f.alpha = .1;
-                model.ODESolver.RelTol = .001;
-                model.ODESolver.AbsTol = .02;
+                f.alpha = @(t).1;
+                m.ODESolver.RelTol = .001;
+                m.ODESolver.AbsTol = .02;
             case 3
-                model.T = 400;
-                model.dt = 1;
+                m.T = 400;
+                m.dt = 1;
                 types = [0 .2 .4 .6 .8 1];
                 fe = this.PosFE;
                 geo = fe.Geometry;
@@ -71,8 +77,8 @@ classdef DebugConfig < muscle.AModelConfig
                 p = motorunit.Pool;
                 p.FibreTypes = types;
                 this.Pool = p;
-                model.ODESolver.RelTol = .01;
-                model.ODESolver.AbsTol = .1;
+                m.ODESolver.RelTol = .01;
+                m.ODESolver.AbsTol = .1;
             case {4,5,6}
                 %% Material configuration from CMISS/3Elem_sprenger.xml
                 % c1M = 3.56463903963e-02 MPa
@@ -91,36 +97,57 @@ classdef DebugConfig < muscle.AModelConfig
                 % The derivative of the force-length function as function handle
                 f.ForceLengthFunDeriv = @(ratio)(ratio<=1).*((1/.57)*(((1-ratio)/.57).^3).*exp(-((1-ratio)/.57).^4)) ...
                     - (ratio > 1) .* ((1/.14) .* (((ratio-1)/.14).^2) .* exp(-((ratio-1)/.14).^3));
-                model.T = 12;
-                model.dt = .2;
-                f.alpha = 0;
+                m.T = 12;
+                m.dt = .2;
+                f.alpha = @(t)0;
                 sys.ApplyVelocityBCUntil = 10;
             case {7,8,9}
                 %% Using the "normal" Material configuration of Heidlauf
-                model.T = 15;
-                model.dt = .1;
-                f.alpha = 0;
+                m.T = 15;
+                m.dt = .1;
+                f.alpha = @(t)0;
                 sys.ApplyVelocityBCUntil = 10;
+            case 10
+                f.alpha = @(t)0;
+                m.ODESolver.RelTol = .001;
+                m.ODESolver.AbsTol = .03;
+                m.T = 1;
+                m.dt = .01;
+                sys.Viscosity = 0;
+                sys.Inputs{1} = this.getAlphaRamp(m.T/2,1);
             end
         end
         
+        function P = getBoundaryPressure(this, elemidx, faceidx)
+            % Determines the neumann forces on the boundary.
+            %
+            % The unit for the applied quantities is kiloPascal [kPa]
+            %
+            % In the default implementation there are no force boundary
+            % conditions.
+            P = [];
+            if this.Version == 10
+%                 if any(elemidx - (9:16) == 0) && faceidx == 2
+                if elemidx == 1 && faceidx == 2
+                   P = 2;
+                end
+            end
+        end
+        
+        function u = getInputFunction(this, m)
+            u = this.getAlphaRamp(m.T/2,1);
+        end
     end
     
     methods(Access=protected)
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             geo = this.PosFE.Geometry;
             % Always fix back side
-            displ_dir(:,geo.Elements(1,geo.MasterFaces(1,:))) = true;
-            switch this.Version
-            
-            case {2,3}
-                %displ_dir(:,geo.Elements(1,[6:8 11 12 18:20])) = true;
-            
-                % Only fix the right back corner nodes in yz-direction
-    %             displ_dir([2 3],geo.Elements(1,[9 18 27])) = true;
-%                 displ_dir(:,geo.Elements(1,[9 18 27])) = true;
+            if this.Version == 10
+                displ_dir(1,geo.Elements(1,geo.MasterFaces(1,:))) = true;
+            else
+                displ_dir(:,geo.Elements(1,geo.MasterFaces(1,:))) = true;
             end
-            
         end
         
         function [velo_dir, velo_dir_val] = setVelocityDirichletBC(this, velo_dir, velo_dir_val)
@@ -153,6 +180,8 @@ classdef DebugConfig < muscle.AModelConfig
             case {6,9}
                 % Stretch perpendicular to fibre direction
                 anull(2,:,:) = 1;
+            case 10
+                anull(:,:,:) = 0;
             end
         end
     end

@@ -140,8 +140,8 @@ classdef System < models.BaseDynSystem
                 B(this.bc_dir_idx) = [];
                 % Set as constant input conversion matrix
                 this.B = dscomponents.LinearInputConv(B);
-                % Set constant input function
-                this.Inputs{1} = @(t)1;
+                % Set input function
+                this.Inputs{1} = mc.getInputFunction(this.Model);
             end
             
             % Init fibre directions and precomputable values
@@ -345,7 +345,7 @@ classdef System < models.BaseDynSystem
                     udir = u(:,have_residuals);
                     residuals(residuals_pos) = r.DF(sortidx,ts)/maxdfval;
                     quiver3(h,udir(1,:),udir(2,:),udir(3,:),...
-                        residuals(1,have_residuals),residuals(2,have_residuals),residuals(3,have_residuals),0,'k', 'MarkerSize',14);
+                        residuals(1,have_residuals),residuals(2,have_residuals),residuals(3,have_residuals),'k', 'MarkerSize',14);
                 end
                 
                 %% Neumann condition forces
@@ -398,7 +398,7 @@ classdef System < models.BaseDynSystem
                         %lambdafsq = sum(sum((u'*u) .* (dtna0*dtna0')));
                         gps = u*Ngp;
                         anull = u*this.dNa0(:,:,m);
-                        quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'.','Color',[.5 .8 .5]);
+                        quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'.','Color','w');
                     end
                 end
                 
@@ -526,7 +526,10 @@ classdef System < models.BaseDynSystem
 %     %             velo_dir(1,tq.elems(1,[3 10 15])) = true;
 %             end
 %             x0(find(velo_dir)+tq.NumNodes * 3) = .5;
-            
+
+            % Give the model config a chance to provide x0
+            x0 = mc.getX0(x0);
+
             % Remove dirichlet values
             x0(this.bc_dir_idx) = [];
             

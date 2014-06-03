@@ -1,6 +1,10 @@
 classdef AModelConfig < handle
     %AModelConfig
     
+    properties
+        Model;
+    end
+    
     properties(SetAccess=private)
         PosFE;
         
@@ -48,21 +52,18 @@ classdef AModelConfig < handle
             P = [];
         end
         
-        function alpha = getAlphaRamp(~, ramptime, alphamax)
-            if nargin < 3
-                alphamax = 1;
-            end
-            alpha = @(t)alphamax * ((t<ramptime)*t/ramptime + (t>=ramptime));
+        function u = getInputFunction(this, m)
+            u = @(t)1;
+        end
+        
+        function x0 = getX0(this, x0)
+            %% do nothing
         end
     end
     
     methods(Access=protected)
         function anull = seta0(~, anull)
             % do nothing!
-        end
-        
-        function x0 = getx0(~)
-            x0 = [];
         end
         
         function [velo_dir, velo_dir_val] = setVelocityDirichletBC(~, velo_dir, velo_dir_val)
@@ -72,6 +73,13 @@ classdef AModelConfig < handle
             %
             % In the default implementation there are no velocity
             % conditions.
+        end
+        
+        function alpha = getAlphaRamp(~, ramptime, alphamax)
+            if nargin < 3
+                alphamax = 1;
+            end
+            alpha = @(t)alphamax * ((t<ramptime)*t/ramptime + (t>=ramptime));
         end
     end
     

@@ -45,6 +45,7 @@ classdef Model < models.BaseFullModel
             this.System.MaxTimestep = []; %model.dt;
             
             % Call the config-specific model configuration
+            conf.Model = this;
             conf.configureModel(this);
             
             % Set the config to the model, triggering geometry related
@@ -127,6 +128,17 @@ classdef Model < models.BaseFullModel
                 idxXYZ(dim,geo.Elements(elem,geo.MasterFaces(faces(k),:))) = true;
             end
             idx = find(idxXYZ(:));
+        end
+        
+        function idx = getDirichletBCFaceIdx(this, elem, face, dim)
+            if nargin < 4
+                dim = 1:3;
+            end
+            geo = this.Config.PosFE.Geometry;
+            idx_face = false(size(this.System.bc_dir_displ));
+            idx_face(dim,geo.Elements(elem,geo.MasterFaces(face,:))) = true;
+            fidx = find(this.System.bc_dir_displ & idx_face);
+            [~, idx] = intersect(this.System.bc_dir_displ_idx, fidx);
         end
         
         function setConfig(this, value)
