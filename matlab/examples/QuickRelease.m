@@ -40,7 +40,7 @@ classdef QuickRelease < muscle.AModelConfig
                     [pts, cubes] = geometry.Cube8Node.DemoGrid(0:20:40,[0 20],[0 20]);
                     geo = geometry.Cube8Node(pts, cubes);
                 case 2
-                    geo = Belly.getBelly(3, 50, 3, .5, 15);
+                    geo = Belly.getBelly(3, 50, 4.5, 1.5, 15);
                 case 3
                     s = load(fullfile(fileparts(which(mfilename)),'..','CMISS','EntireTA.mat'));
                     geo = s.geo27;
@@ -54,6 +54,14 @@ classdef QuickRelease < muscle.AModelConfig
             os = m.ODESolver;
             switch this.GeoNr
                 case 1
+                    if this.ICCompMode
+                        os.RelTol = 1e-7;
+                        os.AbsTol = .009;
+                    else
+                        os.RelTol = .01;
+                        os.AbsTol = .1;
+                    end
+                case 2
                     if this.ICCompMode
                         os.RelTol = 1e-7;
                         os.AbsTol = .009;
@@ -88,11 +96,10 @@ classdef QuickRelease < muscle.AModelConfig
                 m.T = max(this.icMovetime, this.icAlphaRampTime) + this.icRelaxTime;
                 m.dt = m.T / 300;
                 m.System.ApplyVelocityBCUntil = this.icMovetime;
-                m.System.Viscosity = 0.01;
             else
-                m.T = 10;
+                m.T = 20;
                 m.dt = .1;
-                f.alpha = this.getAlphaRamp(5*m.dt,alpha);
+                f.alpha = this.getAlphaRamp(2*m.dt,alpha);
                 m.EnableTrajectoryCaching = true;
             end
         end
@@ -112,6 +119,20 @@ classdef QuickRelease < muscle.AModelConfig
                 case 1
                     % Get average velocity of loose end
                     facenode_idx = m.getFaceDofsGlobal(2,2,1);
+                    o(1,:) = mean(uvw(facenode_idx+geo.NumNodes*3,:),1);
+                    
+                    % Get force on that end [N]
+                    o(2,:) = abs(sum(nf,1))/1000;
+                    % Also store the dirichlet forces (maybe we'll need it)
+                    % [N]
+                    o(3,:) = sum(df,1)/1000;
+                case 2
+                    facenode_idx = [];
+                    for k = 1:4
+                        facenode_idx = [facenode_idx; m.getFaceDofsGlobal(k,3,2)];%#ok
+                    end
+                    % Save some work
+                    facenode_idx = unique(facenode_idx);
                     o(1,:) = mean(uvw(facenode_idx+geo.NumNodes*3,:),1);
                     
                     % Get force on that end [N]
@@ -146,6 +167,10 @@ classdef QuickRelease < muscle.AModelConfig
                         if elemidx == 2 && faceidx == 2
                             P = 1;
                         end
+                    case 2
+                        if elemidx <= 4 && faceidx == 3
+                            P = 1;
+                        end
                     case 3
                         if elemidx == 6 && faceidx == 3
                             P = 1;
@@ -169,11 +194,11 @@ classdef QuickRelease < muscle.AModelConfig
                     face = geo.MasterFaces(1,:);
                     displ_dir(:,geo.Elements(1,face(5))) = true;
                     displ_dir(1,geo.Elements(1,face([1:4 6:9]))) = true;
-%                 case 2
-%                     % Fix back side
-%                     for k = geo.NumElements-3:geo.NumElements
-%                         displ_dir(:,geo.Elements(k,geo.MasterFaces(4,:))) = true;
-%                     end
+                case 2
+                    % Fix back side
+                    for k = geo.NumElements-3:geo.NumElements
+                        displ_dir(:,geo.Elements(k,geo.MasterFaces(4,:))) = true;
+                    end
                 case 3
                     % Fix broad end of TA
                     displ_dir(:,geo.Elements(8,geo.MasterFaces(4,:))) = true;
@@ -203,6 +228,12 @@ classdef QuickRelease < muscle.AModelConfig
                         len = box(2)-box(1);
                         velo_dir(1,geo.Elements(2,geo.MasterFaces(2,:))) = true;
                         totaldistance = (f.lambdafopt-1)*len;
+                        velo_dir_val(velo_dir) = totaldistance/this.icMovetime;
+                    case 2
+                        for k = 1:4
+                           velo_dir(2,geo.Elements(k,geo.MasterFaces(3,:))) = true;
+                        end
+                        totaldistance = (f.lambdafopt-1)*(box(4)-box(3));
                         velo_dir_val(velo_dir) = totaldistance/this.icMovetime;
                     case 3
                         len = box(4)-box(3);
@@ -239,8 +270,8 @@ classdef QuickRelease < muscle.AModelConfig
             if exist(x0file,'file') ~= 2
                 mc = QuickRelease(geonr, true);
                 m = muscle.Model(mc);
-                [t, y] = m.simulate(0);
-                m.plot(t,y);
+                [t, y] = m.simulate([.001; 0]);
+%                 m.plot(t,y);
                 y = m.System.includeDirichletValues(t,y);
                 x0 = y(:,end);%#ok
                 save(x0file,'x0');
@@ -258,7 +289,7 @@ classdef QuickRelease < muscle.AModelConfig
                 m = muscle.Model(mc);
                 
                 % loads in [g]
-                loads = [0 100];% 200 500];
+                loads = [0 100 2000];% 200 500];
                 
                 % convert to pressure:
                 % [g]/1000 = [kg]
@@ -269,7 +300,8 @@ classdef QuickRelease < muscle.AModelConfig
                 m.System.Inputs = {};
                 for lidx = 1:length(loads)
                     pressure = pressures(lidx);
-                    m.System.Inputs{lidx} = mc.getAlphaRamp(5*m.dt,pressure);
+                    %m.System.Inputs{lidx} = @(t)pressure;
+                    m.System.Inputs{lidx} = mc.getAlphaRamp(2*m.dt,pressure);
                 end
             end
 %             geo = mc.PosFE.Geometry;
@@ -282,7 +314,8 @@ classdef QuickRelease < muscle.AModelConfig
             c = ColorMapCreator;
             c.useJet([0.01 0.05 0.1 .5]);
             
-            mus = [.1 1 10; 0 0 0];
+            mus = [.1 1];
+            mus = [mus; zeros(size(mus))];
             nparams = length(mus);
             for k=1:nparams
                 mu = mus(:,k);
@@ -290,9 +323,13 @@ classdef QuickRelease < muscle.AModelConfig
                     [t, y] = m.simulate(mu,inidx);
                     o = m.Config.getOutputOfInterest(m, t, y);
                     
+                    % Remove the first two entries as the activation is
+                    % increased there
+%                     o = o(:,3:end);
+                    
                     h = pm.nextPlot(sprintf('force_velo_load%g_visc%g',loads(inidx),mu(1)),...
                         sprintf('Force / velocity plot\nLoad: %g[g] (eff. pressure %g[kPa]), viscosity:%g [mNs/m]',loads(inidx),pressures(inidx),mu(1)),...
-                        'Velocity [mm/ms]','Force [mN]');
+                        'Velocity [mm/ms]','Force [N]');
                     plot(h,o(1,:),o(2,:),'r');
                     
 %                     h = pm.nextPlot(sprintf('velo_visc%g',v),...
