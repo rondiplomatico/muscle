@@ -59,6 +59,13 @@ classdef AModelConfig < handle
         function x0 = getX0(this, x0)
             %% do nothing
         end
+        
+        function alpha = getAlphaRamp(~, ramptime, alphamax)
+            if nargin < 3
+                alphamax = 1;
+            end
+            alpha = @(t)alphamax * ((t<ramptime).*t/ramptime + (t>=ramptime));
+        end
     end
     
     methods(Access=protected)
@@ -73,14 +80,8 @@ classdef AModelConfig < handle
             %
             % In the default implementation there are no velocity
             % conditions.
-        end
+        end        
         
-        function alpha = getAlphaRamp(~, ramptime, alphamax)
-            if nargin < 3
-                alphamax = 1;
-            end
-            alpha = @(t)alphamax * ((t<ramptime)*t/ramptime + (t>=ramptime));
-        end
     end
     
     methods(Abstract, Access=protected)

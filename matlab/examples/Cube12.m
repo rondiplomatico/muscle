@@ -9,12 +9,12 @@ classdef Cube12 < muscle.AModelConfig
             this = this@muscle.AModelConfig(geo.toCube20Node);
         end
         
-        function configureModel(this, model)
-            model.T = 20;
-            model.dt = .1;
-            f = model.System.f;
+        function configureModel(this, m)
+            m.T = 20;
+            m.dt = .1;
+            m.DefaultMu = [0; 0];
+            f = m.System.f;
             f.alpha = this.getAlphaRamp(4,.1);
-            f.System.Viscosity = 0;
         end
     end
     

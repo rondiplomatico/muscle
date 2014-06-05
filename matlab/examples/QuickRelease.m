@@ -1,6 +1,8 @@
 classdef QuickRelease < muscle.AModelConfig
-% A long geometry with 20% deviation from default cubic positions and
-% complex fibre structure
+% Provides a model config and test scripts for a quick release test.
+%
+% The material parameters used are suggested by Thomas Heidlauf, see his
+% thesis.
 
     properties(Constant)
         OutputDir = fullfile(fileparts(which(mfilename)),'quickrelease');
@@ -14,14 +16,14 @@ classdef QuickRelease < muscle.AModelConfig
     properties(SetAccess=private)
         % The time the velocity BCs are applied in order to reach the
         % initial condition
-        icMovetime = 200; % [ms]
+        icMovetime = 100; % [ms]
         
         % The time used to increase the muscle activation
         icAlphaRampTime = 100; % [ms]
         
         % The time after movement and activation is fully done until the
         % ICs are extracted ("quasi static")
-        icRelaxTime = 300; % [ms]
+        icRelaxTime = 50000; % [ms]
     end
 
     methods
@@ -53,46 +55,104 @@ classdef QuickRelease < muscle.AModelConfig
             switch this.GeoNr
                 case 1
                     if this.ICCompMode
-                        os.RelTol = .001;
-                        os.AbsTol = .01;
+                        os.RelTol = 1e-7;
+                        os.AbsTol = .009;
                     else
-                        os.RelTol = .1;
+                        os.RelTol = .01;
                         os.AbsTol = .1;
                     end
-                case {2,3}
-                    os.RelTol = .01;
-                    os.AbsTol = .08;
+                case 3
+                    if this.ICCompMode
+                        os.RelTol = 1e-7;
+                        os.AbsTol = .02;
+                    else
+                        os.RelTol = .01;
+                        os.AbsTol = .5;
+                    end
             end
-            % For IC comps, use an alpha ramp. Otherwise, start with full
-            % activation straight away
+            %% Material setup
             f = m.System.f;
-            alpha = .1;
+            % Material set (see main comment)
+            f.c10 = 6.352e-10; % [kPa]
+            f.c01 = 3.627; % [kPa]
+            f.b1 = 0.00355439810963035; % [kPa]
+            f.d1 = 14.5;%12.660539325481963; % [-]
+            f.Pmax = 250; % [kPa], in Paper 25N/cm², but kPa = 0.1N/cm² 
+            f.lambdafopt = 1.2; % [-]
+            
+            alpha = 1;
             if this.ICCompMode
-                f.alpha = this.getAlphaRamp(this.icAlphaRampTime, alpha);
+                % No activation needed for position/IC computing
+                f.alpha = @(t)0;
+%                 f.alpha = this.getAlphaRamp(this.icAlphaRampTime, alpha);
                 m.T = max(this.icMovetime, this.icAlphaRampTime) + this.icRelaxTime;
-                m.dt = m.T / 100;
+                m.dt = m.T / 300;
                 m.System.ApplyVelocityBCUntil = this.icMovetime;
+                m.System.Viscosity = 0.01;
             else
-                m.T = 100;
+                m.T = 10;
                 m.dt = .1;
-                f.alpha = @(t)alpha;
+                f.alpha = this.getAlphaRamp(5*m.dt,alpha);
                 m.EnableTrajectoryCaching = true;
             end
         end
         
         function x0 = getX0(this, x0)
             if ~this.ICCompMode
-                s = load(fullfile(QuickRelease.OutputDir,sprintf('ic_geo%d.mat',this.GeoNr)));
+                s = load(fullfile(QuickRelease.OutputDir,sprintf('geo%d_ic.mat',this.GeoNr)));
                 x0 = s.x0;
             end
         end
         
-%         function o = getOutputOfInterest(this, m, t, uvw)
-%             geo = m.Config.PosFE.Geometry;
-%             
-%            
-%         end
+        function o = getOutputOfInterest(this, m, t, uvw)
+            geo = m.Config.PosFE.Geometry;
+            [df,nf] = m.getResidualForces(t,uvw);
+            uvw = m.System.includeDirichletValues(t, uvw);
+            switch this.GeoNr
+                case 1
+                    % Get average velocity of loose end
+                    facenode_idx = m.getFaceDofsGlobal(2,2,1);
+                    o(1,:) = mean(uvw(facenode_idx+geo.NumNodes*3,:),1);
+                    
+                    % Get force on that end [N]
+                    o(2,:) = abs(sum(nf,1))/1000;
+                    % Also store the dirichlet forces (maybe we'll need it)
+                    % [N]
+                    o(3,:) = sum(df,1)/1000;
+                case 3
+                    % Get average velocity of loose end
+                    facenode_idx = m.getFaceDofsGlobal(6,3,2);
+                    o(1,:) = mean(uvw(facenode_idx+geo.NumNodes*3,:),1);
+                    
+                    % Get force on that end [N]
+                    o(2,:) = abs(sum(nf,1))/1000;
+                    % Also store the dirichlet forces (maybe we'll need it)
+                    % [N]
+                    o(3,:) = sum(df,1)/1000;
+            end
+        end
         
+        function P = getBoundaryPressure(this, elemidx, faceidx)
+            % Determines the neumann forces on the boundary.
+            %
+            % The unit for the applied quantities is kiloPascal [kPa]
+            %
+            % In the default implementation there are no force boundary
+            % conditions.
+            P = [];
+            if ~this.ICCompMode
+                switch this.GeoNr
+                    case 1
+                        if elemidx == 2 && faceidx == 2
+                            P = 1;
+                        end
+                    case 3
+                        if elemidx == 6 && faceidx == 3
+                            P = 1;
+                        end
+                end
+            end
+        end
         
     end
     
@@ -106,16 +166,23 @@ classdef QuickRelease < muscle.AModelConfig
             switch this.GeoNr
                 case 1
                     % Fix front
-                    displ_dir(:,geo.Elements(1,geo.MasterFaces(1,:))) = true;
+                    face = geo.MasterFaces(1,:);
+                    displ_dir(:,geo.Elements(1,face(5))) = true;
+                    displ_dir(1,geo.Elements(1,face([1:4 6:9]))) = true;
 %                 case 2
 %                     % Fix back side
 %                     for k = geo.NumElements-3:geo.NumElements
 %                         displ_dir(:,geo.Elements(k,geo.MasterFaces(4,:))) = true;
 %                     end
-%                 case 3
-%                     % Fix broad end of TA
-%                     displ_dir(:,geo.Elements(8,geo.MasterFaces(4,:))) = true;
-%                     displ_dir(:,geo.Elements(8,geo.MasterFaces(2,:))) = true;
+                case 3
+                    % Fix broad end of TA
+                    displ_dir(:,geo.Elements(8,geo.MasterFaces(4,:))) = true;
+                    displ_dir(:,geo.Elements(8,geo.MasterFaces(2,:))) = true;
+                    % For quick release test we also constrain the movement
+                    % of the loose end to the y axis
+                    if ~this.ICCompMode
+                        displ_dir([1 3],geo.Elements(6,geo.MasterFaces(3,:))) = true;
+                    end
             end
         end
         
@@ -130,13 +197,21 @@ classdef QuickRelease < muscle.AModelConfig
                 geo = this.PosFE.Geometry;
                 box = geo.getBoundingBox;
                 f = this.Model.System.f;
+                
                 switch this.GeoNr
                     case 1
-                        xdia = box(2)-box(1);
-                        %totaldistance = (f.lambdafopt-1)*xdia;
-                        totaldistance = .01*xdia;
+                        len = box(2)-box(1);
                         velo_dir(1,geo.Elements(2,geo.MasterFaces(2,:))) = true;
+                        totaldistance = (f.lambdafopt-1)*len;
                         velo_dir_val(velo_dir) = totaldistance/this.icMovetime;
+                    case 3
+                        len = box(4)-box(3);
+                        % Set only for y direction to nonzero value
+                        velo_dir(2,geo.Elements(6,geo.MasterFaces(3,:))) = true;
+                        totaldistance = (f.lambdafopt-1)*len;
+                        velo_dir_val(velo_dir) = -totaldistance/this.icMovetime;
+                        % Set zero for rest
+                        velo_dir(:,geo.Elements(6,geo.MasterFaces(3,:))) = true;
                 end
             end
         end
@@ -160,18 +235,44 @@ classdef QuickRelease < muscle.AModelConfig
             end
             
             %% Initial conditions
-            file = fullfile(QuickRelease.OutputDir,sprintf('ic_geo%d.mat',geonr));
-            if exist(file,'file') ~= 2
+            x0file = fullfile(QuickRelease.OutputDir,sprintf('geo%d_ic.mat',geonr));
+            if exist(x0file,'file') ~= 2
                 mc = QuickRelease(geonr, true);
                 m = muscle.Model(mc);
                 [t, y] = m.simulate(0);
                 m.plot(t,y);
                 y = m.System.includeDirichletValues(t,y);
                 x0 = y(:,end);%#ok
-                save(file,'x0');
+                save(x0file,'x0');
+                fprintf('Initial conditions file created. Please re-run.\n');
+                return;
             end
             
-            mc = QuickRelease(geonr, false);
+            file = fullfile(QuickRelease.OutputDir,sprintf('geo%d.mat',geonr));
+            saveit = true;
+            if exist(file,'file') == 2
+                load(file);
+                saveit = false;
+            else
+                mc = QuickRelease(geonr, false);
+                m = muscle.Model(mc);
+                
+                % loads in [g]
+                loads = [0 100];% 200 500];
+                
+                % convert to pressure:
+                % [g]/1000 = [kg]
+                % [kg]*[m/s²] = [N]
+                % [N]*1000 = [mN]
+                % [mN]/[mm²] = [kPa]
+                pressures = (loads/1000*m.Gravity)*1000/400; % [kPa]
+                m.System.Inputs = {};
+                for lidx = 1:length(loads)
+                    pressure = pressures(lidx);
+                    m.System.Inputs{lidx} = mc.getAlphaRamp(5*m.dt,pressure);
+                end
+            end
+%             geo = mc.PosFE.Geometry;
             
             pm = PlotManager(false,2,2);
 %             pm = PlotManager;
@@ -181,91 +282,41 @@ classdef QuickRelease < muscle.AModelConfig
             c = ColorMapCreator;
             c.useJet([0.01 0.05 0.1 .5]);
             
-            visc = 10;
-%             visc = [0.001 0.01 .1 1 10];
-            nvisc = length(visc);
-            for k=1:nvisc
-                m = muscle.Model(mc);
-                v = visc(k);
-                m.System.Viscosity = v;
-                file = fullfile(QuickRelease.OutputDir,sprintf('geo%d_visc%g.mat',geonr,visc(k)));
-                
-                if exist(file,'file') == 2
-                    load(file);
-                else
-                    [t, y, ct] = m.simulate(0);
-                    m.plot(t,y);
-%                     o = m.Config.getOutputOfInterest(m, t, y);
-%                     save(file,'m','y','o','ct');
-                end
-                
-%                 ec = [.3 .3 .3];
-%                 h = pm.nextPlot(sprintf('pos_visc%g',v),...
-%                     sprintf('Averaged X-position [mm] of right face for different rates and activation level\nViscosity=%g',v),...
-%                     'Activation increase rate [1/ms]','alpha [-]');
-%                 surf(h,1./ramptimes, alphavals, pos(:,:,1)','FaceColor','interp','EdgeColor',ec);
-%                 set(h,'XScale','log');
-%                 view(-150, 45);
-%                 
-%                 h = pm.nextPlot(sprintf('velo_visc%g',v),...
-%                     sprintf('Averaged X-velocity [mm/ms] of right face for different rates and activation level\nViscosity=%g',v),...
-%                     'Activation increase rate [1/ms]','alpha [-]');
-%                 surf(h,1./ramptimes, alphavals, abs(pos(:,:,2))','FaceColor','interp','EdgeColor',ec);
-%                 set(h,'XScale','log');
-%                 view(-136, 56);
+            mus = [.1 1 10; 0 0 0];
+            nparams = length(mus);
+            for k=1:nparams
+                mu = mus(:,k);
+                for inidx = 1:m.System.InputCount
+                    [t, y] = m.simulate(mu,inidx);
+                    o = m.Config.getOutputOfInterest(m, t, y);
+                    
+                    h = pm.nextPlot(sprintf('force_velo_load%g_visc%g',loads(inidx),mu(1)),...
+                        sprintf('Force / velocity plot\nLoad: %g[g] (eff. pressure %g[kPa]), viscosity:%g [mNs/m]',loads(inidx),pressures(inidx),mu(1)),...
+                        'Velocity [mm/ms]','Force [mN]');
+                    plot(h,o(1,:),o(2,:),'r');
+                    
+%                     h = pm.nextPlot(sprintf('velo_visc%g',v),...
+%                         sprintf('Averaged X-velocity [mm/ms] of right face for different rates and activation level\nViscosity=%g',v),...
+%                         'Activation increase rate [1/ms]','alpha [-]');
+%                     surf(h,1./ramptimes, alphavals, abs(pos(:,:,2))','FaceColor','interp','EdgeColor',ec);
+%                     set(h,'XScale','log');
+%                     view(-136, 56);
+                end  
+            end
+            
+            if saveit
+                save(file,'m','y','o','t','pressures','loads');
             end
             
 %             m.plotGeometrySetup(pm);
 %             
-%             pm.done;
+            pm.done;
 %             pm.FilePrefix = sprintf('case1_geo%d',geonr);
 %             pm.ExportDPI = 200;
 %             pm.SaveFormats = {'jpg'};
 %             pm.savePlots(QuasiStaticTest.OutputDir,'Close',true);
         end
-        
-     
-        
-        function [alphavals, output] = runAlphaRamp(m, ramptimes) %globaltimes, globalout
-            f = m.System.f;
-            rampsteps = 30;
-            alphamax = 1;
-            alphavals = linspace(0,alphamax,rampsteps+1);
-            ramppos = 1:2:rampsteps*2+1;
-%             relaxperc = 1.3;
-            nrates = length(ramptimes);
-
-%             globaloutsampling = round(ramptimes(end)/4);
-%             globaltimes = linspace(0,max(ramptimes)+relaxtime,globaloutsampling);
-%             globalout = zeros(nrates,globaloutsampling,2);
-
-            output = zeros(nrates, rampsteps+1, 2);
-            pi = ProcessIndicator('Computing for %d different alpha increase rates',nrates,false,nrates);
-            for tidx = 1:nrates
-                ramptime = ramptimes(tidx);
-                m.T = ramptime;%*relaxperc;
-                m.dt = ramptime/rampsteps/2;
-
-                f.alpha = @(t)alphamax * ((t>ramptime) + (t<=ramptime).*t/ramptime);
-
-                [t,y] = m.simulate(0);
-                o = m.Config.getOutputOfInterest(m, t, y);
-                % Extract position on global time grid (plotting only)
-%                 [~, idx] = min(abs(globaltimes-t(end))); idx = idx(1);
-                for k = 1:size(o,1)
-                    output(tidx,:,k) = o(k,ramppos);
-%                     globalout(tidx,1:idx,k) = interp1(t,o(k,:),globaltimes(1:idx),'cubic');
-%                     globalout(tidx,idx+1:end,k) = globalout(tidx,idx,k);
-                end
-
-                % Check correct alpha values
-                if norm(f.alpha(t(ramppos)) - alphavals) > 1e-15
-                    error('Boo.');
-                end
-                pi.step;
-            end
-            pi.stop;
-        end
+       
     end
     
 end

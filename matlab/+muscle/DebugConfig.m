@@ -22,6 +22,8 @@ classdef DebugConfig < muscle.AModelConfig
     %
     % Version 10: One side is fixed and a certain pressure is applied to
     % the other side's face
+    % Version 11: A slightly deformed cube with one side fixed and velocity
+    % boundary conditions
     
     properties(SetAccess=private)
         Version;
@@ -36,9 +38,14 @@ classdef DebugConfig < muscle.AModelConfig
             end
             % Single cube with same config as reference element
             [pts, cubes] = geometry.Cube8Node.DemoGrid([0 1],[0 1],[0 1]);
-%             if version == 10
-%                 [pts, cubes] = geometry.Cube8Node.DemoGrid([0 1],[0 2],[0 1]);
-%             end
+            if version == 11
+                pts(1,[6 8]) = 2;
+                theta = .4;
+                R = [cos(theta) -sin(theta) 0
+                     sin(theta) cos(theta)  0
+                     0          0           1];
+                pts = R*pts;
+            end
             geo = geometry.Cube8Node(pts, cubes);
             this = this@muscle.AModelConfig(geo.toCube27Node);
             
@@ -115,6 +122,12 @@ classdef DebugConfig < muscle.AModelConfig
                 m.dt = .01;
                 sys.Viscosity = 0;
                 sys.Inputs{1} = this.getAlphaRamp(m.T/2,1);
+            case 11
+                f.alpha = @(t)0;
+                m.ODESolver.RelTol = .001;
+                m.ODESolver.AbsTol = .05;
+                m.T = 10;
+                m.dt = .05;
             end
         end
         
@@ -165,6 +178,11 @@ classdef DebugConfig < muscle.AModelConfig
                 % Move the whole front
                 velo_dir(1,geo.Elements(1,geo.MasterFaces(2,:))) = true;
                 velo_dir_val(velo_dir) = .04;
+            case 11
+                velo_dir(:,geo.Elements(1,geo.MasterFaces(2,:))) = true;
+                hlp = velo_dir;
+                hlp([1 3],:) = 0;
+                velo_dir_val(hlp) = .04;
             end
         end
         
@@ -180,7 +198,7 @@ classdef DebugConfig < muscle.AModelConfig
             case {6,9}
                 % Stretch perpendicular to fibre direction
                 anull(2,:,:) = 1;
-            case 10
+            case {10,11}
                 anull(:,:,:) = 0;
             end
         end

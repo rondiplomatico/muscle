@@ -90,7 +90,7 @@ classdef BaseGeometry < handle
                     for i = 1:6
                         facenodes = p(:,el(this.MasterFaces(i,:)));
                         mid = mean(facenodes,2);
-                        text(mid(1),mid(2),mid(3),sprintf('F_%d',i),'Parent',h,'Color','g');
+                        text(mid(1),mid(2),mid(3),sprintf('F_%d',i),'Parent',h,'Color','k');
                     end
                 end
             end
@@ -111,6 +111,10 @@ classdef BaseGeometry < handle
                 pm.done;
             end
         end
+        
+%         function area = getFaceArea(this, elem, face)
+%             nodes = this.Nodes(:,this.Elements(elem,this.MasterFaces(face,:)));
+%         end
         
         function bounds = getBoundingBox(this, marginfac)
             if nargin < 2
@@ -149,20 +153,21 @@ classdef BaseGeometry < handle
             % to the face number 1 to 6, sorted as given in FaceNormals.
             if this.NumElements > 1
                 inner = zeros(this.NumElements,6);
-                for faceidx = 1:3
-                    Aside = (faceidx-1)*2+1;
-                    Bside = Aside+1;
-
-                    % Also sort the element node indices in case of
-                    % nonidentical numbering within each element
-                    A = sort(this.Elements(:,this.MasterFaces(Aside,:)),2);
-                    B = sort(this.Elements(:,this.MasterFaces(Bside,:)),2);
-                    for l = 1:this.NumElements
-                        opposing = sum(abs(A - circshift(B,l-1)),2) == 0;
-                        if any(opposing)
-                            opposedto = circshift(opposing,-(l-1));
-                            inner(opposing, Aside) = find(opposedto);
-                            inner(opposedto, Bside) = find(opposing);
+                for Afaceidx = 1:6
+                    for Bfaceidx = 1:6
+                        if Afaceidx ~= Bfaceidx
+                            % Also sort the element node indices in case of
+                            % nonidentical numbering within each element
+                            A = sort(this.Elements(:,this.MasterFaces(Afaceidx,:)),2);
+                            B = sort(this.Elements(:,this.MasterFaces(Bfaceidx,:)),2);
+                            for l = 1:this.NumElements
+                                opposing = sum(abs(A - circshift(B,l-1)),2) == 0;
+                                if any(opposing)
+                                    opposedto = circshift(opposing,-(l-1));
+                                    inner(opposing, Afaceidx) = find(opposedto);
+                                    inner(opposedto, Bfaceidx) = find(opposing);
+                                end
+                            end
                         end
                     end
                 end

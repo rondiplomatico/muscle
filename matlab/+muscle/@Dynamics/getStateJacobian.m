@@ -1,4 +1,6 @@
 function J = getStateJacobian(this, uvwdof, t)
+%     J = this.getStateJacobianFD(uvwdof,t);
+%     return;
     sys = this.System;
     mc = sys.Model.Config; 
     fe_pos = mc.PosFE;
@@ -19,7 +21,7 @@ function J = getStateJacobian(this, uvwdof, t)
     d1 = this.d1;
     lfopt = this.lambdafopt;
     Pmax = this.Pmax;
-%     visc = this.fViscosity;
+%     visc = this.mu(1);
     alphaconst = this.alpha(t);
     havefibres = sys.HasFibres;
     havefibretypes = havefibres && ~isempty(mc.Pool);
@@ -90,12 +92,14 @@ function J = getStateJacobian(this, uvwdof, t)
             p = w' * fe_press.Ngp(:,gp,m);
 
             % Invariant I1
-            I1 = sum(sum((u'*u) .* (dtn*dtn')));
+%             I1 = sum(sum((u'*u) .* (dtn*dtn')));
+            I1 = C(1,1) + C(2,2) + C(3,3);
 
             if havefibres
                 %% Anisotropic part
                 dtna0 = sys.dtna0(:,gp,m);
-                lambdafsq = sum(sum((u'*u) .* (dtna0*dtna0')));
+%                 lambdafsq = sum(sum((u'*u) .* (dtna0*dtna0')));
+                lambdafsq = sum((F*sys.a0(:,gp,m)).^2);
                 lambdaf = sqrt(lambdafsq);
 
                 ratio = lambdaf/lfopt;
@@ -105,9 +109,13 @@ function J = getStateJacobian(this, uvwdof, t)
                 if havefibretypes
                     alpha = ftwelem(gp);
                 end
-                gval = (b1/lambdafsq)*(lambdaf^d1-1) + (Pmax/lambdaf)*fl*alpha;
-                dgdlam = (b1/lambdaf^3)*((d1-2)*lambdaf^d1 + 2)...
-                    + (Pmax/lambdafsq)*alpha*(dfl - fl);
+                
+                gval = (Pmax/lambdaf)*fl*alpha;
+                dgdlam = (Pmax/lambdafsq)*alpha*(dfl - fl);
+                if lambdaf > 1
+                    gval = gval + (b1/lambdafsq)*(lambdaf^d1-1);
+                    dgdlam = dgdlam + (b1/lambdaf^3)*((d1-2)*lambdaf^d1 + 2);
+                end
                 a0 = sys.a0oa0(:,:,(m-1)*num_gausspoints + gp);
             end
 

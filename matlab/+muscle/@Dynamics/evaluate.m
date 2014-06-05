@@ -20,7 +20,7 @@ function duvw = evaluate(this, uvwdof, t)
     havefibres = sys.HasFibres;
     havefibretypes = havefibres && ~isempty(mc.Pool);
     
-%     visc = this.fViscosity;
+%     visc = this.mu(1);
     if havefibretypes
         fibretypeweights = mc.FibreTypeWeights;
         % Input data is x1: fibre type, x2: mean current, x3: time
@@ -73,18 +73,21 @@ function duvw = evaluate(this, uvwdof, t)
             u = uvwcomplete(elemidx_pos);
             % Deformation gradient
             F = u * dtn;
+            C = F'*F;
            
             %% Isotropic part (Invariant I1 related)
-            I1 = sum(sum((u'*u) .* (dtn*dtn')));
+%             I1 = sum(sum((u'*u) .* (dtn*dtn')));
+            I1 = C(1,1) + C(2,2) + C(3,3);
             
             %% Compile tensor
             P = p*inv(F)' + 2*(this.c10 + I1*this.c01)*F ...
-                - 2*this.c01*F*(F'*F);
+                - 2*this.c01*F*C;
             
             %% Anisotropic part (Invariant I4 related)
             if havefibres
-                dtna0 = sys.dtna0(:,gp,m);
-                lambdafsq = sum(sum((u'*u) .* (dtna0*dtna0')));
+%                 dtna0 = sys.dtna0(:,gp,m);
+%                 lambdafsq = sum(sum((u'*u) .* (dtna0*dtna0')));
+                lambdafsq = sum((F*sys.a0(:,gp,m)).^2);
                 lambdaf = sqrt(lambdafsq);
 
                 % Evaluate g function
@@ -95,16 +98,20 @@ function duvw = evaluate(this, uvwdof, t)
                 if havefibretypes 
                     alpha = ftwelem(gp);
                 end
-                gval = (b1/lambdafsq)*(lambdaf^d1-1) + (Pmax/lambdaf)*fl*alpha;
+                markert = 0;
+                if lambdaf > 1
+                    markert = (b1/lambdafsq)*(lambdaf^d1-1);
+                end
+                gval = markert + (Pmax/lambdaf)*fl*alpha;
                 a0 = sys.a0oa0(:,:,(m-1)*num_gausspoints + gp);
                 P = P + gval*F*a0;
             end
             
-            % Viscosity
+%             Viscosity
 %             if visc > 0
 %                 v = uvwcomplete(elemidx_velo);
-% %                 P = P + visc * v * dtn;
-%                 P = P + visc * 2 * F' * (v * dtn);
+%                 P = P + visc * v * dtn;
+% %                 P = P + visc * 2 * F' * (v * dtn);
 %             end
             
             weight = fe_pos.GaussWeights(gp) * fe_pos.elem_detjac(m,gp);
@@ -127,6 +134,12 @@ function duvw = evaluate(this, uvwdof, t)
     %% Save & remove values at dirichlet pos/velo nodes
     this.LastBCResiduals = duvw([sys.bc_dir_displ_idx+dofs_pos; sys.bc_dir_velo_idx]);
     duvw(sys.bc_dir_idx) = [];
+    
+%     fo = sum(duvw);
+%     fprintf('t=%20g, force=%20g\n',t,fo);
+%     if fo > 1e4
+%         keyboard;
+%     end
 
     %% If direct mass matrix inversion is used
     if this.usemassinv

@@ -13,12 +13,12 @@ classdef Long < muscle.AModelConfig
             this = this@muscle.AModelConfig(geo);
         end
         
-        function configureModel(this, model)
-            model.T = 50;
-            model.dt = 1;
-            f = model.System.f;
+        function configureModel(this, m)
+            m.T = 50;
+            m.dt = 1;
+            m.DefaultMu = [.1; 0];
+            f = m.System.f;
             f.alpha = this.getAlphaRamp(10,1);
-            f.System.Viscosity = 0;
         end
     end
     
@@ -31,15 +31,6 @@ classdef Long < muscle.AModelConfig
                 displ_dir(:,geo.Elements(k,[6:8 11 12 18:20])) = true;
             end
         end
-        
-%         function [velo_dir, velo_dir_val] = setVelocityDirichletBC(this, velo_dir, velo_dir_val)
-%             %% Dirichlet conditions: Position (fix one side)
-%             geo = this.PosFE.Geometry;
-%             for k = [1 9]
-%                 velo_dir(1,geo.Elements(k,[1:3 9 10 13:15])) = true;
-%             end
-%             velo_dir_val(velo_dir) = -.1;
-%         end
         
         function anull = seta0(this, anull)
             fe = this.PosFE;

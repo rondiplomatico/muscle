@@ -6,15 +6,15 @@ classdef Sprenger32Elem < muscle.AModelConfig
             this = this@muscle.AModelConfig(s.geo20);
         end
         
-        function configureModel(this, model)
-            model.T = 1;
-            model.dt = .01;
-            f = model.System.f;
-            f.System.Viscosity = 1;
+        function configureModel(this, m)
+            m.T = 1;
+            m.dt = .01;
+            f = m.System.f;
+            m.DefaultMu = [1; 0];
             
             %% Material configuration from CMISS/3Elem_sprenger.xml
             % malpha_calculation
-            f.alpha = @(t)1; % [-]
+            f.alpha = this.getAlphaRamp(.1,1); % [-]
             
             % c1M = 3.56463903963e-02 MPa
             f.c10 = 35.6463903963; % [kPa]

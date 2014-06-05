@@ -31,8 +31,7 @@ classdef Belly < muscle.AModelConfig
             model.T = 150;
             model.dt = .1;
             f = model.System.f;
-            f.alpha = 0;
-            model.System.Viscosity = 0;
+            f.alpha = @(t)0;
         end
     end
     

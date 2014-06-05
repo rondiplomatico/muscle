@@ -6,7 +6,6 @@ classdef EntireTA < muscle.AModelConfig
             s = load(fullfile(fileparts(which(mfilename)),'..','CMISS','EntireTA.mat'));
             this = this@muscle.AModelConfig(s.geo27);
 
-            
             %% Muscle fibre weights
             geo = s.geo27;
             types = [0 .2 .4 .6 .8 1];
@@ -24,15 +23,14 @@ classdef EntireTA < muscle.AModelConfig
             this.Pool = p;
         end
         
-        function configureModel(this, model)
+        function configureModel(this, m)
             % Overload this method to set model-specific quantities like
             % simulation time etc
-            model.T = 200;
-            model.dt = 1;
-%             f = model.System.f;
-%             f.alpha = this.getAlphaRamp(30,1);
-            model.System.Viscosity = .1;
-            os = model.ODESolver;
+            m.T = 200;
+            m.dt = 1;
+            m.DefaultMu = [.1; 0];
+            m.System.f.alpha = this.getAlphaRamp(50,1);
+            os = m.ODESolver;
             os.RelTol = .01;
             os.AbsTol = .08;
         end
@@ -47,7 +45,6 @@ classdef EntireTA < muscle.AModelConfig
             % Back faces
             displ_dir(:,geo.Elements(8,geo.MasterFaces(4,:))) = true;
             displ_dir(:,geo.Elements(8,geo.MasterFaces(2,:))) = true;
-%             displ_dir(:,geo.Elements(1,geo.MasterFaces(4,:))) = true;
         end
                 
         function anull = seta0(~, anull)

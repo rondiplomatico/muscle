@@ -58,6 +58,14 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         LastBCResiduals;
     end
     
+    properties(Transient)
+        % Helper value for QuickReleaseTests (or others) that use a
+        % function handle with certain alpha ramp time for different
+        % simulations. Used in getSimCacheExtra to uniquely identify a
+        % simulation in the cache
+        RampTime;
+    end
+    
     properties(Transient, Access=private)
         % Cached quantity from this.System.UseDirectMassInversion for
         % faster evaluation of dynamics.
@@ -92,10 +100,10 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             prepareSimulation@dscomponents.ACompEvalCoreFun(this, mu);
             mc = this.System.Model.Config;
 %             if ~isempty(mc.FibreTypes)
-%                 this.muprep = [mc.FibreTypes; ones(size(mc.FibreTypes))*mu];
+%                 this.muprep = [mc.FibreTypes; ones(size(mc.FibreTypes))*mu(2)];
 %             end
             if ~isempty(mc.Pool)
-                mc.Pool.prepareSimulation(this.System.Model.T,mu);
+                mc.Pool.prepareSimulation(this.System.Model.T,mu(2));
             end
             this.usemassinv = this.System.UseDirectMassInversion;
         end

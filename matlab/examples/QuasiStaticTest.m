@@ -1,6 +1,16 @@
 classdef QuasiStaticTest < muscle.AModelConfig
-% A long geometry with 20% deviation from default cubic positions and
-% complex fibre structure
+% Tests to investigate the difference between quasi-static and dynamic
+% simulations.
+%
+% Tests can be run for three different geometries (Block, Belly & TA) and
+% different viscosities
+% 
+%
+% Material set from
+% Article (Hawkins1994)
+% Hawkins, D. & Bey, M.
+% A comprehensive approach for studying muscle-tendon mechanics
+% Journal of Biomechanical Engineering, 1994, 116, 51-55
 
     properties(Constant)
         OutputDir = fullfile(fileparts(which(mfilename)),'quasistatictest');
@@ -35,15 +45,32 @@ classdef QuasiStaticTest < muscle.AModelConfig
         end
         
         function configureModel(this, m)
-            os = m.ODESolver;
+            % Use the material set of
+            f = m.System.f;
+            
+            % Material set (see main comment)
+            f.c10 = 6.352e-10; % [kPa]
+            f.c01 = 3.627; % [kPa]
+            f.b1 = 2.756e-5; % [kPa]
+            f.d1 = 43.373; % [-]
+            f.Pmax = 73; % [kPa], in Paper 7.3N/cm², but kPa = 0.1N/cm² 
+            f.lambdafopt = 1.2; % [-]
+            
             switch this.GeoNr
                 case 1
-                    os.RelTol = .01;
-                    os.AbsTol = .05;
+                    rt = .01;
+                    at = .05;
                 case {2,3}
-                    os.RelTol = .01;
-                    os.AbsTol = .08;
+                    if this.Case == 1
+                        rt = .01;
+                        at = .1;
+                    else
+                        rt = .01;
+                        at = .08;
+                    end
             end
+            m.ODESolver.RelTol = rt;
+            m.ODESolver.AbsTol = at;
             m.EnableTrajectoryCaching = true;
         end
         
@@ -162,119 +189,122 @@ classdef QuasiStaticTest < muscle.AModelConfig
             if nargin < 1
                 geonr = 1;
             end
-            mc = QuasiStaticTest(1,geonr);
+            
+            file = fullfile(QuasiStaticTest.OutputDir,sprintf('case1_geo%d.mat',geonr));
+            firstrun = true;
+            if exist(file,'file') == 2
+                load(file);
+                firstrun = false;
+            else
+                mc = QuasiStaticTest(1,geonr);
+                m = muscle.Model(mc);
+            end
             
             % The activation rates (alpha increase per ms)
             ramptimes = [.1:.1:1 1:.2:2 3:10 20 40 50 100 300 600 1000 2000 8000 60000]; % [ms]
             
-%             pm = PlotManager(false,2,2);
-            pm = PlotManager;
+            pm = PlotManager(false,2,2);
+%             pm = PlotManager;
             pm.AutoTickMarks = 0;
             pm.LeaveOpen = true;
             
             c = ColorMapCreator;
             c.useJet([0.01 0.05 0.1 .5]);
-%             c.addColor(0.005,[0 .7 0]);
-%             c.addColor(0.01,[.7 .5 .2],[.5 .7 .2]);
-%             c.addColor(0.05,[1 1 .4],[.7 .5 .2]*.5);
-%             c.addColor(0.1,[.7 0 0],[1 1 .4]*.3);
-%             c.addColor(10,[1 0 1]);
            
-%             visc = [0.001 0.01 .1 1 10];
-            visc = [0.01 .1 1 10];
-            nvisc = length(visc);
-            for k=1:nvisc
-                m = muscle.Model(mc);
-                v = visc(k);
-                m.System.Viscosity = v;
-                file = fullfile(QuasiStaticTest.OutputDir,sprintf('case1_geo%d_visc%g.mat',geonr,visc(k)));
-                
-                if exist(file,'file') == 2
-                    load(file);
-                else
-                    [alphavals, pos] = QuasiStaticTest.runAlphaRamp(m, ramptimes); %globaltimes, globalpos
-                    save(file,'alphavals','m','pos','ramptimes');
-%                     save(file,'alphavals','m','pos','globaltimes','globalpos','ramptimes');
+            mus = [0.001 0.01 .1 1 10
+                  0     0    0  0 0];
+            nparams = size(mus,2);
+            for k=1:nparams
+                if k==1 && geonr == 2
+                    m.ODESolver.RelTol = .1;
+                    m.ODESolver.AbsTol = .5;
                 end
+                mu = mus(:,k);
+                
+                [alphavals, pos] = QuasiStaticTest.runAlphaRamp(m, mu, ramptimes);
                 
                 ec = [.3 .3 .3];
-                h = pm.nextPlot(sprintf('pos_visc%g',v),...
-                    sprintf('Averaged X-position [mm] of right face for different rates and activation level\nViscosity=%g',v),...
+                h = pm.nextPlot(sprintf('pos_visc%g',mu(1)),...
+                    sprintf('Averaged X-position [mm] of right face for different rates and activation level\nViscosity=%g',mu(1)),...
                     'Activation increase rate [1/ms]','alpha [-]');
                 surf(h,1./ramptimes, alphavals, pos(:,:,1)','FaceColor','interp','EdgeColor',ec);
                 set(h,'XScale','log');
                 view(-150, 45);
-                
-                h = pm.nextPlot(sprintf('velo_visc%g',v),...
-                    sprintf('Averaged X-velocity [mm/ms] of right face for different rates and activation level\nViscosity=%g',v),...
-                    'Activation increase rate [1/ms]','alpha [-]');
-                surf(h,1./ramptimes, alphavals, abs(pos(:,:,2))','FaceColor','interp','EdgeColor',ec);
-                set(h,'XScale','log');
-                view(-136, 56);
-
-                h = pm.nextPlot(sprintf('pos_abserr_visc%g',v),...
-                    sprintf('Absolute error in of X-position [mm] for different rates and activation level\nagainst quasi-static positions (rate=%g/ms)\nViscosity=%g',1/ramptimes(end),v),...
-                    'Activation increase rate [1/ms]','alpha [-]');
-                staticpos = repmat(pos(end,:,1),size(pos,1),1);
-                diffX = abs(pos(:,:,1) - staticpos)';
-                surf(h,1./ramptimes, alphavals, diffX,'FaceColor','interp','EdgeColor',ec);
-                set(h,'XScale','log');
-                view(-150, 45);
-                
-                h = pm.nextPlot(sprintf('pos_abserr_topview_visc%g',v),...
-                    sprintf('Absolute error of X-position [mm] for different rates and activation level\nagainst quasi-static positions (rate=%g/ms)\nViscosity=%g',1/ramptimes(end),v),...
-                    'Activation increase rate [1/ms]','alpha [-]');
-                surf(h,1./ramptimes, alphavals, diffX,'FaceColor','interp','EdgeColor',ec);
-                set(h,'XScale','log'); colorbar;
-                view(h,-180, 90);
-                
-                h = pm.nextPlot(sprintf('pos_relerr_visc%g',v),...
-                    sprintf('Relative error of X-position [mm] for different rates and activation level\nagainst quasi-static positions (rate=%g/ms)\nViscosity=%g',1/ramptimes(end),v),...
-                    'Activation increase rate [1/ms]','alpha [-]');
-                Z = abs(diffX ./ staticpos');
-                surf(h,1./ramptimes, alphavals, Z ,'FaceColor','interp','EdgeColor',ec);
-                c.LogPlot = false;
-                colormap(h,c.create(Z)); colorbar;
-                set(h,'XScale','log');
-                view(-150, 45);
-
-                nsteps = length(alphavals)-1;
-                dt = meshgrid(ramptimes, 1:nsteps)';
-                velo = diff(staticpos,[],2) ./ (dt/nsteps);
-                h = pm.nextPlot(sprintf('velo_estim_visc%g',v),...
-                    sprintf('Inferred velocities [mm/ms] for different rates and "quasi time step"\nViscosity=%g',v),...
-                    '\Delta t [1/ms]','alpha  * \Delta t ');
-                Z = abs(velo)';
-                LogPlot.logsurfc(h,1./ramptimes, alphavals(2:end), Z,'FaceColor','interp','EdgeColor',ec);
-                set(h,'XScale','log'); axis(h,'tight');
-                view(-150, 45);
-                
-                h = pm.nextPlot(sprintf('velo_relerr_visc%g',v),...
-                    sprintf('Relative error between computed (via rate) velocities [mm/ms] for different rates and "quasi time step"\nViscosity=%g',v),...
-                    '\Delta t [1/ms]','Fraction of timestep');
-                Z = abs((velo-pos(:,2:end,2))./pos(:,2:end,2))';
-                LogPlot.logsurfc(h,1./ramptimes, alphavals(2:end), Z,'FaceColor','interp','EdgeColor',ec);
-                set(h,'XScale','log'); axis(h,'tight');
-                c.LogPlot = true;
-                colormap(h,c.create(Z)); colorbar;
-                view(-125, 50);
-                
-                h = pm.nextPlot(sprintf('velo_relerr_maxmean_visc%g',v),...
-                    sprintf('Relative error between computed (via rate) velocities [mm/ms] for different rates\nMax/Mean over all "quasi time steps"\nViscosity=%g',v),...
-                    '\Delta t [1/ms]','Error');
-                maxv = max(abs((velo-pos(:,2:end,2))./pos(:,2:end,2)),[],2);
-                meanv = mean(abs((velo-pos(:,2:end,2))./pos(:,2:end,2)),2);
-                loglog(h,1./ramptimes, [maxv meanv]); axis(h,'tight');
-                legend('Max relative error','Mean relative error','Location','NorthWest');
+%                 
+%                 h = pm.nextPlot(sprintf('velo_visc%g',mu(1)),...
+%                     sprintf('Averaged X-velocity [mm/ms] of right face for different rates and activation level\nViscosity=%g',mu(1)),...
+%                     'Activation increase rate [1/ms]','alpha [-]');
+%                 surf(h,1./ramptimes, alphavals, abs(pos(:,:,2))','FaceColor','interp','EdgeColor',ec);
+%                 set(h,'XScale','log');
+%                 view(-136, 56);
+% 
+%                 h = pm.nextPlot(sprintf('pos_abserr_visc%g',mu(1)),...
+%                     sprintf('Absolute error in of X-position [mm] for different rates and activation level\nagainst quasi-static positions (rate=%g/ms)\nViscosity=%g',1/ramptimes(end),mu(1)),...
+%                     'Activation increase rate [1/ms]','alpha [-]');
+%                 staticpos = repmat(pos(end,:,1),size(pos,1),1);
+%                 diffX = abs(pos(:,:,1) - staticpos)';
+%                 surf(h,1./ramptimes, alphavals, diffX,'FaceColor','interp','EdgeColor',ec);
+%                 set(h,'XScale','log');
+%                 view(-150, 45);
+%                 
+%                 h = pm.nextPlot(sprintf('pos_abserr_topview_visc%g',mu(1)),...
+%                     sprintf('Absolute error of X-position [mm] for different rates and activation level\nagainst quasi-static positions (rate=%g/ms)\nViscosity=%g',1/ramptimes(end),mu(1)),...
+%                     'Activation increase rate [1/ms]','alpha [-]');
+%                 surf(h,1./ramptimes, alphavals, diffX,'FaceColor','interp','EdgeColor',ec);
+%                 set(h,'XScale','log'); colorbar;
+%                 view(h,-180, 90);
+%                 
+%                 h = pm.nextPlot(sprintf('pos_relerr_visc%g',mu(1)),...
+%                     sprintf('Relative error of X-position [mm] for different rates and activation level\nagainst quasi-static positions (rate=%g/ms)\nViscosity=%g',1/ramptimes(end),mu(1)),...
+%                     'Activation increase rate [1/ms]','alpha [-]');
+%                 Z = abs(diffX ./ staticpos');
+%                 surf(h,1./ramptimes, alphavals, Z ,'FaceColor','interp','EdgeColor',ec);
+%                 c.LogPlot = false;
+%                 colormap(h,c.create(Z)); colorbar;
+%                 set(h,'XScale','log');
+%                 view(-150, 45);
+% 
+%                 nsteps = length(alphavals)-1;
+%                 dt = meshgrid(ramptimes, 1:nsteps)';
+%                 velo = diff(staticpos,[],2) ./ (dt/nsteps);
+%                 h = pm.nextPlot(sprintf('velo_estim_visc%g',mu(1)),...
+%                     sprintf('Inferred velocities [mm/ms] for different rates and "quasi time step"\nViscosity=%g',mu(1)),...
+%                     '\Delta t [1/ms]','alpha  * \Delta t ');
+%                 Z = abs(velo)';
+%                 LogPlot.logsurfc(h,1./ramptimes, alphavals(2:end), Z,'FaceColor','interp','EdgeColor',ec);
+%                 set(h,'XScale','log'); axis(h,'tight');
+%                 view(-150, 45);
+%                 
+%                 h = pm.nextPlot(sprintf('velo_relerr_visc%g',mu(1)),...
+%                     sprintf('Relative error between computed (via rate) velocities [mm/ms] for different rates and "quasi time step"\nViscosity=%g',mu(1)),...
+%                     '\Delta t [1/ms]','Fraction of timestep');
+%                 Z = abs((velo-pos(:,2:end,2))./pos(:,2:end,2))';
+%                 LogPlot.logsurfc(h,1./ramptimes, alphavals(2:end), Z,'FaceColor','interp','EdgeColor',ec);
+%                 set(h,'XScale','log'); axis(h,'tight');
+%                 c.LogPlot = true;
+%                 colormap(h,c.create(Z)); colorbar;
+%                 view(-125, 50);
+%                 
+%                 h = pm.nextPlot(sprintf('velo_relerr_maxmean_visc%g',mu(1)),...
+%                     sprintf('Relative error between computed (via rate) velocities [mm/ms] for different rates\nMax/Mean over all "quasi time steps"\nViscosity=%g',mu(1)),...
+%                     '\Delta t [1/ms]','Error');
+%                 maxv = max(abs((velo-pos(:,2:end,2))./pos(:,2:end,2)),[],2);
+%                 meanv = mean(abs((velo-pos(:,2:end,2))./pos(:,2:end,2)),2);
+%                 loglog(h,1./ramptimes, [maxv meanv]); axis(h,'tight');
+%                 legend('Max relative error','Mean relative error','Location','NorthWest');
+            end
+            
+            if firstrun
+                save(file,'alphavals','m','pos','ramptimes');
             end
             
             m.plotGeometrySetup(pm);
             
             pm.done;
-            pm.FilePrefix = sprintf('case1_geo%d',geonr);
-            pm.ExportDPI = 200;
-            pm.SaveFormats = {'jpg'};
-            pm.savePlots(QuasiStaticTest.OutputDir,'Close',true);
+%             pm.FilePrefix = sprintf('case1_geo%d',geonr);
+%             pm.ExportDPI = 200;
+%             pm.SaveFormats = {'jpg'};
+%             pm.savePlots(QuasiStaticTest.OutputDir,'Close',true);
         end
         
         function runTestCase2(geonr)
@@ -282,7 +312,16 @@ classdef QuasiStaticTest < muscle.AModelConfig
             if nargin < 1
                 geonr = 1;
             end
-            mc = QuasiStaticTest(2,geonr);
+            
+            file = fullfile(QuasiStaticTest.OutputDir,sprintf('case2_geo%d.mat',geonr));
+            firstrun = true;
+            if exist(file,'file') == 2
+                firstrun = false;
+                load(file);
+            else
+                mc = QuasiStaticTest(2,geonr);
+                m = muscle.Model(mc);
+            end
             
             % The activation rates (alpha increase per ms)
             ramptimes = [.1:.1:1 1:.2:2 3:10 20 40 50 100 300 1000 10000 60000]; % [ms]
@@ -294,26 +333,16 @@ classdef QuasiStaticTest < muscle.AModelConfig
             c = ColorMapCreator;
             c.useJet([0.1 0.2 .5 1]);
             
-            visc = [0.001 0.01 .1 1 10];
-%             visc = [0.01 .1 1 10];
-            nvisc = length(visc);
-            for k=1:nvisc
-                v = visc(k);
-                file = fullfile(QuasiStaticTest.OutputDir,sprintf('case2_geo%d_visc%g.mat',geonr,visc(k)));
-                if exist(file,'file') == 2
-                    load(file);
-%                     [alphavals, forces] = QuasiStaticTest.runAlphaRamp(m, ramptimes);
-%                     save(file,'forces','-APPEND');
-                else
-                    m = muscle.Model(mc);
-                    m.System.Viscosity = v;
-                    [alphavals, forces] = QuasiStaticTest.runAlphaRamp(m, ramptimes);
-                    save(file,'alphavals','m','forces','ramptimes');
-                end
+            mus = [0.001 0.01 .1 1 10
+                   0     0     0 0 0];
+            nparams = length(mus);
+            for k=1:nparams
+                mu = mus(:,k);
+                [alphavals, forces] = QuasiStaticTest.runAlphaRamp(m, mu, ramptimes);
                 
                 ec = [.3 .3 .3];
-                h = pm.nextPlot(sprintf('forcenorm_visc%g',v),...
-                    sprintf('Force [N] (averaged over one fixed side)\nViscosity=%g',v),...
+                h = pm.nextPlot(sprintf('forcenorm_visc%g',mu(1)),...
+                    sprintf('Force [N] (averaged over one fixed side)\nViscosity=%g',mu(1)),...
                     'Activation increase rate [1/ms]','alpha [-]');
                 surf(h,1./ramptimes, alphavals, forces(:,:,1)','FaceColor','interp','EdgeColor',ec);
                 set(h,'XScale','log');
@@ -321,15 +350,15 @@ classdef QuasiStaticTest < muscle.AModelConfig
                 
                 staticnorm = repmat(forces(end,:,1),size(forces,1),1);
                 diff = staticnorm - forces(:,:,1);
-                h = pm.nextPlot(sprintf('forcenorm_visc%g',v),...
-                    sprintf('Error of Force [N] compared to quasi-static solution (rate %g/ms)\nViscosity=%g',1/ramptimes(end),v),...
+                h = pm.nextPlot(sprintf('forcenorm_visc%g',mu(1)),...
+                    sprintf('Error of Force [N] compared to quasi-static solution (rate %g/ms)\nViscosity=%g',1/ramptimes(end),mu(1)),...
                     'Activation increase rate [1/ms]','alpha [-]');
                 surf(h,1./ramptimes, alphavals, diff','FaceColor','interp','EdgeColor',ec);
                 set(h,'XScale','log');
                 view(-150, 45);
                 
-                h = pm.nextPlot(sprintf('forcenorm_visc%g',v),...
-                    sprintf('Relative error of Force [N] compared to quasi-static solution (rate %g/ms)\nViscosity=%g',1/ramptimes(end),v),...
+                h = pm.nextPlot(sprintf('forcenorm_visc%g',mu(1)),...
+                    sprintf('Relative error of Force [N] compared to quasi-static solution (rate %g/ms)\nViscosity=%g',1/ramptimes(end),mu(1)),...
                     'Activation increase rate [1/ms]','alpha [-]');
                 Z = abs(diff ./ staticnorm)';
                 surf(h,1./ramptimes, alphavals, Z,'FaceColor','interp','EdgeColor',ec);
@@ -339,27 +368,31 @@ classdef QuasiStaticTest < muscle.AModelConfig
                 view(-150, 45);
                 
                 %% Single dimensions
-%                 h = pm.nextPlot(sprintf('xpos_rate_alpha_visc%g',v),...
-%                     sprintf('X\nViscosity=%g',v),...
+%                 h = pm.nextPlot(sprintf('xpos_rate_alpha_visc%g',mu(1)),...
+%                     sprintf('X\nViscosity=%g',mu(1)),...
 %                     'Activation increase rate [1/ms]','alpha [-]');
 %                 surf(h,1./ramptimes, alphavals, forces(:,:,2)','FaceColor','interp','EdgeColor',ec);
 %                 set(h,'XScale','log');
 %                 view(-150, 45);
 %                 
-%                 h = pm.nextPlot(sprintf('xpos_rate_alpha_visc%g',v),...
-%                     sprintf('Y\nViscosity=%g',v),...
+%                 h = pm.nextPlot(sprintf('xpos_rate_alpha_visc%g',mu(1)),...
+%                     sprintf('Y\nViscosity=%g',mu(1)),...
 %                     'Activation increase rate [1/ms]','alpha [-]');
 %                 surf(h,1./ramptimes, alphavals, forces(:,:,3)','FaceColor','interp','EdgeColor',ec);
 %                 set(h,'XScale','log');
 %                 view(-150, 45);
 %                 
-%                 h = pm.nextPlot(sprintf('xpos_rate_alpha_visc%g',v),...
-%                     sprintf('Z\nViscosity=%g',v),...
+%                 h = pm.nextPlot(sprintf('xpos_rate_alpha_visc%g',mu(1)),...
+%                     sprintf('Z\nViscosity=%g',mu(1)),...
 %                     'Activation increase rate [1/ms]','alpha [-]');
 %                 surf(h,1./ramptimes, alphavals, forces(:,:,4)','FaceColor','interp','EdgeColor',ec);
 %                 set(h,'XScale','log');
 %                 view(-150, 45);
 
+            end
+            
+            if firstrun
+                save(file,'alphavals','m','forces','ramptimes');
             end
             
             m.plotGeometrySetup(pm);
@@ -371,36 +404,28 @@ classdef QuasiStaticTest < muscle.AModelConfig
 %             pm.savePlots(QuasiStaticTest.OutputDir,'Close',true);
         end
         
-        function [alphavals, output] = runAlphaRamp(m, ramptimes) %globaltimes, globalout
+        function [alphavals, output] = runAlphaRamp(m, mu, ramptimes)
             f = m.System.f;
             rampsteps = 30;
             alphamax = 1;
             alphavals = linspace(0,alphamax,rampsteps+1);
             ramppos = 1:2:rampsteps*2+1;
-%             relaxperc = 1.3;
             nrates = length(ramptimes);
-
-%             globaloutsampling = round(ramptimes(end)/4);
-%             globaltimes = linspace(0,max(ramptimes)+relaxtime,globaloutsampling);
-%             globalout = zeros(nrates,globaloutsampling,2);
 
             output = zeros(nrates, rampsteps+1, 2);
             pi = ProcessIndicator('Computing for %d different alpha increase rates',nrates,false,nrates);
             for tidx = 1:nrates
                 ramptime = ramptimes(tidx);
-                m.T = ramptime;%*relaxperc;
+                m.T = ramptime;
                 m.dt = ramptime/rampsteps/2;
+                
+                f.alpha = m.Config.getAlphaRamp(ramptime,alphamax);
 
-                f.alpha = @(t)alphamax * ((t>ramptime) + (t<=ramptime).*t/ramptime);
-
-                [t,y] = m.simulate(0);
+                [t,y] = m.simulate(mu);
                 o = m.Config.getOutputOfInterest(m, t, y);
                 % Extract position on global time grid (plotting only)
-%                 [~, idx] = min(abs(globaltimes-t(end))); idx = idx(1);
                 for k = 1:size(o,1)
                     output(tidx,:,k) = o(k,ramppos);
-%                     globalout(tidx,1:idx,k) = interp1(t,o(k,:),globaltimes(1:idx),'cubic');
-%                     globalout(tidx,idx+1:end,k) = globalout(tidx,idx,k);
                 end
 
                 % Check correct alpha values

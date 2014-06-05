@@ -17,15 +17,15 @@ classdef SprengerUnitCube8Elem < muscle.AModelConfig
             this.Variant = variant;
         end
         
-        function configureModel(~, model)
-            model.T = 1;
-            model.dt = .01;
-            f = model.System.f;
-            f.System.Viscosity = 1;
+        function configureModel(this, m)
+            m.T = 1;
+            m.dt = .01;
+            f = m.System.f;
+            m.DefaultMu = [1; 0];
             
             %% Material configuration from CMISS/3Elem_sprenger.xml
             % malpha_calculation
-            f.alpha = @(t)1; % [-]
+            f.alpha = this.getAlphaRamp(.1,1); % [-]
             
             % c1M = 3.56463903963e-02 MPa
             f.c10 = 35.6463903963; % [kPa]
@@ -78,11 +78,7 @@ classdef SprengerUnitCube8Elem < muscle.AModelConfig
 %                 displ_dir(1,geo.Elements(6,[3 10 15 17 20])) = true;
 %                 displ_dir(1,geo.Elements(8,[8 12 15 17 20])) = true;
             else
-                pos = geo.MasterFaces(1,:);
-                displ_dir(:,geo.Elements(1,pos)) = true;
-                displ_dir(:,geo.Elements(3,pos)) = true;
-                displ_dir(:,geo.Elements(5,pos)) = true;
-                displ_dir(:,geo.Elements(7,pos)) = true;
+                displ_dir(:,geo.Elements([1 3 5 7],geo.MasterFaces(1,:))) = true;
             end
             
         end

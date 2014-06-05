@@ -17,6 +17,12 @@ classdef Model < models.BaseFullModel
         Config;
         
         MuscleDensity = 1.1e-6; % [kg/mm³] (1100kg/m³)
+        
+        Gravity = 9.80665; % [m/s²]
+    end
+    
+    properties(Dependent)
+        Geo;
     end
     
     methods
@@ -33,6 +39,8 @@ classdef Model < models.BaseFullModel
             %this.Data.useFileTrajectoryData;
             
             this.System = muscle.System(this);
+            
+            this.DefaultMu = [1; 1];
             
             this.T = 10; % [ms]
             this.dt = .01; % [ms]
@@ -64,13 +72,37 @@ classdef Model < models.BaseFullModel
         
         function plotForceLengthCurve(this)
             pm = PlotManager(false,1,2);
+%             pm = PlotManager;
             pm.LeaveOpen = true;
             f = this.System.f;
-            h = pm.nextPlot('force_length',sprintf('Force-Length curve for model %s',this.Name),'\lambda/\lambda_{opt}','force');
-            ratio = 0:.01:2;
-            plot(h,ratio,f.ForceLengthFun(ratio),'r');
-            h = pm.nextPlot('force_length_deriv',sprintf('Derivative of Force-Length curve for model %s',this.Name),'\lambda/\lambda_{opt}','deriv');
-            plot(h,ratio,f.ForceLengthFunDeriv(ratio),'b');
+            
+            lambda = 0:.01:2;
+            fl = f.ForceLengthFun(lambda/f.lambdafopt);
+            markertf = max(0,(f.b1./lambda.^2).*(lambda.^f.d1-1));
+            
+            h = pm.nextPlot('force_length',sprintf('Force-Length curve for model %s',this.Name),'\lambda [-]','force [kPa]');
+            plot(h,lambda,fl,'r',lambda,markertf,'g',lambda,fl+markertf,'b');
+            axis(h,[0 2 0 2]);
+            legend(h,'Activation','Passive fibre (markert)','Total','Location','NorthWest');
+            
+            dfl = f.ForceLengthFunDeriv(lambda/f.lambdafopt);
+            dmarkertf = (lambda >= 1).*(f.b1./lambda.^3).*((f.d1-2)*lambda.^f.d1 + 2);
+            h = pm.nextPlot('force_length_deriv',sprintf('Derivative of Force-Length curve for model %s',this.Name),'\lambda','deriv [kPa/ms]');
+            plot(h,lambda,dfl,'r',lambda,dmarkertf,'g',lambda,dfl + dmarkertf,'b');
+            axis(h,[0 2 -7 9]);
+%             h = pm.nextPlot('force_length_markert',sprintf('Force-Length curve of Markert et al %s',this.Name),'\lambda [-]','force [kPa]');
+%             semilogy(h,lambda,abs(markertf),'b');
+            
+            pm.done;
+        end
+        
+        function plotActivation(this)
+            pm = PlotManager;
+            pm.LeaveOpen = true;
+            f = this.System.f;
+            
+            h = pm.nextPlot('activation',sprintf('Activation curve for model %s',this.Name),'time [ms]','alpha [-]');
+            plot(h,this.Times,f.alpha(this.scaledTimes),'r');
             pm.done;
         end
         
@@ -166,7 +198,21 @@ classdef Model < models.BaseFullModel
             % See also: musclefibres.MuscleFibreSystem
             [varargout{1:nargout}] = this.System.plot(varargin{:});
         end
+        
+        function value = get.Geo(this)
+            value = this.Config.PosFE.Geometry;
+        end
     end
+    
+%     methods(Access=protected)
+%         function value = getSimCacheExtra(this)
+%             % Return values:
+%             % value: A column vector with additional values to distinguish
+%             % the simulation from others (internal configurations) @type
+%             % colvec<double>
+%             value = this.System.f.RampTime;
+%         end
+%     end
     
     methods(Static)
         function test_ModelVersions

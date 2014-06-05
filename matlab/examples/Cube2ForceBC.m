@@ -8,17 +8,18 @@ classdef Cube2ForceBC < muscle.AModelConfig
             this = this@muscle.AModelConfig(geo.toCube20Node);
         end
         
-        function configureModel(~, model)
-            model.T = 4;
-            model.dt = .01;
-            f = model.System.f;
+        function configureModel(this, m)
+            m.T = 4;
+            m.dt = .01;
+            m.DefaultMu = [.1; 0];
+            m.DefaultInput = 1;
+            f = m.System.f;
             f.alpha = @(t)0;
-            model.System.Viscosity = .1;
-            os = model.ODESolver;
+            os = m.ODESolver;
             os.RelTol = .0001;
             os.AbsTol = .05;
             % Ramp up the external pressure
-            model.System.Inputs{1} = @(t)min(1,t);
+            m.System.Inputs{1} = this.getAlphaRamp(1,1);
         end
         
         function P = getBoundaryPressure(~, elemidx, faceidx)
@@ -29,12 +30,6 @@ classdef Cube2ForceBC < muscle.AModelConfig
             % In the default implementation there are no force boundary
             % conditions.
             P = [];
-%             if elemidx == 1 && faceidx == 3
-%                 P = zeros(3);
-%                 P(3,2) = 1;
-%                 %P(2,2) = 1;
-%                 P(1,2) = .5;
-%             end
             if elemidx == 1 && faceidx == 2
                 P = -.8;
             end
@@ -58,7 +53,7 @@ classdef Cube2ForceBC < muscle.AModelConfig
         
         function anull = seta0(~, anull)
            % Direction is xz
-%            anull([1 3],:,:) = 1;
+           anull([1 3],:,:) = 1;
         end
     end
     

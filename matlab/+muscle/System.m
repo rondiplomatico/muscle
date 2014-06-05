@@ -1,8 +1,8 @@
 classdef System < models.BaseDynSystem
 % MuscleFibreSystem: The global dynamical system used within the MuscleFibreModel
 %
-% Contains the FibreDynamics, Linear Diffusion and InputConv components as well as a
-% ConstInitialValue.
+% The system u'' + K(u) is transformed into the first order system v' +
+% K(u), u' = v
 %
 % @author Daniel Wirtz @date 2014-01-20
 
@@ -10,8 +10,6 @@ classdef System < models.BaseDynSystem
        globidx_displ;
        
        globidx_pressure;
-       
-       Plota0 = true;
        
        % Set this to a double value to apply velocity dirichlet conditions
        % only up to a certain time (zero after that)
@@ -86,29 +84,19 @@ classdef System < models.BaseDynSystem
        %
        % @type logical @default false
        UseDirectMassInversion;
-       
-       % The model's viscosity.
-       %
-       % Set to zero to disable.
-       %
-       % @type double @default 0
-       Viscosity;
     end
     
     properties(Access=private)
-        fViscosity = 0;
         fUseDirectMassInversion = false;
         fD;
     end
     
     methods
         function this = System(model)
-            % The system x'' + K(x) is transformed into the first order system
-            % v' + K(x), x' = v
-            
             % Call superclass constructor
             this = this@models.BaseDynSystem(model);
             
+            this.addParam('viscosity',[0 10],10);
             this.addParam('mean input current',[0 1],10);
             
             %% Set system components
@@ -185,8 +173,8 @@ classdef System < models.BaseDynSystem
         function prepareSimulation(this, mu, inputidx)
             this.A = [];
             prepareSimulation@models.BaseDynSystem(this, mu, inputidx);
-            if this.fViscosity > 0
-               this.fD.prepareSimulation(this.fViscosity);
+            if mu(1) > 0
+               this.fD.prepareSimulation(mu);
                this.A = this.fD;
             end
         end
@@ -198,6 +186,7 @@ classdef System < models.BaseDynSystem
             i.addParamValue('Forces',false,@(v)islogical(v));
             i.addParamValue('Velo',false,@(v)islogical(v));
             i.addParamValue('Pressure',false,@(v)islogical(v));
+            i.addParamValue('Fibres',true,@(v)islogical(v));
             i.addParamValue('Skel',false,@(v)islogical(v));
             i.addParamValue('Pool',length(t)>1,@(v)islogical(v));
             i.addParamValue('pm',[],@(v)isa(v,'PlotManager'));
@@ -388,14 +377,12 @@ classdef System < models.BaseDynSystem
                 end
                 
                 %% a0 fibres
-                if this.HasFibres && this.Plota0
+                if this.HasFibres && r.Fibres
                     Ngp = dfem.N(dfem.GaussPoints);
                     for m = 1:geo.NumElements
                         u = uvw(1:vstart-1,ts);
                         u = u(this.globidx_displ(:,:,m));
                         
-                        %dtna0 = this.dtna0(:,gp,m);
-                        %lambdafsq = sum(sum((u'*u) .* (dtna0*dtna0')));
                         gps = u*Ngp;
                         anull = u*this.dNa0(:,:,m);
                         quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'.','Color','w');
@@ -477,20 +464,6 @@ classdef System < models.BaseDynSystem
         
         function value = get.UseDirectMassInversion(this)
             value = this.fUseDirectMassInversion;
-        end
-        
-        function set.Viscosity(this, value)
-            if ~isreal(value) || ~isscalar(value)
-                error('UseDirectMassInversion must be a real scalar');
-            end
-            if this.fViscosity ~= value
-                this.fViscosity = value;
-                %this.configUpdated;
-            end
-        end
-        
-        function value = get.Viscosity(this)
-            value = this.fViscosity;
         end
     end
     
@@ -714,12 +687,10 @@ classdef System < models.BaseDynSystem
                         % (plotting only so far)
                         dNanull(:,gp,m) = dNgp(:,pos) * anull(:,gp,m);
                         
-                        % <grad phi_k, a0> scalar products
+                        % <grad phi_k, a0> scalar products (for
+                        % getStateJacobian)
                         pos = 3*(gp-1)+1:3*gp;
-%                         dtnanull(:,gp,m) = fe.transgrad(:,pos,m)*anull(:,gp,m);
                         dtnanull(:,gp,m) = fe.transgrad(:,pos,m)*loc_anull;
-%                         dtnanull(:,gp,m) = dNgp(:,pos)*loc_anull;
-                        %dtnanull(:,gp,m) = dNgp(:,pos)*anull(:,gp,m);
                         
                         % a0 dyad a0
                         pos = (m-1)*fe.GaussPointsPerElem+gp;
