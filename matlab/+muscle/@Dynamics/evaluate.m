@@ -76,7 +76,7 @@ function duvw = evaluate(this, uvwdof, t)
             C = F'*F;
            
             %% Isotropic part (Invariant I1 related)
-%             I1c = sum(sum((u'*u) .* (dtn*dtn')));
+%             I1 = sum(sum((u'*u) .* (dtn*dtn')));
             I1 = C(1,1) + C(2,2) + C(3,3);
             
             %% Compile tensor
@@ -85,9 +85,8 @@ function duvw = evaluate(this, uvwdof, t)
             
             %% Anisotropic part (Invariant I4 related)
             if havefibres
-%                 dtna0 = sys.dtna0(:,gp,m);
-%                 lambdafsq_c = sum(sum((u'*u) .* (dtna0*dtna0')));
-                lambdafsq = sum((F*sys.a0(:,gp,m)).^2);
+                dtna0 = sys.dtna0(:,gp,m);
+                lambdafsq = sum(sum((u'*u) .* (dtna0*dtna0')));
                 lambdaf = sqrt(lambdafsq);
 
                 % Evaluate g function

@@ -98,8 +98,7 @@ function J = getStateJacobian(this, uvwdof, t)
             if havefibres
                 %% Anisotropic part
                 dtna0 = sys.dtna0(:,gp,m);
-%                 lambdafsq = sum(sum((u'*u) .* (dtna0*dtna0')));
-                lambdafsq = sum((F*sys.a0(:,gp,m)).^2);
+                lambdafsq = sum(sum((u'*u) .* (dtna0*dtna0')));
                 lambdaf = sqrt(lambdafsq);
 
                 ratio = lambdaf/lfopt;

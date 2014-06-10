@@ -61,13 +61,13 @@ classdef QuasiStaticTest < muscle.AModelConfig
                     rt = .01;
                     at = .05;
                 case {2,3}
-                    if this.Case == 1
-                        rt = .01;
-                        at = .1;
-                    else
+%                     if this.Case == 1
+%                         rt = .01;
+%                         at = .1;
+%                     else
                         rt = .01;
                         at = .08;
-                    end
+%                     end
             end
             m.ODESolver.RelTol = rt;
             m.ODESolver.AbsTol = at;
@@ -214,13 +214,10 @@ classdef QuasiStaticTest < muscle.AModelConfig
             mus = [0.001 0.01 .1 1 10
                   0     0    0  0 0];
             nparams = size(mus,2);
-            for k=1:nparams
+            for k=2:nparams
                 if k==1 && geonr == 2
                     m.ODESolver.RelTol = .1;
                     m.ODESolver.AbsTol = .5;
-                elseif k==1 && geonr == 3
-                    m.ODESolver.RelTol = .01;
-                    m.ODESolver.AbsTol = .2;
                 end
                 mu = mus(:,k);
                 

@@ -172,11 +172,10 @@ classdef System < models.BaseDynSystem
         
         function prepareSimulation(this, mu, inputidx)
             this.A = [];
-            prepareSimulation@models.BaseDynSystem(this, mu, inputidx);
             if mu(1) > 0
-               this.fD.prepareSimulation(mu);
-               this.A = this.fD;
+                this.A = this.fD;
             end
+            prepareSimulation@models.BaseDynSystem(this, mu, inputidx);
         end
         
         function pm = plot(this, t, uvw, varargin)
