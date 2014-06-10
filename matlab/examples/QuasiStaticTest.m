@@ -218,10 +218,17 @@ classdef QuasiStaticTest < muscle.AModelConfig
                 if k==1 && geonr == 2
                     m.ODESolver.RelTol = .1;
                     m.ODESolver.AbsTol = .5;
+                elseif k==1 && geonr == 3
+                    m.ODESolver.RelTol = .01;
+                    m.ODESolver.AbsTol = .2;
                 end
                 mu = mus(:,k);
                 
                 [alphavals, pos] = QuasiStaticTest.runAlphaRamp(m, mu, ramptimes);
+                
+                if firstrun
+                    save(file,'alphavals','m','pos','ramptimes');
+                end
                 
                 ec = [.3 .3 .3];
                 h = pm.nextPlot(sprintf('pos_visc%g',mu(1)),...

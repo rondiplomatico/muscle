@@ -63,9 +63,8 @@ classdef DebugConfig < muscle.AModelConfig
             case 1
                 f.alpha = @(t)0;
             case 2
-                f.alpha = @(t).1;
-                m.ODESolver.RelTol = .001;
-                m.ODESolver.AbsTol = .02;
+                f.alpha = this.getAlphaRamp(.01,1);
+                m.DefaultMu = [.01; 0];
             case 3
                 m.T = 400;
                 m.dt = 1;

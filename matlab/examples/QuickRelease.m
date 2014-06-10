@@ -23,7 +23,7 @@ classdef QuickRelease < muscle.AModelConfig
         
         % The time after movement and activation is fully done until the
         % ICs are extracted ("quasi static")
-        icRelaxTime = 50000; % [ms]
+        icRelaxTime = 100000; % [ms]
     end
 
     methods
@@ -326,6 +326,10 @@ classdef QuickRelease < muscle.AModelConfig
                     % Remove the first two entries as the activation is
                     % increased there
 %                     o = o(:,3:end);
+
+                    if saveit
+                        save(file,'m','y','o','t','pressures','loads');
+                    end
                     
                     h = pm.nextPlot(sprintf('force_velo_load%g_visc%g',loads(inidx),mu(1)),...
                         sprintf('Force / velocity plot\nLoad: %g[g] (eff. pressure %g[kPa]), viscosity:%g [mNs/m]',loads(inidx),pressures(inidx),mu(1)),...
@@ -338,7 +342,7 @@ classdef QuickRelease < muscle.AModelConfig
 %                     surf(h,1./ramptimes, alphavals, abs(pos(:,:,2))','FaceColor','interp','EdgeColor',ec);
 %                     set(h,'XScale','log');
 %                     view(-136, 56);
-                end  
+                end
             end
             
             if saveit
