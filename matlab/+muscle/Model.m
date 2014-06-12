@@ -71,27 +71,57 @@ classdef Model < models.BaseFullModel
         end
         
         function plotForceLengthCurve(this)
-            pm = PlotManager(false,1,2);
-%             pm = PlotManager;
+            error('fixme!');
+%             pm = PlotManager(false,1,2);
+            pm = PlotManager;
             pm.LeaveOpen = true;
             f = this.System.f;
             
-            lambda = 0:.01:2;
+            lambda = 0:.005:2;
             fl = f.ForceLengthFun(lambda/f.lambdafopt);
-            markertf = max(0,(f.b1./lambda.^2).*(lambda.^f.d1-1));
+%             markertf = max(0,(f.b1./lambda.^2).*(lambda.^f.d1-1));
+            markertf = (f.b1./lambda.^2).*(lambda.^f.d1-1);
             
-            h = pm.nextPlot('force_length',sprintf('Force-Length curve for model %s',this.Name),'\lambda [-]','force [kPa]');
+            h = pm.nextPlot('force_length',sprintf('Force-Length curve for model %s',this.Name),'\lambda [-]','pressure [kPa]');
             plot(h,lambda,fl,'r',lambda,markertf,'g',lambda,fl+markertf,'b');
             axis(h,[0 2 0 2]);
             legend(h,'Activation','Passive fibre (markert)','Total','Location','NorthWest');
             
             dfl = f.ForceLengthFunDeriv(lambda/f.lambdafopt);
-            dmarkertf = (lambda >= 1).*(f.b1./lambda.^3).*((f.d1-2)*lambda.^f.d1 + 2);
+            dmarkertf = (lambda>=1).*(f.b1./lambda.^3).*((f.d1-2)*lambda.^f.d1 + 2);
             h = pm.nextPlot('force_length_deriv',sprintf('Derivative of Force-Length curve for model %s',this.Name),'\lambda','deriv [kPa/ms]');
             plot(h,lambda,dfl,'r',lambda,dmarkertf,'g',lambda,dfl + dmarkertf,'b');
             axis(h,[0 2 -7 9]);
-%             h = pm.nextPlot('force_length_markert',sprintf('Force-Length curve of Markert et al %s',this.Name),'\lambda [-]','force [kPa]');
-%             semilogy(h,lambda,abs(markertf),'b');
+            
+            if this.System.UseCrossFibreStiffness
+                markertf = max(0,(f.b1cf./lambda.^2).*(lambda.^f.d1cf-1));
+                h = pm.nextPlot('force_length_xfibre',sprintf('Force-Length curve in cross-fibre direction for model %s',this.Name),'\lambda [-]','pressure [kPa]');
+                plot(h,lambda,markertf,'r');
+                axis(h,[0 2 0 150]);
+                legend(h,'Passive cross-fibre pressure','Location','NorthWest');
+                
+                dmarkertf = (lambda >= 1).*(f.b1cf./lambda.^3).*((f.d1cf-2)*lambda.^f.d1cf + 2);
+                h = pm.nextPlot('force_length_xfibre_deriv',sprintf('Derivative of Force-Length curve in cross-fibre direction for model %s',this.Name),'\lambda [-]','pressure [kPa]');
+                plot(h,lambda,dmarkertf,'r');
+            end
+            
+            pm.done;
+        end
+        
+        function plotAnisotropicPressure(this)
+%             pm = PlotManager(false,1,2);
+            pm = PlotManager;
+            pm.LeaveOpen = true;
+            f = this.System.f;
+            
+            [lambda, alpha] = meshgrid(.02:.02:1.5,0:.01:1);
+            
+            fl = f.ForceLengthFun(lambda/f.lambdafopt);
+            active = f.Pmax./lambda.*fl.*alpha;% + 1*max(0,(lambda-1)).*alpha;
+            passive = max(0,(f.b1./lambda.^2).*(lambda.^f.d1-1));
+            
+            h = pm.nextPlot('aniso_pressure',sprintf('Pressure in fibre direction for model %s',this.Name),'Stretch \lambda','Activation \alpha');
+            surf(h,lambda,alpha,active+passive,'EdgeColor','k','FaceColor','interp');
             
             pm.done;
         end

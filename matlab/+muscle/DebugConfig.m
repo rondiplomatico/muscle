@@ -22,8 +22,10 @@ classdef DebugConfig < muscle.AModelConfig
     %
     % Version 10: One side is fixed and a certain pressure is applied to
     % the other side's face
-    % Version 11: A slightly deformed cube with one side fixed and velocity
+    % Version 11: A slightly rotated cube with one side fixed and velocity
     % boundary conditions
+    % Version 12: A cube with fibres and additional cross-fibre direction
+    % markert pressure. (only activation used)
     
     properties(SetAccess=private)
         Version;
@@ -38,13 +40,18 @@ classdef DebugConfig < muscle.AModelConfig
             end
             % Single cube with same config as reference element
             [pts, cubes] = geometry.Cube8Node.DemoGrid([0 1],[0 1],[0 1]);
-            if version == 11
+            if version == 11 || version == 12
+                [pts, cubes] = geometry.Cube8Node.DemoGrid([-1 1],[-1 1],[-1 1]);
                 pts(1,[6 8]) = 2;
-                theta = .4;
+                theta = .3;
                 R = [cos(theta) -sin(theta) 0
                      sin(theta) cos(theta)  0
                      0          0           1];
-                pts = R*pts;
+%                 R = [cos(theta) -sin(theta) 0
+%                        0 1 0
+%                      sin(theta) 0 cos(theta)];
+
+                pts = circshift(R,[1 1])*R*pts;
             end
             geo = geometry.Cube8Node(pts, cubes);
             this = this@muscle.AModelConfig(geo.toCube27Node);
@@ -56,14 +63,14 @@ classdef DebugConfig < muscle.AModelConfig
             sys = m.System;
             f = sys.f;
             m.T = 1;
-            m.dt = .05;
+            m.dt = .01;
             m.ODESolver.RelTol = .00001;
             m.ODESolver.AbsTol = .002;
             switch this.Version
             case 1
                 f.alpha = @(t)0;
             case 2
-                f.alpha = this.getAlphaRamp(.01,1);
+                f.alpha = this.getAlphaRamp(.04,1);
                 m.DefaultMu = [.01; 0];
             case 3
                 m.T = 400;
@@ -119,14 +126,20 @@ classdef DebugConfig < muscle.AModelConfig
                 m.ODESolver.AbsTol = .03;
                 m.T = 1;
                 m.dt = .01;
-                sys.Viscosity = 0;
-                sys.Inputs{1} = this.getAlphaRamp(m.T/2,1);
+                m.DefaultMu = [0;0];
+                m.DefaultInput = 1;
             case 11
                 f.alpha = @(t)0;
                 m.ODESolver.RelTol = .001;
                 m.ODESolver.AbsTol = .05;
                 m.T = 10;
                 m.dt = .05;
+            case 12
+                f.b1 = 1;
+                f.d1 = 1;
+                f.alpha = this.getAlphaRamp(.04,1);
+                m.DefaultMu = [.01; 0];
+%                 m.System.UseCrossFibreStiffness = true;
             end
         end
         
@@ -146,8 +159,11 @@ classdef DebugConfig < muscle.AModelConfig
             end
         end
         
-        function u = getInputFunction(this, m)
-            u = this.getAlphaRamp(m.T/2,1);
+        function u = getInputs(this)
+            u = {};
+            if this.Version == 10
+                u = {this.getAlphaRamp(this.Model.T/2,1)};
+            end
         end
     end
     
@@ -187,7 +203,7 @@ classdef DebugConfig < muscle.AModelConfig
         
         function anull = seta0(this, anull)
             switch this.Version
-            case {2,3}
+            case {2,3,12}
                 anull(1,:,:) = 1;
             case {4,7}
                 % No fibres

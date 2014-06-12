@@ -14,6 +14,19 @@ classdef AModelConfig < handle
     properties(SetAccess=protected)
         FibreTypeWeights = [];
         Pool;
+        
+        % The coordinate system in which to interpret the applied pressure
+        % of neumann boundary conditions.
+        %
+        % 'local' uses the normals on the faces as given in the reference
+        % configuration, i.e. the "true" normals.
+        %
+        % 'global' uses the global coordinate system of the geometry, i.e.
+        % the master element. This can be used to apply forces coming from
+        % one fixed direction over a possibly noneven geometry surface.
+        %
+        % @type char @default 'local'
+        NeumannCoordinateSystem = 'local';
     end
     
     methods
@@ -49,22 +62,36 @@ classdef AModelConfig < handle
             %
             % In the default implementation there are no force boundary
             % conditions.
+            %
+            % See also: NeumannCoordinateSystem
             P = [];
         end
         
-        function u = getInputFunction(this, m)
-            u = @(t)1;
+        function u = getInputs(~)
+            % Returns the inputs `u(t)` of the model, if neumann boundary
+            % conditions are used
+            %
+            % this.Model can be used to get access to the model this
+            % configuration is applied to.
+            %
+            % Return values:
+            % u: The cell array of input functions to use within this
+            % model. @type cell @default {@(t)1}
+            u = {@(t)1};
         end
         
         function x0 = getX0(this, x0)
             %% do nothing
         end
         
-        function alpha = getAlphaRamp(~, ramptime, alphamax)
-            if nargin < 3
-                alphamax = 1;
+        function alpha = getAlphaRamp(~, ramptime, alphamax, starttime)
+            if nargin < 4
+                starttime = 0;
+                if nargin < 3
+                    alphamax = 1;
+                end
             end
-            alpha = @(t)alphamax * ((t<ramptime).*t/ramptime + (t>=ramptime));
+            alpha = @(t)(t >= starttime) .* (alphamax * (((t-starttime)<ramptime).*(t-starttime)/ramptime + (t>=ramptime+starttime)));
         end
     end
     

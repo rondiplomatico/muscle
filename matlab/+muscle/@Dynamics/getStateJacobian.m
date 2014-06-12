@@ -25,6 +25,11 @@ function J = getStateJacobian(this, uvwdof, t)
     alphaconst = this.alpha(t);
     havefibres = sys.HasFibres;
     havefibretypes = havefibres && ~isempty(mc.Pool);
+    usecrossfibres = havefibres && this.crossfibres;
+    if usecrossfibres
+        b1cf = this.b1cf;
+        d1cf = this.d1cf;
+    end
     
     if havefibretypes
         fibretypeweights = mc.FibreTypeWeights;
@@ -92,30 +97,52 @@ function J = getStateJacobian(this, uvwdof, t)
             p = w' * fe_press.Ngp(:,gp,m);
 
             % Invariant I1
-%             I1 = sum(sum((u'*u) .* (dtn*dtn')));
             I1 = C(1,1) + C(2,2) + C(3,3);
 
             if havefibres
                 %% Anisotropic part
-                dtna0 = sys.dtna0(:,gp,m);
-                lambdafsq = sum(sum((u'*u) .* (dtna0*dtna0')));
-                lambdaf = sqrt(lambdafsq);
+                a0pos = (m-1)*num_gausspoints + gp;
+                a0B = sys.a0Base(:,:,a0pos);
+                a0BI = sys.a0BaseInv(:,:,a0pos);
+                lambdas = a0BI*F*a0B;
+                lambda_a0 = lambdas(1,1);
 
-                ratio = lambdaf/lfopt;
+                ratio = lambda_a0/lfopt;
                 fl = this.ForceLengthFun(ratio);
                 dfl = this.ForceLengthFunDeriv(ratio);
                 alpha = alphaconst;
                 if havefibretypes
                     alpha = ftwelem(gp);
                 end
-                
-                gval = (Pmax/lambdaf)*fl*alpha;
-                dgdlam = (Pmax/lambdafsq)*alpha*(dfl - fl);
-                if lambdaf > 1
-                    gval = gval + (b1/lambdafsq)*(lambdaf^d1-1);
-                    dgdlam = dgdlam + (b1/lambdaf^3)*((d1-2)*lambdaf^d1 + 2);
+                g_value = (Pmax/lambda_a0)*fl*alpha;
+                dg_dlam = (Pmax/lambda_a0^2)*alpha*(dfl - fl);
+                % Using > 1 is deadly. All lambdas are equal to one at t=0
+                % (reference config, analytical), but numerically this is
+                % dependent on how precise F and hence lambda is computed.
+                % It is very very close to one, but sometimes 1e-7 smaller
+                % or bigger.. and that makes all the difference!
+                if lambda_a0 > .999
+                    g_value = g_value + (b1/lambda_a0^2)*(lambda_a0^d1-1);
+                    dg_dlam = dg_dlam + (b1/lambda_a0^3)*((d1-2)*lambda_a0^d1 + 2);
                 end
                 a0 = sys.a0oa0(:,:,(m-1)*num_gausspoints + gp);
+                
+                %% Cross-fibre stiffness part
+                if usecrossfibres
+                    lambda_a0n1 = lambdas(2,2);
+                    if lambda_a0n1 > .999
+                        xfibre1 = (b1cf/lambda_a0n1^2)*(lambda_a0n1^d1cf-1);
+                        dxfibre1_dlam = (b1cf/lambda_a0n1^3)*((d1cf-2)*lambda_a0n1^d1cf + 2);
+                    end
+                    lambda_a0n2 = lambdas(3,3);
+                    if lambda_a0n2 > .999
+                        xfibre2 = (b1cf/lambda_a0n2^2)*(lambda_a0n2^d1cf-1);
+                        dxfibre2_dlam = (b1cf/lambda_a0n2^3)*((d1cf-2)*lambda_a0n2^d1cf + 2);
+                    end
+                    
+                    a0n1 = sys.a0oa0n1(:,:,(m-1)*num_gausspoints + gp);
+                    a0n2 = sys.a0oa0n2(:,:,(m-1)*num_gausspoints + gp);
+                end
             end
 
             %% Main node loop
@@ -133,7 +160,9 @@ function J = getStateJacobian(this, uvwdof, t)
 
                 % correct! :-)
                 if havefibres
-                    dlambdaf = (1/lambdaf)*dtna0(k)*sum(([1; 1; 1] * dtna0') .* u, 2);
+                    dlamdas_x = diag(a0B'*e1_dyad_dPhik*a0B);
+                    dlamdas_y = diag(a0B'*e2_dyad_dPhik*a0B);
+                    dlamdas_z = diag(a0B'*e3_dyad_dPhik*a0B);
                 end
 
                 %% grad_u K(u,v,w)
@@ -146,7 +175,15 @@ function J = getStateJacobian(this, uvwdof, t)
                     + fac1(1)*F + fac2*e1_dyad_dPhik...
                     -2*this.c01 * (e1_dyad_dPhik * C + F*dFtF1);%#ok<*MINV>
                 if havefibres
-                    dPx = dPx + (dgdlam*dlambdaf(1)*F + gval*e1_dyad_dPhik)*a0;
+                    dPx = dPx + (dg_dlam*dlamdas_x(1)*F + g_value*e1_dyad_dPhik)*a0;
+                    if usecrossfibres 
+                        if lambda_a0n1 > .999
+                            dPx = dPx + (dxfibre1_dlam*dlamdas_x(2)*F + xfibre1*e1_dyad_dPhik)*a0n1;
+                        end
+                        if lambda_a0n2 > .999
+                            dPx = dPx + (dxfibre2_dlam*dlamdas_x(3)*F + xfibre2*e1_dyad_dPhik)*a0n2;
+                        end
+                    end
                 end
                 i(cur_off + relidx_pos) = elemidx_velo_linear;
                 j(cur_off + relidx_pos) = elemidx_pos_XYZ(1,k);
@@ -160,7 +197,15 @@ function J = getStateJacobian(this, uvwdof, t)
                     +fac1(2)*F + fac2*e2_dyad_dPhik...
                     -2*this.c01 * (e2_dyad_dPhik * C + F*dFtF2);
                 if havefibres
-                    dPy = dPy + (dgdlam*dlambdaf(2)*F + gval*e2_dyad_dPhik)*a0;
+                    dPy = dPy + (dg_dlam*dlamdas_y(1)*F + g_value*e2_dyad_dPhik)*a0;
+                    if usecrossfibres 
+                        if lambda_a0n1 > .999
+                            dPy = dPy + (dxfibre1_dlam*dlamdas_y(2)*F + xfibre1*e2_dyad_dPhik)*a0n1;
+                        end
+                        if lambda_a0n2 > .999
+                            dPy = dPy + (dxfibre2_dlam*dlamdas_y(3)*F + xfibre2*e2_dyad_dPhik)*a0n2;
+                        end
+                    end
                 end
                 i(cur_off + relidx_pos) = elemidx_velo_linear;
                 j(cur_off + relidx_pos) = elemidx_pos_XYZ(2,k);
@@ -174,7 +219,15 @@ function J = getStateJacobian(this, uvwdof, t)
                     +fac1(3)*F + fac2*e3_dyad_dPhik ...
                     - 2*this.c01 * (e3_dyad_dPhik * C + F*dFtF3);
                 if havefibres
-                    dPz = dPz + (dgdlam*dlambdaf(3)*F + gval*e3_dyad_dPhik)*a0;
+                    dPz = dPz + (dg_dlam*dlamdas_z(1)*F + g_value*e3_dyad_dPhik)*a0;
+                    if usecrossfibres 
+                        if lambda_a0n1 > .999
+                            dPz = dPz + (dxfibre1_dlam*dlamdas_z(2)*F + xfibre1*e3_dyad_dPhik)*a0n1;
+                        end
+                        if lambda_a0n2 > .999
+                            dPz = dPz + (dxfibre2_dlam*dlamdas_z(3)*F + xfibre2*e3_dyad_dPhik)*a0n2;
+                        end
+                    end
                 end
                 i(cur_off + relidx_pos) = elemidx_velo_linear;
                 j(cur_off + relidx_pos) = elemidx_pos_XYZ(3,k);
@@ -256,17 +309,4 @@ function J = getStateJacobian(this, uvwdof, t)
         % Multiply with inverse of Mass matrix!
         J(sys.dof_idx_velo,:) = sys.Minv*J(sys.dof_idx_velo,:);
     end
-
-    % legacy speed test for quick eval in jacobian
-    %             tic;
-    %             for k2=1:1000
-    %                 dFtF1 = e1_dyad_dPhik'*F + F'*e1_dyad_dPhik;
-    %             end
-    %             toc;
-    %             tic;
-    %             for k2=1:1000
-    %                 dFtF12 = sum(([1;1;1] * u(1,:)) .* dtn',2) * dtn(k,:);
-    %                 dFtF12 = dFtF12+dFtF12';
-    %             end
-    %             toc;
 end

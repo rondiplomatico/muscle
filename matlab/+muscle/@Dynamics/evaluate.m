@@ -19,6 +19,11 @@ function duvw = evaluate(this, uvwdof, t)
     alphaconst = this.alpha(t);
     havefibres = sys.HasFibres;
     havefibretypes = havefibres && ~isempty(mc.Pool);
+    usecrossfibres = havefibres && this.crossfibres;
+    if usecrossfibres
+        b1cf = this.b1cf;
+        d1cf = this.d1cf;
+    end
     
 %     visc = this.mu(1);
     if havefibretypes
@@ -85,25 +90,45 @@ function duvw = evaluate(this, uvwdof, t)
             
             %% Anisotropic part (Invariant I4 related)
             if havefibres
-                dtna0 = sys.dtna0(:,gp,m);
-                lambdafsq = sum(sum((u'*u) .* (dtna0*dtna0')));
-                lambdaf = sqrt(lambdafsq);
+                a0pos = (m-1)*num_gausspoints + gp;
+                a0B = sys.a0Base(:,:,a0pos);
+                a0BI = sys.a0BaseInv(:,:,a0pos);
+                lambdas = a0BI*F*a0B;
+                lambdaf = lambdas(1,1);
 
                 % Evaluate g function
                 % Using a subfunction is 20% slower!
                 % So: direct implementation here
                 fl = flfun(lambdaf/lfopt);
                 alpha = alphaconst;
-                if havefibretypes 
+                if havefibretypes
                     alpha = ftwelem(gp);
                 end
                 markert = 0;
-                if lambdaf > 1
-                    markert = (b1/lambdafsq)*(lambdaf^d1-1);
+                % Using > 1 is deadly. All lambdas are equal to one at t=0
+                % (reference config, analytical), but numerically this is
+                % dependent on how precise F and hence lambda is computed.
+                % It is very very close to one, but sometimes 1e-7 smaller
+                % or bigger.. and that makes all the difference!
+                if lambdaf > .999
+                    markert = (b1/lambdaf^2)*(lambdaf^d1-1);
                 end
-                gval = markert + (Pmax/lambdaf)*fl*alpha;
-                a0 = sys.a0oa0(:,:,(m-1)*num_gausspoints + gp);
-                P = P + gval*F*a0;
+                gval = markert + (Pmax/lambdaf)*fl*alpha; %+ 1000*max(0,(lambdaf-1))*alpha;
+                P = P + gval*F*sys.a0oa0(:,:,a0pos);
+                
+                %% Cross-fibre stiffness part
+                if usecrossfibres
+                    lambdaf = lambdas(2,2);
+                    if lambdaf > .999
+                        g1 = (b1cf/lambdaf^2)*(lambdaf^d1cf-1);
+                        P = P + g1*F*sys.a0oa0n1(:,:,a0pos);
+                    end
+                    lambdaf = lambdas(3,3);
+                    if lambdaf > .999
+                        g2 = (b1cf/lambdaf^2)*(lambdaf^d1cf-1);
+                        P = P + g2*F*sys.a0oa0n2(:,:,a0pos);
+                    end
+                end
             end
             
 %             Viscosity
@@ -135,7 +160,7 @@ function duvw = evaluate(this, uvwdof, t)
     duvw(sys.bc_dir_idx) = [];
     
 %     fo = sum(duvw);
-%     fprintf('t=%20g, force=%20g\n',t,fo);
+%     fprintf('t=%15g, force=%15g\n',t,fo);
 %     if fo > 1e4
 %         keyboard;
 %     end

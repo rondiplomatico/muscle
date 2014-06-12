@@ -7,21 +7,34 @@ classdef System < models.BaseDynSystem
 % @author Daniel Wirtz @date 2014-01-20
 
     properties
+       % The global index of node x,y,z positions within uvw.
+       %
+       % The velocities are indentically indexed but 3*NumNodes later.
        globidx_displ;
        
+       % The global index of node pressures within uvw.
        globidx_pressure;
        
        % Set this to a double value to apply velocity dirichlet conditions
        % only up to a certain time (zero after that)
+       %
+       % This can be used to generate initial conditions with a deformed
+       % state
+       %
+       % @type double @default Inf
        ApplyVelocityBCUntil = Inf;
     end
     
     properties(SetAccess=private)
+       % This contains the indices of the nodes tracking pressure (linear /
+       % 8-corner elements) within the quadratic global node numbering
+       %
+       % Used for plotting only so far.
        pressure_to_displ_nodes;
        
        % The overall values of dirichlet conditions
        %
-       % To specify in [mm] for position and mm/ms for velocity
+       % To specify in [mm] for position and [mm/ms] for velocity
        % 
        % Collected from bc_dir_displ_val, bc_dir_velo_val
        bc_dir_val;
@@ -42,6 +55,7 @@ classdef System < models.BaseDynSystem
        bc_dir_displ_idx;
        bc_dir_displ_val; % [mm]
        
+       % Same
        bc_dir_velo;
        bc_dir_velo_idx;
        bc_dir_velo_val; % [mm/ms]
@@ -62,12 +76,18 @@ classdef System < models.BaseDynSystem
        
        Minv;
        
-       % Fibre stuff
+       %% Fibre stuff
        HasFibres = false;
        a0;
-       dtna0;
        a0oa0;
        dNa0;
+       a0Base;
+       a0BaseInv;
+       
+       %% Cross-fibre stiffness stuff
+       % normals to a0
+       a0oa0n1;
+       a0oa0n2;
     end
    
     properties(Dependent)
@@ -84,10 +104,19 @@ classdef System < models.BaseDynSystem
        %
        % @type logical @default false
        UseDirectMassInversion;
+       
+       % Flag to indicate if this system should use stiffness terms
+       % (Markert) for cross-fibre directions.
+       %
+       % The Dynamics.
+       %
+       % @type logaical @default false
+       UseCrossFibreStiffness;
     end
     
     properties(Access=private)
         fUseDirectMassInversion = false;
+        fUseCrossFibreStiffness = false;
         fD;
     end
     
@@ -96,7 +125,10 @@ classdef System < models.BaseDynSystem
             % Call superclass constructor
             this = this@models.BaseDynSystem(model);
             
+            % The muscle viscosity. [mN * mm/ms]
             this.addParam('viscosity',[0 10],10);
+            % For some variants, we have the mean input current for the
+            % motoneuron pool (generating activation)
             this.addParam('mean input current',[0 1],10);
             
             %% Set system components
@@ -106,68 +138,70 @@ classdef System < models.BaseDynSystem
         
         function configUpdated(this)
             mc = this.Model.Config;
-            tq = mc.PosFE;
-            g = tq.Geometry;
-            tl = mc.PressFE;
-            gp = tl.Geometry;
-                
-%             % Find the indices of the pressure nodes in the displacement
-%             % nodes geometry (used for plotting)
-            this.pressure_to_displ_nodes = g.getCommonNodesWith(gp);
-            
-            % Call subroutine for boundary condition index crunching
-            this.computeDirichletBC;
-            
-            %% Construct B matrix
-            % Collect neumann forces
-            [B, this.bc_neum_forces_nodeidx] = this.getSpatialExternalForces;
-            % Only set up forces if present
-            if ~isempty(this.bc_neum_forces_nodeidx)
-                this.bc_neum_forces_val = B(this.bc_neum_forces_nodeidx + g.NumNodes * 3);
-                % Remove dirichlet DoFs
-                B(this.bc_dir_idx) = [];
-                % Set as constant input conversion matrix
-                this.B = dscomponents.LinearInputConv(B);
-                % Set input function
-                this.Inputs{1} = mc.getInputFunction(this.Model);
+            if ~isempty(mc)
+                tq = mc.PosFE;
+                g = tq.Geometry;
+                tl = mc.PressFE;
+                gp = tl.Geometry;
+
+    %             % Find the indices of the pressure nodes in the displacement
+    %             % nodes geometry (used for plotting)
+                this.pressure_to_displ_nodes = g.getCommonNodesWith(gp);
+
+                % Call subroutine for boundary condition index crunching
+                this.computeDirichletBC;
+
+                %% Construct B matrix
+                % Collect neumann forces
+                [B, this.bc_neum_forces_nodeidx] = this.getSpatialExternalForces;
+                % Only set up forces if present
+                if ~isempty(this.bc_neum_forces_nodeidx)
+                    this.bc_neum_forces_val = B(this.bc_neum_forces_nodeidx + g.NumNodes * 3);
+                    % Remove dirichlet DoFs
+                    B(this.bc_dir_idx) = [];
+                    % Set as constant input conversion matrix
+                    this.B = dscomponents.LinearInputConv(B);
+                    % Set input function
+                    this.Inputs = mc.getInputs;
+                end
+
+                % Init fibre directions and precomputable values
+                this.inita0;
+
+                % Construct global indices in uvw from element nodes. Each dof in
+                % an element is used three times for x,y,z displacement. The
+                % "elems" matrix contains the overall DOF numbers of each
+                % element in the order of the nodes (along row) in the master
+                % element.
+                ne = g.NumElements;
+                globalelementdofs = zeros(3,g.DofsPerElement,ne,'int32');
+                for m = 1:ne
+                    % First index of element dof in global array
+                    hlp = (g.Elements(m,:)-1)*3+1;
+                    % Use first, second and third as positions.
+                    globalelementdofs(:,:,m) = [hlp; hlp+1; hlp+2];
+                end
+                this.globidx_displ = globalelementdofs;
+
+                % The same for the pressure
+                globalpressuredofs = zeros(gp.DofsPerElement,gp.NumElements,'int32');
+                off = g.NumNodes * 6;
+                for m = 1:gp.NumElements
+                    globalpressuredofs(:,m) = off + gp.Elements(m,:);
+                end
+                this.globidx_pressure = globalpressuredofs;
+
+                %% Compile Mass Matrix
+                this.M = this.assembleMassMatrix;
+
+                %% Compile Damping Matrix
+                this.fD = this.assembleDampingMatrix;
+
+                %% Initial value
+                this.x0 = this.assembleX0;
+
+                this.f.configUpdated;
             end
-            
-            % Init fibre directions and precomputable values
-            this.inita0;
-            
-            % Construct global indices in uvw from element nodes. Each dof in
-            % an element is used three times for x,y,z displacement. The
-            % "elems" matrix contains the overall DOF numbers of each
-            % element in the order of the nodes (along row) in the master
-            % element.
-            ne = g.NumElements;
-            globalelementdofs = zeros(3,g.DofsPerElement,ne,'int32');
-            for m = 1:ne
-                % First index of element dof in global array
-                hlp = (g.Elements(m,:)-1)*3+1;
-                % Use first, second and third as positions.
-                globalelementdofs(:,:,m) = [hlp; hlp+1; hlp+2];
-            end
-            this.globidx_displ = globalelementdofs;
-            
-            % The same for the pressure
-            globalpressuredofs = zeros(gp.DofsPerElement,gp.NumElements,'int32');
-            off = g.NumNodes * 6;
-            for m = 1:gp.NumElements
-                globalpressuredofs(:,m) = off + gp.Elements(m,:);
-            end
-            this.globidx_pressure = globalpressuredofs;
-            
-            %% Compile Mass Matrix
-            this.M = this.assembleMassMatrix;
-            
-            %% Compile Damping Matrix
-            this.fD = this.assembleDampingMatrix;
-            
-            %% Initial value
-            this.x0 = this.assembleX0;
-            
-            this.f.configUpdated;
         end
         
         function prepareSimulation(this, mu, inputidx)
@@ -408,7 +442,7 @@ classdef System < models.BaseDynSystem
                 if r.Vid
                     vw.writeVideo(getframe(gcf));
                 else
-                    pause(.05);
+                    pause(.1);
 %                     pause;
                 end
             end
@@ -463,6 +497,22 @@ classdef System < models.BaseDynSystem
         
         function value = get.UseDirectMassInversion(this)
             value = this.fUseDirectMassInversion;
+        end
+        
+        function set.UseCrossFibreStiffness(this, value)
+            if ~islogical(value) || ~isscalar(value)
+                error('UseCrossFibreStiffness must be true or false');
+            end
+            if this.fUseCrossFibreStiffness ~= value
+                this.fUseCrossFibreStiffness = value;
+                if ~isempty(this.Model.Config)
+                    this.inita0;
+                end
+            end
+        end
+        
+        function value = get.UseCrossFibreStiffness(this)
+            value = this.fUseCrossFibreStiffness;
         end
     end
     
@@ -629,6 +679,8 @@ classdef System < models.BaseDynSystem
             ngp = fe_displ.GaussPointsPerElemFace;
             force = zeros(geo.NumNodes * 3,1);
             faceswithforce = false(1,geo.NumFaces);
+            
+            globalcoord = strcmp(mc.NeumannCoordinateSystem,'global');
             for fn = 1:geo.NumFaces
                 elemidx = geo.Faces(1,fn);
                 faceidx = geo.Faces(2,fn);
@@ -638,8 +690,14 @@ classdef System < models.BaseDynSystem
                 if ~isempty(P)
                     faceswithforce(fn) = true;
                     integrand = zeros(3,geo.NodesPerFace);
+                    if globalcoord
+                        N = geo.FaceNormals(:,faceidx);
+                    end
                     for gi = 1:ngp
-                        PN = (P * fe_displ.NormalsOnFaceGP(:,gi,fn)) * fe_displ.Ngpface(:,gi,fn)';
+                        if ~globalcoord
+                            N = fe_displ.NormalsOnFaceGP(:,gi,fn);
+                        end
+                        PN = (P * N) * fe_displ.Ngpface(:,gi,fn)';
                         integrand = integrand + fe_displ.FaceGaussWeights(gi)*PN*fe_displ.face_detjac(fn,gi);
                     end
                     facenodeidx = geo.Elements(elemidx,masterfacenodeidx);
@@ -670,8 +728,13 @@ classdef System < models.BaseDynSystem
                 dNgp = fe.gradN(fe.GaussPoints);
                 
                 anulldyadanull = zeros(3,3,fe.GaussPointsPerElem*geo.NumElements);
-                dtnanull = zeros(geo.DofsPerElement,fe.GaussPointsPerElem,geo.NumElements);
                 dNanull = zeros(geo.DofsPerElement,fe.GaussPointsPerElem,geo.NumElements);
+                if this.fUseCrossFibreStiffness
+                    a0a0n1 = anulldyadanull;
+                    a0a0n2 = anulldyadanull;
+                    a0base = anulldyadanull;
+                    a0basei = anulldyadanull;
+                end
                 for m = 1 : geo.NumElements
                     u = geo.Nodes(:,geo.Elements(m,:));
                     for gp = 1 : fe.GaussPointsPerElem
@@ -682,23 +745,41 @@ classdef System < models.BaseDynSystem
                         loc_anull = Jac * anull(:,gp,m);
                         loc_anull = loc_anull/norm(loc_anull);
                         
+                        % Compute "the" two normals (any will do)
+                        loc_anulln1 = circshift(loc_anull,1);
+                        loc_anulln1 = loc_anulln1 - (loc_anulln1'*loc_anull) * loc_anull;
+                        loc_anulln1 = loc_anulln1/norm(loc_anulln1);
+
+                        loc_anulln2 = circshift(loc_anull,2);
+                        loc_anulln2 = loc_anulln2 - (loc_anulln2'*loc_anull) * loc_anull - (loc_anulln2'*loc_anulln1) * loc_anulln1;
+                        loc_anulln2 = loc_anulln2/norm(loc_anulln2);
+                        
                         % forward transformation of a0 at gauss points
                         % (plotting only so far)
                         dNanull(:,gp,m) = dNgp(:,pos) * anull(:,gp,m);
                         
-                        % <grad phi_k, a0> scalar products (for
-                        % getStateJacobian)
-                        pos = 3*(gp-1)+1:3*gp;
-                        dtnanull(:,gp,m) = fe.transgrad(:,pos,m)*loc_anull;
-                        
                         % a0 dyad a0
                         pos = (m-1)*fe.GaussPointsPerElem+gp;
-                        anulldyadanull(:,:,pos) = loc_anull*loc_anull';%anull(:,gp,m)*anull(:,gp,m)';
+                        anulldyadanull(:,:,pos) = loc_anull*loc_anull';
+                        a0base(:,:,pos) = [loc_anull loc_anulln1 loc_anulln2];
+                        a0basei(:,:,pos) = inv(a0base(:,:,pos));
+                        if this.fUseCrossFibreStiffness
+                            a0a0n1(:,:,pos) = loc_anulln1*loc_anulln1';
+                            a0a0n2(:,:,pos) = loc_anulln2*loc_anulln2';
+                        end
                     end
                 end
-                this.dtna0 = dtnanull;
                 this.a0oa0 = anulldyadanull;
                 this.dNa0 = dNanull;
+                this.a0Base = a0base;
+                this.a0BaseInv = a0basei;
+                
+                this.a0oa0n1 = [];
+                this.a0oa0n2 = [];
+                if this.fUseCrossFibreStiffness
+                    this.a0oa0n1 = a0a0n1;
+                    this.a0oa0n2 = a0a0n2;    
+                end
             end
         end
         

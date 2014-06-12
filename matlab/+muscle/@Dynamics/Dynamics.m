@@ -3,10 +3,17 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     % in @cite Heidlauf2013 .
     
     properties
+       %% Isotropic parameters (Moonley-Rivlin)
        c10 = 6.352e-10; % [kPa]
        c01 = 3.627; % [kPa]
+       
+       %% Anisotropic parameters (Markert)
        b1 = 2.756e-5; % [kPa]
        d1 = 43.373; % [-]
+       
+       % Cross-fibre markert part
+       b1cf = 53163.72204148964; % [kPa] = [N/mm²]
+       d1cf = 0.014991843974911; % [-]
        
        Pmax = 73; % [kPa], in Paper 7.3N/cm², but kPa = 0.1N/cm² 
        
@@ -70,6 +77,9 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         % Cached quantity from this.System.UseDirectMassInversion for
         % faster evaluation of dynamics.
         usemassinv;
+        
+        % Cached value for cross fibre computations (speed)
+        crossfibres = false;
     end
     
     methods
@@ -106,6 +116,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                 mc.Pool.prepareSimulation(this.System.Model.T,mu(2));
             end
             this.usemassinv = this.System.UseDirectMassInversion;
+            this.crossfibres = this.System.UseCrossFibreStiffness;
         end
         
         function evaluateCoreFun(varargin)
@@ -124,39 +135,20 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                 full = false;
             end
             
-%             oldvisc = this.fViscosity;
-%             
-%             %res = test_Jacobian@dscomponents.ACoreFun(this, varargin{:});
-%             if oldvisc ~= 0
-%                 this.Viscosity = 0;
-%             end
             m = this.System.Model;
-            mu = m.getRandomParam;
             if full
-                [t,y] = m.simulate(mu);
+                [t,y] = m.simulate;
             else
                 t = 100;
-                y = this.System.x0.evaluate(mu);
+                y = this.System.x0.evaluate(this.System.Model.DefaultMu);
             end
             
             % Use nonzero t to have an effect
-            res = test_Jacobian@dscomponents.ACoreFun(this, y, t, mu);
+            res = test_Jacobian@dscomponents.ACoreFun(this, y, t, this.System.Model.DefaultMu);
             
             % Check if sparsity pattern and jacobian matrices match
-            Jp = this.JSparsityPattern;
-            Jeff = Jp;
-            for k=1:length(t)
-                J = this.getStateJacobian(y(:,k),t(k));
-                Jeff(:) = false;
-                Jeff(logical(J)) = true;
-                check = (Jp | Jeff) & ~Jp;
-                res = res && ~any(check(:));
-            end
-            
-%             this.Viscosity = 1;
-%             res = res && test_Jacobian@dscomponents.ACoreFun(this, y, t, mu);
-%             
-%             % Check if sparsity pattern and jacobian matrices match
+%             Jp = this.JSparsityPattern;
+%             Jeff = Jp;
 %             for k=1:length(t)
 %                 J = this.getStateJacobian(y(:,k),t(k));
 %                 Jeff(:) = false;
@@ -164,8 +156,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
 %                 check = (Jp | Jeff) & ~Jp;
 %                 res = res && ~any(check(:));
 %             end
-%             
-%             this.Viscosity = oldvisc;
         end
         
         function copy = clone(this)

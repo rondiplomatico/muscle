@@ -75,7 +75,7 @@ classdef QuickRelease < muscle.AModelConfig
                         os.AbsTol = .02;
                     else
                         os.RelTol = .01;
-                        os.AbsTol = .5;
+                        os.AbsTol = .8;
                     end
             end
             %% Material setup
@@ -84,7 +84,7 @@ classdef QuickRelease < muscle.AModelConfig
             f.c10 = 6.352e-10; % [kPa]
             f.c01 = 3.627; % [kPa]
             f.b1 = 0.00355439810963035; % [kPa]
-            f.d1 = 14.5;%12.660539325481963; % [-]
+            f.d1 = 12.660539325481963;%14.5; % [-]
             f.Pmax = 250; % [kPa], in Paper 25N/cm², but kPa = 0.1N/cm² 
             f.lambdafopt = 1.2; % [-]
             
@@ -234,7 +234,7 @@ classdef QuickRelease < muscle.AModelConfig
                            velo_dir(2,geo.Elements(k,geo.MasterFaces(3,:))) = true;
                         end
                         totaldistance = (f.lambdafopt-1)*(box(4)-box(3));
-                        velo_dir_val(velo_dir) = totaldistance/this.icMovetime;
+                        velo_dir_val(velo_dir) = -totaldistance/this.icMovetime;
                     case 3
                         len = box(4)-box(3);
                         % Set only for y direction to nonzero value
@@ -272,9 +272,9 @@ classdef QuickRelease < muscle.AModelConfig
                 m = muscle.Model(mc);
                 [t, y] = m.simulate([.001; 0]);
 %                 m.plot(t,y);
-                y = m.System.includeDirichletValues(t,y);
-                x0 = y(:,end);%#ok
-                save(x0file,'x0');
+                yfull = m.System.includeDirichletValues(t,y);
+                x0 = yfull(:,end);%#ok
+                save(x0file,'x0','t','y','m');
                 fprintf('Initial conditions file created. Please re-run.\n');
                 return;
             end
@@ -289,14 +289,22 @@ classdef QuickRelease < muscle.AModelConfig
                 m = muscle.Model(mc);
                 
                 % loads in [g]
-                loads = [0 100 2000];% 200 500];
+                loads = [0 100 2000];
                 
                 % convert to pressure:
                 % [g]/1000 = [kg]
                 % [kg]*[m/s²] = [N]
                 % [N]*1000 = [mN]
                 % [mN]/[mm²] = [kPa]
-                pressures = (loads/1000*m.Gravity)*1000/400; % [kPa]
+                switch geonr
+                    case 1
+                        a = mc.PosFE.getFaceArea(2,2);
+                    case 2
+                        a = mc.PosFE.getFaceArea(4,3);
+                    case 3
+                        a = mc.PosFE.getFaceArea(6,3);
+                end
+                pressures = (loads/1000*m.Gravity)*1000/a; % [kPa]
                 m.System.Inputs = {};
                 for lidx = 1:length(loads)
                     pressure = pressures(lidx);
@@ -316,6 +324,7 @@ classdef QuickRelease < muscle.AModelConfig
             
             mus = [.1 1];
             mus = [mus; zeros(size(mus))];
+            m.Data.ParamSamples = mus;
             nparams = length(mus);
             for k=1:nparams
                 mu = mus(:,k);
@@ -343,10 +352,6 @@ classdef QuickRelease < muscle.AModelConfig
 %                     set(h,'XScale','log');
 %                     view(-136, 56);
                 end
-            end
-            
-            if saveit
-                save(file,'m','y','o','t','pressures','loads');
             end
             
 %             m.plotGeometrySetup(pm);

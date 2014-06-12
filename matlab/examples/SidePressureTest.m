@@ -14,10 +14,23 @@ classdef SidePressureTest < muscle.AModelConfig
 
     properties(Constant)
         OutputDir = fullfile(fileparts(which(mfilename)),'sidepressure');
+        
+        % The time over which the muscle is activated
+        ActivationTime = .5; % [ms]
+        
+        % The time waited at full activation before applying the load
+        RelaxTime = 1; % [ms]
+        
+        % The time over which the load is increased/applied
+        LoadRampTime = 4; % [ms]
     end
 
     properties
         GeoNr;
+    end
+    
+    properties(SetAccess=private)
+        Area;
     end
 
     methods
@@ -25,21 +38,29 @@ classdef SidePressureTest < muscle.AModelConfig
             if nargin < 1
                 geonr = 1;
             end
+            Utils.ensureDir(SidePressureTest.OutputDir);
             switch geonr
                 case 1
-                    [pts, cubes] = geometry.Cube8Node.DemoGrid(0:10:30,[0 20],[0 20]);
+                    [pts, cubes] = geometry.Cube8Node.DemoGrid(0:20:60,[0 20],[0 20]);
                     geo = geometry.Cube8Node(pts, cubes);
                 case 2
-                    geo = Belly.getBelly(8, 50, 3, .5, 15);
+                    geo = Belly.getBelly(5, 50, 4.5, 1.5, 15);
                 case 3
                     s = load(fullfile(fileparts(which(mfilename)),'..','CMISS','EntireTA.mat'));
                     geo = s.geo27;
             end
             this = this@muscle.AModelConfig(geo);
             this.GeoNr = geonr;
+            this.NeumannCoordinateSystem = 'global';
         end
         
         function configureModel(this, m)
+            
+            m.T = this.ActivationTime+this.RelaxTime+this.LoadRampTime+10;
+            m.dt = m.T/200;
+            m.DefaultInput = 1;
+            m.DefaultMu = [.1; 0];
+            
             % Use the material set of
             f = m.System.f;
             
@@ -48,53 +69,93 @@ classdef SidePressureTest < muscle.AModelConfig
             f.c01 = 3.627; % [kPa]
             f.b1 = 2.756e-5; % [kPa]
             f.d1 = 43.373; % [-]
+            % Cross-fibre markert part
+            f.b1cf = 5316.72204148964; % [kPa] = [N/mm²]
+            f.d1cf = 0.014991843974911; % [-]
             f.Pmax = 250; % [kPa]
             f.lambdafopt = 1; % [-]
+            
+            f.alpha = this.getAlphaRamp(this.ActivationTime,1);
             
             os = m.ODESolver;
             switch this.GeoNr
                 case 1
                     os.RelTol = .01;
-                    os.AbsTol = .05;
+                    os.AbsTol = .1;%.05;
                 case {2,3}
                     os.RelTol = .01;
-                    os.AbsTol = .08;
+                    os.AbsTol = .1;
             end
             m.EnableTrajectoryCaching = true;
+%             m.System.UseCrossFibreStiffness = true;
         end
         
         function o = getOutputOfInterest(this, m, t, uvw)
-            geo = m.Geo;
-            uvw = m.System.includeDirichletValues(t, uvw);
+%             geo = m.Geo;
+            df = m.getResidualForces(t, uvw);
+%             uvw = m.System.includeDirichletValues(t, uvw);
             switch this.GeoNr
                 case 1
-                    facenode_idx = m.getFaceDofsGlobal(2,2,1);
-                    o(1,:) = mean(uvw(facenode_idx,:),1);
-                    o(2,:) = mean(uvw(facenode_idx+geo.NumNodes*3,:),1);
+                    idx = m.getDirichletBCFaceIdx(1,1);
+                    o(1,:) = mean(df(idx,:),1);
                 case 2
-                    facenode_idx = [];
-                    for k = 1:4
-                        facenode_idx = [facenode_idx; m.getFaceDofsGlobal(k,3,2)];%#ok
-                    end
-                    % Save some work
-                    facenode_idx = unique(facenode_idx);
-                    o(1,:) = mean(uvw(facenode_idx,:),1);
-                    o(2,:) = mean(uvw(facenode_idx+geo.NumNodes*3,:),1);
+                    xidx = m.getDirichletBCFaceIdx(1:4,3,1);
+                    yidx = m.getDirichletBCFaceIdx(1:4,3,2);
+                    zidx = m.getDirichletBCFaceIdx(1:4,3,3);
+                    vec = [mean(df(xidx,:),1); mean(df(yidx,:),1); mean(df(zidx,:),1)];
+                    o(1,:) = Norm.L2(vec);
+                    o(2:4,:) = vec;
                 case 3
-                    facenode_xidx = m.getFaceDofsGlobal(6,3,1);
-                    facenode_yidx = m.getFaceDofsGlobal(6,3,2);
-                    facenode_xidx = unique(facenode_xidx);
-                    facenode_yidx = unique(facenode_yidx);
+                    xidx = m.getDirichletBCFaceIdx(6,3,1);
+                    yidx = m.getDirichletBCFaceIdx(6,3,2);
+                    zidx = m.getDirichletBCFaceIdx(6,3,3);
+                    vec = [mean(df(xidx,:),1); mean(df(yidx,:),1); mean(df(zidx,:),1)];
+                    o(1,:) = Norm.L2(vec);
+                    o(2:4,:) = vec;
+            end
+        end
+        
+        function P = getBoundaryPressure(this, elemidx, faceidx)
+            % Determines the neumann forces on the boundary.
+            %
+            % The unit for the applied quantities is kiloPascal [kPa]
+            %
+            % See also: NeumannCoordinateSystem
+            P = [];
+            switch this.GeoNr
+                case 1
+                    if elemidx == 2 && faceidx == 6
+                        P = -1;
+                    end
+                case 2
+                    if (elemidx == 9 || elemidx == 10) && faceidx == 6
+                        P = -1;
+                    end
+            end
+        end
+        
+        function u = getInputs(this)
+            % loads in [g]
+            loads = [0 100 200 500 1000];
 
-                    % Store x,y positions and velocities separately
-                    o(3,:) = mean(uvw(facenode_xidx,:),1);
-                    o(4,:) = mean(uvw(facenode_yidx,:),1);
-                    o(5,:) = mean(uvw(facenode_xidx+geo.NumNodes*3,:),1);
-                    o(6,:) = mean(uvw(facenode_yidx+geo.NumNodes*3,:),1);
-
-                    % Return norm of difference vector (to initial pos)
-                    o(1,:) = Norm.L2(o([3 4],:) - o([3 4],1)*ones(1,size(o,2)));
-                    o(2,:) = Norm.L2(o([5 6],:) - o([5 6],1)*ones(1,size(o,2)));
+            % convert to pressure:
+            % [g]/1000 = [kg]
+            % [kg]*[m/s²] = [N]
+            % [N]*1000 = [mN]
+            % [mN]/[mm²] = [kPa]
+            switch this.GeoNr
+                case 1
+                    a = this.PosFE.getFaceArea(2,6);
+                case 2
+                    a = this.PosFE.getFaceArea([11 12],[5 5]);
+            end
+            pressures = (loads/1000*this.Model.Gravity)*1000/a; % [kPa]
+            u = {};
+            start = this.ActivationTime+this.RelaxTime;
+            % Configure a load input that increases over LoadRampTime
+            % ms up to the set pressure
+            for lidx = 1:length(loads)
+                u{lidx} = this.getAlphaRamp(this.LoadRampTime,pressures(lidx),start);%#ok
             end
         end
     end
@@ -115,10 +176,15 @@ classdef SidePressureTest < muscle.AModelConfig
                     % Fix lower side in z direction
                     displ_dir(3,geo.Elements(2,geo.MasterFaces(5,:))) = true;
                 case 2
-                    % Fix back side
-                    for k = [1:4 geo.NumElements-3:geo.NumElements]
+                    % Both sides
+                    for k = geo.NumElements-3:geo.NumElements
                         displ_dir(:,geo.Elements(k,geo.MasterFaces(4,:))) = true;
                     end
+                    for k = 1:4
+                        displ_dir(:,geo.Elements(k,geo.MasterFaces(3,:))) = true;
+                    end
+                    % and bottom
+                    displ_dir(3,geo.Elements([11 12],geo.MasterFaces(5,:))) = true;
                 case 3
                     % Fix broad end of TA
                     displ_dir(:,geo.Elements(8,geo.MasterFaces(4,:))) = true;
@@ -141,14 +207,21 @@ classdef SidePressureTest < muscle.AModelConfig
     end
     
     methods(Static)
-        function runTest(geonr)
+         function runTest(geonr)
             if nargin < 1
                 geonr = 1;
             end
-            mc = QuasiStaticTest(geonr);
             
-            % The activation rates (alpha increase per ms)
-            ramptimes = [.1:.1:1 1:.2:2 3:10 20 40 50 100 300 600 1000 2000 8000 60000]; % [ms]
+            file = fullfile(SidePressureTest.OutputDir,sprintf('geo%d.mat',geonr));
+            saveit = true;
+            if exist(file,'file') == 2
+                load(file);
+                saveit = false;
+            else
+                mc = SidePressureTest(geonr);
+                m = muscle.Model(mc);    
+            end
+%             geo = mc.PosFE.Geometry;
             
             pm = PlotManager(false,2,2);
 %             pm = PlotManager;
@@ -157,106 +230,38 @@ classdef SidePressureTest < muscle.AModelConfig
             
             c = ColorMapCreator;
             c.useJet([0.01 0.05 0.1 .5]);
-%             c.addColor(0.005,[0 .7 0]);
-%             c.addColor(0.01,[.7 .5 .2],[.5 .7 .2]);
-%             c.addColor(0.05,[1 1 .4],[.7 .5 .2]*.5);
-%             c.addColor(0.1,[.7 0 0],[1 1 .4]*.3);
-%             c.addColor(10,[1 0 1]);
-           
-            visc = [0.001 0.01 .1 1 10];
-%             visc = [1 10];
-            nvisc = length(visc);
-            for k=1:nvisc
-                m = muscle.Model(mc);
-                if k==1 && geonr == 2
-                    m.ODESolver.RelTol = .1;
-                    m.ODESolver.AbsTol = .5;
-                end
-                v = visc(k);
-                m.System.Viscosity = v;
-                file = fullfile(QuasiStaticTest.OutputDir,sprintf('case1_geo%d_visc%g.mat',geonr,visc(k)));
-                
-                if exist(file,'file') == 2
-                    load(file);
-                else
-                    [alphavals, pos] = QuasiStaticTest.runAlphaRamp(m, ramptimes); %globaltimes, globalpos
-                    save(file,'alphavals','m','pos','ramptimes');
-%                     save(file,'alphavals','m','pos','globaltimes','globalpos','ramptimes');
-                end
-                
-                ec = [.3 .3 .3];
-                h = pm.nextPlot(sprintf('pos_visc%g',v),...
-                    sprintf('Averaged X-position [mm] of right face for different rates and activation level\nViscosity=%g',v),...
-                    'Activation increase rate [1/ms]','alpha [-]');
-                surf(h,1./ramptimes, alphavals, pos(:,:,1)','FaceColor','interp','EdgeColor',ec);
-                set(h,'XScale','log');
-                view(-150, 45);
-                
-                h = pm.nextPlot(sprintf('velo_visc%g',v),...
-                    sprintf('Averaged X-velocity [mm/ms] of right face for different rates and activation level\nViscosity=%g',v),...
-                    'Activation increase rate [1/ms]','alpha [-]');
-                surf(h,1./ramptimes, alphavals, abs(pos(:,:,2))','FaceColor','interp','EdgeColor',ec);
-                set(h,'XScale','log');
-                view(-136, 56);
+            
+            mus = [.01 .1 1];
+            mus = [mus; zeros(size(mus))];
+            m.Data.ParamSamples = mus;
+            nparams = length(mus);
+            pi = ProcessIndicator('Running %d scenarios',nparams*m.System.InputCount,false,nparams*m.System.InputCount);
+            for k=1:nparams
+                mu = mus(:,k);
+                for inidx = 5:m.System.InputCount
+                    [t, y] = m.simulate(mu,inidx);
+                    o = m.Config.getOutputOfInterest(m, t, y);
+                    
+                    % Remove the first two entries as the activation is
+                    % increased there
+%                     o = o(:,3:end);
 
-                h = pm.nextPlot(sprintf('pos_abserr_visc%g',v),...
-                    sprintf('Absolute error in of X-position [mm] for different rates and activation level\nagainst quasi-static positions (rate=%g/ms)\nViscosity=%g',1/ramptimes(end),v),...
-                    'Activation increase rate [1/ms]','alpha [-]');
-                staticpos = repmat(pos(end,:,1),size(pos,1),1);
-                diffX = abs(pos(:,:,1) - staticpos)';
-                surf(h,1./ramptimes, alphavals, diffX,'FaceColor','interp','EdgeColor',ec);
-                set(h,'XScale','log');
-                view(-150, 45);
-                
-                h = pm.nextPlot(sprintf('pos_abserr_topview_visc%g',v),...
-                    sprintf('Absolute error of X-position [mm] for different rates and activation level\nagainst quasi-static positions (rate=%g/ms)\nViscosity=%g',1/ramptimes(end),v),...
-                    'Activation increase rate [1/ms]','alpha [-]');
-                surf(h,1./ramptimes, alphavals, diffX,'FaceColor','interp','EdgeColor',ec);
-                set(h,'XScale','log'); colorbar;
-                view(h,-180, 90);
-                
-                h = pm.nextPlot(sprintf('pos_relerr_visc%g',v),...
-                    sprintf('Relative error of X-position [mm] for different rates and activation level\nagainst quasi-static positions (rate=%g/ms)\nViscosity=%g',1/ramptimes(end),v),...
-                    'Activation increase rate [1/ms]','alpha [-]');
-                Z = abs(diffX ./ staticpos');
-                surf(h,1./ramptimes, alphavals, Z ,'FaceColor','interp','EdgeColor',ec);
-                c.LogPlot = false;
-                colormap(h,c.create(Z)); colorbar;
-                set(h,'XScale','log');
-                view(-150, 45);
-
-                nsteps = length(alphavals)-1;
-                dt = meshgrid(ramptimes, 1:nsteps)';
-                velo = diff(staticpos,[],2) ./ (dt/nsteps);
-                h = pm.nextPlot(sprintf('velo_estim_visc%g',v),...
-                    sprintf('Inferred velocities [mm/ms] for different rates and "quasi time step"\nViscosity=%g',v),...
-                    '\Delta t [1/ms]','alpha  * \Delta t ');
-                Z = abs(velo)';
-                LogPlot.logsurfc(h,1./ramptimes, alphavals(2:end), Z,'FaceColor','interp','EdgeColor',ec);
-                set(h,'XScale','log'); axis(h,'tight');
-                view(-150, 45);
-                
-                h = pm.nextPlot(sprintf('velo_relerr_visc%g',v),...
-                    sprintf('Relative error between computed (via rate) velocities [mm/ms] for different rates and "quasi time step"\nViscosity=%g',v),...
-                    '\Delta t [1/ms]','Fraction of timestep');
-                Z = abs((velo-pos(:,2:end,2))./pos(:,2:end,2))';
-                LogPlot.logsurfc(h,1./ramptimes, alphavals(2:end), Z,'FaceColor','interp','EdgeColor',ec);
-                set(h,'XScale','log'); axis(h,'tight');
-                c.LogPlot = true;
-                colormap(h,c.create(Z)); colorbar;
-                view(-125, 50);
-                
-                h = pm.nextPlot(sprintf('velo_relerr_maxmean_visc%g',v),...
-                    sprintf('Relative error between computed (via rate) velocities [mm/ms] for different rates\nMax/Mean over all "quasi time steps"\nViscosity=%g',v),...
-                    '\Delta t [1/ms]','Error');
-                maxv = max(abs((velo-pos(:,2:end,2))./pos(:,2:end,2)),[],2);
-                meanv = mean(abs((velo-pos(:,2:end,2))./pos(:,2:end,2)),2);
-                loglog(h,1./ramptimes, [maxv meanv]); axis(h,'tight');
-                legend('Max relative error','Mean relative error','Location','NorthWest');
+                    if saveit
+                        save(file,'m','y','o','t');
+                    end
+                    
+                    h = pm.nextPlot(sprintf('force_velo_load%g_visc%g',loads(inidx),mu(1)),...
+                        sprintf('Force plot\nLoad: %g[g] (eff. pressure %g[kPa]), viscosity:%g [mNs/m]',loads(inidx),pressures(inidx),mu(1)),...
+                        'Time [ms]','Force [N]');
+                    plot(h,t,o(1,:),'r');
+                    
+                    pi.step;
+                end
             end
+            pi.stop;
             
-            m.plotGeometrySetup(pm);
-            
+%             m.plotGeometrySetup(pm);
+%             
             pm.done;
 %             pm.FilePrefix = sprintf('case1_geo%d',geonr);
 %             pm.ExportDPI = 200;
