@@ -35,6 +35,7 @@ classdef BaseFEM < handle
         FaceGaussPoints;
         FaceGaussWeights;
         NormalsOnFaceGP;
+        FaceAreas;
     end
     
     properties(Access=private)
@@ -144,16 +145,20 @@ classdef BaseFEM < handle
                     % Get full transformation jacobian
                     Jac = g.Nodes(:,g.Elements(elemidx,:))*dNxi(:,dNxipos);
 
-                    % Precompute transformed normals
-                    transNormals(:,gi,fn) = Jac*g.FaceNormals(:,faceidx);
+                    % Get rotational part of jacobian
+                    [q, ~] = qr(Jac);
                     
+                    % Precompute transformed normals
+                    transNormals(:,gi,fn) = q*g.FaceNormals(:,faceidx);
+%                     transNormals(:,gi,fn) = Jac*g.FaceNormals(:,faceidx);
+                    
+                    % Take out rotational part (stretch only)
+                    Jac = q\Jac;
                     % Take only the restriction of the jacobian to the
                     % face-dimensions for transformation theorem
                     Jac = Jac(g.FaceDims(:,faceidx),g.FaceDims(:,faceidx));
-%                     Jac_check = g.Nodes(:,g.Elements(elemidx,:)) * this.gradN(xi);
-%                     Jac_check = Jac_check(g.FaceDims(:,faceidx),g.FaceDims(:,faceidx));
-%                     det(Jac) - det(Jac_check)
-                    facejac(fn,gi) = det(Jac);
+                    
+                    facejac(fn,gi) = abs(det(Jac));
                     
                     % Precompute transformation of face normals, only the
                     % gradient N * n part (will be left-multiplied with u
@@ -165,8 +170,17 @@ classdef BaseFEM < handle
             end
             this.dN_facenormals = dNN;
             this.face_detjac = facejac;
+            this.FaceAreas = facejac*this.FaceGaussWeights;
             this.Ngpface = Ngpval;
             this.NormalsOnFaceGP = transNormals;
+        end
+        
+        function a = getFaceArea(this, elemidx, faceidx)
+            g = this.Geometry;
+            a = 0;
+            for k = 1:length(elemidx)
+                a = a + this.FaceAreas(g.Faces(1,:) == elemidx(k) & g.Faces(2,:) == faceidx(k));
+            end
         end
                 
         function plot(this, pm)

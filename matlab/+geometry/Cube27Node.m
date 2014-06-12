@@ -112,6 +112,8 @@ classdef Cube27Node < geometry.BaseGeometry
             n([2 3],:) = n([3 2],:);
             this.Nodes = n;
             this.Elements = this.Elements(:,[1:3 10:12 19:21 4:6 13:15 22:24 7:9 16:18 25:27]);
+            % Update faces indices
+            this.Faces = this.computeFaces;
         end
         
     end
