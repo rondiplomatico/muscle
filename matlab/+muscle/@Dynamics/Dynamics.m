@@ -21,8 +21,8 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
        
        % The activation of the muscle at time t
        %
-       % @type function_handle @default @(t).3
-       alpha = @(t).3; % [-]
+       % @type function_handle @default @(t)0
+       alpha = @(t)0; % [-]
        
        % The force-length function as function handle
        %

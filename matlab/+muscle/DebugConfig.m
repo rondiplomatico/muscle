@@ -139,7 +139,7 @@ classdef DebugConfig < muscle.AModelConfig
                 f.d1 = 1;
                 f.alpha = this.getAlphaRamp(.04,1);
                 m.DefaultMu = [.01; 0];
-%                 m.System.UseCrossFibreStiffness = true;
+                m.System.UseCrossFibreStiffness = true;
             end
         end
         
