@@ -82,7 +82,6 @@ classdef System < models.BaseDynSystem
        a0oa0;
        dNa0;
        a0Base;
-       a0BaseInv;
        
        %% Cross-fibre stiffness stuff
        % normals to a0
@@ -733,7 +732,6 @@ classdef System < models.BaseDynSystem
                     a0a0n1 = anulldyadanull;
                     a0a0n2 = anulldyadanull;
                     a0base = anulldyadanull;
-                    a0basei = anulldyadanull;
                 end
                 for m = 1 : geo.NumElements
                     u = geo.Nodes(:,geo.Elements(m,:));
@@ -762,7 +760,6 @@ classdef System < models.BaseDynSystem
                         pos = (m-1)*fe.GaussPointsPerElem+gp;
                         anulldyadanull(:,:,pos) = loc_anull*loc_anull';
                         a0base(:,:,pos) = [loc_anull loc_anulln1 loc_anulln2];
-                        a0basei(:,:,pos) = inv(a0base(:,:,pos));
                         if this.fUseCrossFibreStiffness
                             a0a0n1(:,:,pos) = loc_anulln1*loc_anulln1';
                             a0a0n2(:,:,pos) = loc_anulln2*loc_anulln2';
@@ -772,7 +769,6 @@ classdef System < models.BaseDynSystem
                 this.a0oa0 = anulldyadanull;
                 this.dNa0 = dNanull;
                 this.a0Base = a0base;
-                this.a0BaseInv = a0basei;
                 
                 this.a0oa0n1 = [];
                 this.a0oa0n2 = [];

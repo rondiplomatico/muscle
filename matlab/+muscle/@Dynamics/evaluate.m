@@ -92,10 +92,8 @@ function duvw = evaluate(this, uvwdof, t)
             if havefibres
                 a0pos = (m-1)*num_gausspoints + gp;
                 a0B = sys.a0Base(:,:,a0pos);
-                a0BI = sys.a0BaseInv(:,:,a0pos);
-                lambdas = a0BI*F*a0B;
-                lambdaf = lambdas(1,1);
-
+                lambdaf = norm(F*a0B(:,1));
+                
                 % Evaluate g function
                 % Using a subfunction is 20% slower!
                 % So: direct implementation here
@@ -118,12 +116,12 @@ function duvw = evaluate(this, uvwdof, t)
                 
                 %% Cross-fibre stiffness part
                 if usecrossfibres
-                    lambdaf = lambdas(2,2);
+                    lambdaf = norm(F*a0B(:,2));
                     if lambdaf > .999
                         g1 = (b1cf/lambdaf^2)*(lambdaf^d1cf-1);
                         P = P + g1*F*sys.a0oa0n1(:,:,a0pos);
                     end
-                    lambdaf = lambdas(3,3);
+                    lambdaf = norm(F*a0B(:,3));
                     if lambdaf > .999
                         g2 = (b1cf/lambdaf^2)*(lambdaf^d1cf-1);
                         P = P + g2*F*sys.a0oa0n2(:,:,a0pos);
@@ -159,7 +157,7 @@ function duvw = evaluate(this, uvwdof, t)
     this.LastBCResiduals = duvw([sys.bc_dir_displ_idx+dofs_pos; sys.bc_dir_velo_idx]);
     duvw(sys.bc_dir_idx) = [];
     
-    fprintf('t=%15g, force=%15g\n',t,sum(duvw));
+%     fprintf('t=%15g, force=%15g\n',t,sum(duvw));
 
     %% If direct mass matrix inversion is used
     if this.usemassinv

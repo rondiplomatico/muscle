@@ -73,9 +73,13 @@ function J = getStateJacobian(this, uvwdof, t)
         elemidx_pos_XYZ = globidx_pos(:,:,m);
         elemidx_velo_XYZ = elemidx_pos_XYZ + dofs_pos;
         elemidx_velo_linear = elemidx_velo_XYZ(:);
+        elemidx_velo_linear3 = [elemidx_velo_linear
+                                elemidx_velo_linear
+                                elemidx_velo_linear];
         elemidx_pressure = globidx_press(:,m);
-        
-%         one = ones(numidx,1);
+        elemidx_pressure3 = [elemidx_pressure
+                             elemidx_pressure
+                             elemidx_pressure];
         
         if havefibretypes 
             ftwelem = fibretypeweights(:,:,m)*FibreForces;
@@ -103,9 +107,8 @@ function J = getStateJacobian(this, uvwdof, t)
                 %% Anisotropic part
                 a0pos = (m-1)*num_gausspoints + gp;
                 a0B = sys.a0Base(:,:,a0pos);
-                a0BI = sys.a0BaseInv(:,:,a0pos);
-                lambdas = a0BI*F*a0B;
-                lambda_a0 = lambdas(1,1);
+                Fa0 = F*a0B(:,1);
+                lambda_a0 = norm(Fa0);
 
                 ratio = lambda_a0/lfopt;
                 fl = this.ForceLengthFun(ratio);
@@ -129,19 +132,20 @@ function J = getStateJacobian(this, uvwdof, t)
                 
                 %% Cross-fibre stiffness part
                 if usecrossfibres
-                    lambda_a0n1 = lambdas(2,2);
-                    if lambda_a0n1 > .999
-                        xfibre1 = (b1cf/lambda_a0n1^2)*(lambda_a0n1^d1cf-1);
-                        dxfibre1_dlam = (b1cf/lambda_a0n1^3)*((d1cf-2)*lambda_a0n1^d1cf + 2);
+                    Fa02 = F*a0B(:,2);
+                    lambdaa02 = norm(Fa02);
+                    if lambdaa02 > .999
+                        xfibre1 = (b1cf/lambdaa02^2)*(lambdaa02^d1cf-1);
+                        dxfibre1_dlam = (b1cf/lambdaa02^3)*((d1cf-2)*lambdaa02^d1cf + 2);
                     end
-                    lambda_a0n2 = lambdas(3,3);
-                    if lambda_a0n2 > .999
-                        xfibre2 = (b1cf/lambda_a0n2^2)*(lambda_a0n2^d1cf-1);
-                        dxfibre2_dlam = (b1cf/lambda_a0n2^3)*((d1cf-2)*lambda_a0n2^d1cf + 2);
+                    Fa03 = F*a0B(:,3);
+                    lambdaa03 = norm(Fa03);
+                    if lambdaa03 > .999
+                        xfibre2 = (b1cf/lambdaa03^2)*(lambdaa03^d1cf-1);
+                        dxfibre2_dlam = (b1cf/lambdaa03^3)*((d1cf-2)*lambdaa03^d1cf + 2);
                     end
-                    
-                    a0n1 = sys.a0oa0n1(:,:,(m-1)*num_gausspoints + gp);
-                    a0n2 = sys.a0oa0n2(:,:,(m-1)*num_gausspoints + gp);
+                    a0oa0_2 = sys.a0oa0n1(:,:,(m-1)*num_gausspoints + gp);
+                    a0oa0_3 = sys.a0oa0n2(:,:,(m-1)*num_gausspoints + gp);
                 end
             end
 
@@ -150,86 +154,90 @@ function J = getStateJacobian(this, uvwdof, t)
             weight = fe_pos.GaussWeights(gp) * fe_pos.elem_detjac(m, gp);
 
             for k = 1:dofsperelem_pos
-                e1_dyad_dPhik = [dtn(k,:); 0 0 0; 0 0 0];
-                e2_dyad_dPhik = [0 0 0; dtn(k,:); 0 0 0];
-                e3_dyad_dPhik = [0 0 0; 0 0 0; dtn(k,:)];
+                % U_i^k = e_i dyad dPhik from script
+                U1k = [dtn(k,:); 0 0 0; 0 0 0];
+                U2k = [0 0 0; dtn(k,:); 0 0 0];
+                U3k = [0 0 0; 0 0 0; dtn(k,:)];
 
                 dI1duk = 2*sum([1; 1; 1] * (dtn(k,:) * dtn') .* u, 2);
                 fac1 = 2*dI1duk*this.c01;
                 fac2 = 2*(this.c10 + I1*this.c01);
 
-                % correct! :-)
-                if havefibres
-                    dlamdas_x = diag(a0B'*e1_dyad_dPhik*a0B);
-                    dlamdas_y = diag(a0B'*e2_dyad_dPhik*a0B);
-                    dlamdas_z = diag(a0B'*e3_dyad_dPhik*a0B);
-                end
-
                 %% grad_u K(u,v,w)
                 % Recall: gradients from nabla K_{u,w} are
                 % negative, as KerMor implements Mu'' = -K(u,v,w)
                 % instead of Mu'' + K(u,v,w) = 0
+                
+                % Assign i index as whole for x,y,z (speed)
+                i(cur_off + (1:3*numXYZDofs_pos)) = elemidx_velo_linear3;
+                
                 % xdim
-                dFtF1 = e1_dyad_dPhik'*F + F'*e1_dyad_dPhik;
-                dPx = -p * (Finv * e1_dyad_dPhik * Finv)'...
-                    + fac1(1)*F + fac2*e1_dyad_dPhik...
-                    -2*this.c01 * (e1_dyad_dPhik * C + F*dFtF1);%#ok<*MINV>
+                dFtF1 = U1k'*F + F'*U1k;
+                dPx = -p * (Finv * U1k * Finv)'...
+                    + fac1(1)*F + fac2*U1k...
+                    -2*this.c01 * (U1k * C + F*dFtF1);%#ok<*MINV>
                 if havefibres
-                    dPx = dPx + (dg_dlam*dlamdas_x(1)*F + g_value*e1_dyad_dPhik)*a0;
+                    dlambda_dux = Fa0'*U1k*a0B(:,1)/lambda_a0;
+                    dPx = dPx + (dg_dlam*dlambda_dux*F + g_value*U1k)*a0;
                     if usecrossfibres 
-                        if lambda_a0n1 > .999
-                            dPx = dPx + (dxfibre1_dlam*dlamdas_x(2)*F + xfibre1*e1_dyad_dPhik)*a0n1;
+                        if lambdaa02 > .999
+                            dlambda_dux = Fa02'*U1k*a0B(:,2)/lambdaa02;
+                            dPx = dPx + (dxfibre1_dlam*dlambda_dux*F + xfibre1*U1k)*a0oa0_2;
                         end
-                        if lambda_a0n2 > .999
-                            dPx = dPx + (dxfibre2_dlam*dlamdas_x(3)*F + xfibre2*e1_dyad_dPhik)*a0n2;
+                        if lambdaa03 > .999
+                            dlambda_dux = Fa03'*U1k*a0B(:,3)/lambdaa03;
+                            dPx = dPx + (dxfibre2_dlam*dlambda_dux*F + xfibre2*U1k)*a0oa0_3;
                         end
                     end
                 end
-                i(cur_off + relidx_pos) = elemidx_velo_linear;
                 j(cur_off + relidx_pos) = elemidx_pos_XYZ(1,k);
                 snew = -weight * dPx * dtn';
                 s(cur_off + relidx_pos) = snew(:);
                 cur_off = cur_off + numXYZDofs_pos;
 
                 % ydim
-                dFtF2 = e2_dyad_dPhik'*F + F'*e2_dyad_dPhik;
-                dPy = -p * (Finv * e2_dyad_dPhik * Finv)'...
-                    +fac1(2)*F + fac2*e2_dyad_dPhik...
-                    -2*this.c01 * (e2_dyad_dPhik * C + F*dFtF2);
+                dFtF2 = U2k'*F + F'*U2k;
+                dPy = -p * (Finv * U2k * Finv)'...
+                    +fac1(2)*F + fac2*U2k...
+                    -2*this.c01 * (U2k * C + F*dFtF2);
                 if havefibres
-                    dPy = dPy + (dg_dlam*dlamdas_y(1)*F + g_value*e2_dyad_dPhik)*a0;
+                    dlambda_duy = Fa0'*U2k*a0B(:,1)/lambda_a0;
+                    dPy = dPy + (dg_dlam*dlambda_duy*F + g_value*U2k)*a0;
                     if usecrossfibres 
-                        if lambda_a0n1 > .999
-                            dPy = dPy + (dxfibre1_dlam*dlamdas_y(2)*F + xfibre1*e2_dyad_dPhik)*a0n1;
+                        if lambdaa02 > .999
+                            dlambda_duy = Fa02'*U2k*a0B(:,2)/lambdaa02;
+                            dPy = dPy + (dxfibre1_dlam*dlambda_duy*F + xfibre1*U2k)*a0oa0_2;
                         end
-                        if lambda_a0n2 > .999
-                            dPy = dPy + (dxfibre2_dlam*dlamdas_y(3)*F + xfibre2*e2_dyad_dPhik)*a0n2;
+                        if lambdaa03 > .999
+                            dlambda_duy = Fa03'*U2k*a0B(:,3)/lambdaa03;
+                            dPy = dPy + (dxfibre2_dlam*dlambda_duy*F + xfibre2*U2k)*a0oa0_3;
                         end
                     end
                 end
-                i(cur_off + relidx_pos) = elemidx_velo_linear;
                 j(cur_off + relidx_pos) = elemidx_pos_XYZ(2,k);
                 snew = -weight * dPy * dtn';
                 s(cur_off + relidx_pos) = snew(:);
                 cur_off = cur_off + numXYZDofs_pos;
 
                 % zdim
-                dFtF3 = e3_dyad_dPhik'*F + F'*e3_dyad_dPhik;
-                dPz = -p * (Finv * e3_dyad_dPhik * Finv)'...
-                    +fac1(3)*F + fac2*e3_dyad_dPhik ...
-                    - 2*this.c01 * (e3_dyad_dPhik * C + F*dFtF3);
+                dFtF3 = U3k'*F + F'*U3k;
+                dPz = -p * (Finv * U3k * Finv)'...
+                    +fac1(3)*F + fac2*U3k ...
+                    - 2*this.c01 * (U3k * C + F*dFtF3);
                 if havefibres
-                    dPz = dPz + (dg_dlam*dlamdas_z(1)*F + g_value*e3_dyad_dPhik)*a0;
+                    dlambda_duz = Fa0'*U3k*a0B(:,1)/lambda_a0;
+                    dPz = dPz + (dg_dlam*dlambda_duz*F + g_value*U3k)*a0;
                     if usecrossfibres 
-                        if lambda_a0n1 > .999
-                            dPz = dPz + (dxfibre1_dlam*dlamdas_z(2)*F + xfibre1*e3_dyad_dPhik)*a0n1;
+                        if lambdaa02 > .999
+                            dlambda_duz = Fa02'*U3k*a0B(:,2)/lambdaa02;
+                            dPz = dPz + (dxfibre1_dlam*dlambda_duz*F + xfibre1*U3k)*a0oa0_2;
                         end
-                        if lambda_a0n2 > .999
-                            dPz = dPz + (dxfibre2_dlam*dlamdas_z(3)*F + xfibre2*e3_dyad_dPhik)*a0n2;
+                        if lambdaa03 > .999
+                            dlambda_duz = Fa03'*U3k*a0B(:,3)/lambdaa03;
+                            dPz = dPz + (dxfibre2_dlam*dlambda_duz*F + xfibre2*U3k)*a0oa0_3;
                         end
                     end
                 end
-                i(cur_off + relidx_pos) = elemidx_velo_linear;
                 j(cur_off + relidx_pos) = elemidx_pos_XYZ(3,k);
                 snew = -weight * dPz * dtn';
                 s(cur_off + relidx_pos) = snew(:);
@@ -261,37 +269,23 @@ function J = getStateJacobian(this, uvwdof, t)
 
                 %% grad u g(u)
                 precomp = weight * det(F) * fe_press.Ngp(:,gp,m);
+                % Assign i index as whole for x,y,z (speed)
+                i(cur_off + (1:3*dofsperelem_press)) = elemidx_pressure3;
                 % dx
-                i(cur_off + relidx_press) = elemidx_pressure;
                 j(cur_off + relidx_press) = elemidx_pos_XYZ(1,k);
-                s(cur_off + relidx_press) = sum(diag(Finv*e1_dyad_dPhik)) * precomp;
+                s(cur_off + relidx_press) = sum(diag(Finv*U1k)) * precomp;
                 cur_off = cur_off + dofsperelem_press;
-%                 i = [i; elemidx_pressure];
-%                 j = [j; ones(dofsperelem_press,1)*elemidx_pos_XYZ(1,k)];
-%                 s = [s; sum(diag(Finv*e1_dyad_dPhik)) * precomp];
                 % dy
-                i(cur_off + relidx_press) = elemidx_pressure;
                 j(cur_off + relidx_press) = elemidx_pos_XYZ(2,k);
-                s(cur_off + relidx_press) = sum(diag(Finv*e2_dyad_dPhik)) * precomp;
+                s(cur_off + relidx_press) = sum(diag(Finv*U2k)) * precomp;
                 cur_off = cur_off + dofsperelem_press;
-%                 i = [i; elemidx_pressure];
-%                 j = [j; ones(dofsperelem_press,1)*elemidx_pos_XYZ(2,k)];
-%                 s = [s; sum(diag(Finv*e2_dyad_dPhik)) * precomp];
                 %dz
-                i(cur_off + relidx_press) = elemidx_pressure;
                 j(cur_off + relidx_press) = elemidx_pos_XYZ(3,k);
-                s(cur_off + relidx_press) = sum(diag(Finv*e3_dyad_dPhik)) * precomp;
+                s(cur_off + relidx_press) = sum(diag(Finv*U3k)) * precomp;
                 cur_off = cur_off + dofsperelem_press;
-%                 i = [i; elemidx_pressure];
-%                 j = [j; ones(dofsperelem_press,1)*elemidx_pos_XYZ(3,k)];
-%                 s = [s; sum(diag(Finv*e3_dyad_dPhik)) * precomp];
             end
             %% Grad_w K(u,v,w)
             for k = 1:dofsperelem_press
-%                 i = [i; i_veloidx];
-%                 j = [j; ones(3*dofsperelem_pos,1)*elemidx_pressure(k)];
-%                 snew = -weight * fe_press.Ngp(k,gp,m) * Finv' * dtn';
-%                 s = [s; snew(:)];
                 i(cur_off + relidx_pos) = elemidx_velo_linear;
                 j(cur_off + relidx_pos) = elemidx_pressure(k);
                 snew = -weight * fe_press.Ngp(k,gp,m) * Finv' * dtn';
