@@ -30,7 +30,8 @@ classdef SidePressureTest < muscle.AModelConfig
     end
     
     properties(SetAccess=private)
-        Area;
+        Loads;
+        Pressures;
     end
 
     methods
@@ -44,7 +45,7 @@ classdef SidePressureTest < muscle.AModelConfig
                     [pts, cubes] = geometry.Cube8Node.DemoGrid(0:20:60,[0 20],[0 20]);
                     geo = geometry.Cube8Node(pts, cubes);
                 case 2
-                    geo = Belly.getBelly(5, 50, 4.5, 1.5, 15);
+                    geo = Belly.getBelly(5, 50, 3.5, 2.5, 15);
                 case 3
                     s = load(fullfile(fileparts(which(mfilename)),'..','CMISS','EntireTA.mat'));
                     geo = s.geo27;
@@ -70,7 +71,7 @@ classdef SidePressureTest < muscle.AModelConfig
             f.b1 = 2.756e-5; % [kPa]
             f.d1 = 43.373; % [-]
             % Cross-fibre markert part
-            f.b1cf = 5316.72204148964; % [kPa] = [N/mm²]
+            f.b1cf = 53163.72204148964/10; % [kPa] = [N/mm²]
             f.d1cf = 0.014991843974911; % [-]
             f.Pmax = 250; % [kPa]
             f.lambdafopt = 1; % [-]
@@ -84,10 +85,10 @@ classdef SidePressureTest < muscle.AModelConfig
                     os.AbsTol = .1;%.05;
                 case {2,3}
                     os.RelTol = .01;
-                    os.AbsTol = .1;
+                    os.AbsTol = .5;
             end
             m.EnableTrajectoryCaching = true;
-%             m.System.UseCrossFibreStiffness = true;
+            m.System.UseCrossFibreStiffness = true;
         end
         
         function o = getOutputOfInterest(this, m, t, uvw)
@@ -131,6 +132,11 @@ classdef SidePressureTest < muscle.AModelConfig
                     if (elemidx == 9 || elemidx == 10) && faceidx == 6
                         P = -1;
                     end
+                case 3
+                    if (elemidx == 2 || elemidx == 3 ||...
+                            elemidx == 9 || elemidx == 10) && faceidx == 6
+                        P = -1;
+                    end
             end
         end
         
@@ -148,6 +154,8 @@ classdef SidePressureTest < muscle.AModelConfig
                     a = this.PosFE.getFaceArea(2,6);
                 case 2
                     a = this.PosFE.getFaceArea([11 12],[5 5]);
+                case 3
+                    a = this.PosFE.getFaceArea([2 3 9 10],[6 6 6 6]);
             end
             pressures = (loads/1000*this.Model.Gravity)*1000/a; % [kPa]
             u = {};
@@ -157,6 +165,8 @@ classdef SidePressureTest < muscle.AModelConfig
             for lidx = 1:length(loads)
                 u{lidx} = this.getAlphaRamp(this.LoadRampTime,pressures(lidx),start);%#ok
             end
+            this.Loads = loads;
+            this.Pressures = pressures;
         end
     end
     
@@ -187,10 +197,12 @@ classdef SidePressureTest < muscle.AModelConfig
                     displ_dir(3,geo.Elements([11 12],geo.MasterFaces(5,:))) = true;
                 case 3
                     % Fix broad end of TA
-                    displ_dir(:,geo.Elements(8,geo.MasterFaces(4,:))) = true;
-                    displ_dir(:,geo.Elements(8,geo.MasterFaces(2,:))) = true;
+                    displ_dir(:,geo.Elements(8,geo.MasterFaces([2 4],:))) = true;
+                    %displ_dir(:,geo.Elements(8,geo.MasterFaces(2,:))) = true;
                     % Fix thin end of TA
                     displ_dir(:,geo.Elements(6,geo.MasterFaces(3,:))) = true;
+                    % Fix bottom of pressured area
+                    displ_dir(3,geo.Elements([2 3 9 10],geo.MasterFaces(5,:))) = true;
             end
         end
         
@@ -238,7 +250,7 @@ classdef SidePressureTest < muscle.AModelConfig
             pi = ProcessIndicator('Running %d scenarios',nparams*m.System.InputCount,false,nparams*m.System.InputCount);
             for k=1:nparams
                 mu = mus(:,k);
-                for inidx = 5:m.System.InputCount
+                for inidx = 1:m.System.InputCount
                     [t, y] = m.simulate(mu,inidx);
                     o = m.Config.getOutputOfInterest(m, t, y);
                     
@@ -247,11 +259,11 @@ classdef SidePressureTest < muscle.AModelConfig
 %                     o = o(:,3:end);
 
                     if saveit
-                        save(file,'m','y','o','t');
+                        save(file,'m','y','o','t','mc');
                     end
                     
-                    h = pm.nextPlot(sprintf('force_velo_load%g_visc%g',loads(inidx),mu(1)),...
-                        sprintf('Force plot\nLoad: %g[g] (eff. pressure %g[kPa]), viscosity:%g [mNs/m]',loads(inidx),pressures(inidx),mu(1)),...
+                    h = pm.nextPlot(sprintf('force_velo_load%g_visc%g',mc.Loads(inidx),mu(1)),...
+                        sprintf('Force plot\nLoad: %g[g] (eff. pressure %g[kPa]), viscosity:%g [mNs/m]',mc.Loads(inidx),mc.Pressures(inidx),mu(1)),...
                         'Time [ms]','Force [N]');
                     plot(h,t,o(1,:),'r');
                     

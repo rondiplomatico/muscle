@@ -159,11 +159,7 @@ function duvw = evaluate(this, uvwdof, t)
     this.LastBCResiduals = duvw([sys.bc_dir_displ_idx+dofs_pos; sys.bc_dir_velo_idx]);
     duvw(sys.bc_dir_idx) = [];
     
-%     fo = sum(duvw);
-%     fprintf('t=%15g, force=%15g\n',t,fo);
-%     if fo > 1e4
-%         keyboard;
-%     end
+    fprintf('t=%15g, force=%15g\n',t,sum(duvw));
 
     %% If direct mass matrix inversion is used
     if this.usemassinv

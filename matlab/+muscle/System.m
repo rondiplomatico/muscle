@@ -375,7 +375,7 @@ classdef System < models.BaseDynSystem
                     % Plot force vectors at nodes
                     uforce = u(:,forces_apply);
                     quiver3(h,uforce(1,:),uforce(2,:),uforce(3,:),...
-                        forces(1,:),forces(2,:),forces(3,:),0,'Color',[.8 .8 1]);
+                        forces(1,:),forces(2,:),forces(3,:),0.1,'Color',[.8 .8 1]);
                     % Plot force vectors at face centers
                     for k=1:numfaceswithforce
                         masterfacenodeidx = geo.MasterFaces(force_elem_face_idx(2,k),:);
@@ -383,13 +383,13 @@ classdef System < models.BaseDynSystem
                         
                         facecenter = mean(u(:,facenodeidx),2);
                         quiver3(h,facecenter(1),facecenter(2),facecenter(3),...
-                            meanforces(1,k),meanforces(2,k),meanforces(3,k),'LineWidth',2,'Color','b','MaxHeadSize',1);
+                            meanforces(1,k),meanforces(2,k),meanforces(3,k),0.1,'LineWidth',2,'Color','b','MaxHeadSize',1);
                         
                         if ~isempty(r.NF)
                             residual_neumann_forces(this.bc_neum_forces_nodeidx) = r.NF(:,ts);
                             meanforce = mean(residual_neumann_forces(:,facenodeidx),2);
                             quiver3(h,facecenter(1),facecenter(2),facecenter(3),...
-                            meanforce(1),meanforce(2),meanforce(3),'LineWidth',2,'Color','k','MaxHeadSize',1);
+                            meanforce(1),meanforce(2),meanforce(3),0.1,'LineWidth',2,'Color','k','MaxHeadSize',1);
                         end
                     end
                 end
