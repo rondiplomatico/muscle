@@ -105,9 +105,9 @@ function J = getStateJacobian(this, uvwdof, t)
 
             if havefibres
                 %% Anisotropic part
-                a0pos = (m-1)*num_gausspoints + gp;
-                a0B = sys.a0Base(:,:,a0pos);
-                Fa0 = F*a0B(:,1);
+                fibrenr = (m-1)*num_gausspoints + gp;
+                fibres = sys.a0Base(:,:,fibrenr);
+                Fa0 = F*fibres(:,1);
                 lambda_a0 = norm(Fa0);
 
                 ratio = lambda_a0/lfopt;
@@ -128,24 +128,24 @@ function J = getStateJacobian(this, uvwdof, t)
                     g_value = g_value + (b1/lambda_a0^2)*(lambda_a0^d1-1);
                     dg_dlam = dg_dlam + (b1/lambda_a0^3)*((d1-2)*lambda_a0^d1 + 2);
                 end
-                a0 = sys.a0oa0(:,:,(m-1)*num_gausspoints + gp);
+                a0 = sys.a0oa0(:,:,fibrenr);
                 
                 %% Cross-fibre stiffness part
                 if usecrossfibres
-                    Fa02 = F*a0B(:,2);
-                    lambdaa02 = norm(Fa02);
-                    if lambdaa02 > .999
-                        xfibre1 = (b1cf/lambdaa02^2)*(lambdaa02^d1cf-1);
-                        dxfibre1_dlam = (b1cf/lambdaa02^3)*((d1cf-2)*lambdaa02^d1cf + 2);
+                    Fcrossf1 = F*fibres(:,2);
+                    lambdaa0_n1 = norm(Fcrossf1);
+                    if lambdaa0_n1 > .999
+                        xfibre1 = (b1cf/lambdaa0_n1^2)*(lambdaa0_n1^d1cf-1);
+                        dxfibre1_dlam = (b1cf/lambdaa0_n1^3)*((d1cf-2)*lambdaa0_n1^d1cf + 2);
                     end
-                    Fa03 = F*a0B(:,3);
-                    lambdaa03 = norm(Fa03);
-                    if lambdaa03 > .999
-                        xfibre2 = (b1cf/lambdaa03^2)*(lambdaa03^d1cf-1);
-                        dxfibre2_dlam = (b1cf/lambdaa03^3)*((d1cf-2)*lambdaa03^d1cf + 2);
+                    Fcrossf2 = F*fibres(:,3);
+                    lambdaa0_n2 = norm(Fcrossf2);
+                    if lambdaa0_n2 > .999
+                        xfibre2 = (b1cf/lambdaa0_n2^2)*(lambdaa0_n2^d1cf-1);
+                        dxfibre2_dlam = (b1cf/lambdaa0_n2^3)*((d1cf-2)*lambdaa0_n2^d1cf + 2);
                     end
-                    a0oa0_2 = sys.a0oa0n1(:,:,(m-1)*num_gausspoints + gp);
-                    a0oa0_3 = sys.a0oa0n2(:,:,(m-1)*num_gausspoints + gp);
+                    a0oa0_2 = sys.a0oa0n1(:,:,fibrenr);
+                    a0oa0_3 = sys.a0oa0n2(:,:,fibrenr);
                 end
             end
 
@@ -177,15 +177,15 @@ function J = getStateJacobian(this, uvwdof, t)
                     + fac1(1)*F + fac2*U1k...
                     -2*this.c01 * (U1k * C + F*dFtF1);%#ok<*MINV>
                 if havefibres
-                    dlambda_dux = Fa0'*U1k*a0B(:,1)/lambda_a0;
+                    dlambda_dux = Fa0'*U1k*fibres(:,1)/lambda_a0;
                     dPx = dPx + (dg_dlam*dlambda_dux*F + g_value*U1k)*a0;
                     if usecrossfibres 
-                        if lambdaa02 > .999
-                            dlambda_dux = Fa02'*U1k*a0B(:,2)/lambdaa02;
+                        if lambdaa0_n1 > .999
+                            dlambda_dux = Fcrossf1'*U1k*fibres(:,2)/lambdaa0_n1;
                             dPx = dPx + (dxfibre1_dlam*dlambda_dux*F + xfibre1*U1k)*a0oa0_2;
                         end
-                        if lambdaa03 > .999
-                            dlambda_dux = Fa03'*U1k*a0B(:,3)/lambdaa03;
+                        if lambdaa0_n2 > .999
+                            dlambda_dux = Fcrossf2'*U1k*fibres(:,3)/lambdaa0_n2;
                             dPx = dPx + (dxfibre2_dlam*dlambda_dux*F + xfibre2*U1k)*a0oa0_3;
                         end
                     end
@@ -201,15 +201,15 @@ function J = getStateJacobian(this, uvwdof, t)
                     +fac1(2)*F + fac2*U2k...
                     -2*this.c01 * (U2k * C + F*dFtF2);
                 if havefibres
-                    dlambda_duy = Fa0'*U2k*a0B(:,1)/lambda_a0;
+                    dlambda_duy = Fa0'*U2k*fibres(:,1)/lambda_a0;
                     dPy = dPy + (dg_dlam*dlambda_duy*F + g_value*U2k)*a0;
                     if usecrossfibres 
-                        if lambdaa02 > .999
-                            dlambda_duy = Fa02'*U2k*a0B(:,2)/lambdaa02;
+                        if lambdaa0_n1 > .999
+                            dlambda_duy = Fcrossf1'*U2k*fibres(:,2)/lambdaa0_n1;
                             dPy = dPy + (dxfibre1_dlam*dlambda_duy*F + xfibre1*U2k)*a0oa0_2;
                         end
-                        if lambdaa03 > .999
-                            dlambda_duy = Fa03'*U2k*a0B(:,3)/lambdaa03;
+                        if lambdaa0_n2 > .999
+                            dlambda_duy = Fcrossf2'*U2k*fibres(:,3)/lambdaa0_n2;
                             dPy = dPy + (dxfibre2_dlam*dlambda_duy*F + xfibre2*U2k)*a0oa0_3;
                         end
                     end
@@ -225,15 +225,15 @@ function J = getStateJacobian(this, uvwdof, t)
                     +fac1(3)*F + fac2*U3k ...
                     - 2*this.c01 * (U3k * C + F*dFtF3);
                 if havefibres
-                    dlambda_duz = Fa0'*U3k*a0B(:,1)/lambda_a0;
+                    dlambda_duz = Fa0'*U3k*fibres(:,1)/lambda_a0;
                     dPz = dPz + (dg_dlam*dlambda_duz*F + g_value*U3k)*a0;
                     if usecrossfibres 
-                        if lambdaa02 > .999
-                            dlambda_duz = Fa02'*U3k*a0B(:,2)/lambdaa02;
+                        if lambdaa0_n1 > .999
+                            dlambda_duz = Fcrossf1'*U3k*fibres(:,2)/lambdaa0_n1;
                             dPz = dPz + (dxfibre1_dlam*dlambda_duz*F + xfibre1*U3k)*a0oa0_2;
                         end
-                        if lambdaa03 > .999
-                            dlambda_duz = Fa03'*U3k*a0B(:,3)/lambdaa03;
+                        if lambdaa0_n2 > .999
+                            dlambda_duz = Fcrossf2'*U3k*fibres(:,3)/lambdaa0_n2;
                             dPz = dPz + (dxfibre2_dlam*dlambda_duz*F + xfibre2*U3k)*a0oa0_3;
                         end
                     end

@@ -315,7 +315,7 @@ classdef System < models.BaseDynSystem
                 typeweights = mc.FibreTypeWeights(1,:,1);
             end
             
-            h = pm.nextPlot('geo','Output','x [mm]','y [mm]');
+            h = pm.nextPlot('geo',sprintf('Deformation at t=%g',t(end)),'x [mm]','y [mm]');
             zlabel(h,'z [mm]');
             
             if ~r.Skel

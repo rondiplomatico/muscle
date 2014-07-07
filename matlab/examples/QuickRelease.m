@@ -24,6 +24,9 @@ classdef QuickRelease < muscle.AModelConfig
         % The time after movement and activation is fully done until the
         % ICs are extracted ("quasi static")
         icRelaxTime = 100000; % [ms]
+        
+        Loads;
+        Pressures;
     end
 
     methods
@@ -179,6 +182,34 @@ classdef QuickRelease < muscle.AModelConfig
             end
         end
         
+        function u = getInputs(this)
+            % loads in [g]
+            loads = [0 100 2000];
+
+            % convert to pressure:
+            % [g]/1000 = [kg]
+            % [kg]*[m/s²] = [N]
+            % [N]*1000 = [mN]
+            % [mN]/[mm²] = [kPa]
+            switch this.GeoNr
+                case 1
+                    a = this.PosFE.getFaceArea(2,2);
+                case 2
+                    a = this.PosFE.getFaceArea(4,3);
+                case 3
+                    a = this.PosFE.getFaceArea(6,3);
+            end
+            m = this.Model;
+            pressures = (loads/1000*m.Gravity)*1000/a; % [kPa]
+            u = {};
+            for lidx = 1:length(loads)
+                pressure = pressures(lidx);
+                u{lidx} = this.getAlphaRamp(2*m.dt,pressure);%#ok
+            end
+            this.Loads = loads;
+            this.Pressures = pressures;
+        end
+        
     end
     
     methods(Access=protected)
@@ -287,30 +318,6 @@ classdef QuickRelease < muscle.AModelConfig
             else
                 mc = QuickRelease(geonr, false);
                 m = muscle.Model(mc);
-                
-                % loads in [g]
-                loads = [0 100 2000];
-                
-                % convert to pressure:
-                % [g]/1000 = [kg]
-                % [kg]*[m/s²] = [N]
-                % [N]*1000 = [mN]
-                % [mN]/[mm²] = [kPa]
-                switch geonr
-                    case 1
-                        a = mc.PosFE.getFaceArea(2,2);
-                    case 2
-                        a = mc.PosFE.getFaceArea(4,3);
-                    case 3
-                        a = mc.PosFE.getFaceArea(6,3);
-                end
-                pressures = (loads/1000*m.Gravity)*1000/a; % [kPa]
-                m.System.Inputs = {};
-                for lidx = 1:length(loads)
-                    pressure = pressures(lidx);
-                    %m.System.Inputs{lidx} = @(t)pressure;
-                    m.System.Inputs{lidx} = mc.getAlphaRamp(2*m.dt,pressure);
-                end
             end
 %             geo = mc.PosFE.Geometry;
             
@@ -337,11 +344,11 @@ classdef QuickRelease < muscle.AModelConfig
 %                     o = o(:,3:end);
 
                     if saveit
-                        save(file,'m','y','o','t','pressures','loads');
+                        save(file,'m','y','o','t','mc');
                     end
                     
-                    h = pm.nextPlot(sprintf('force_velo_load%g_visc%g',loads(inidx),mu(1)),...
-                        sprintf('Force / velocity plot\nLoad: %g[g] (eff. pressure %g[kPa]), viscosity:%g [mNs/m]',loads(inidx),pressures(inidx),mu(1)),...
+                    h = pm.nextPlot(sprintf('force_velo_load%g_visc%g',mc.Loads(inidx),mu(1)),...
+                        sprintf('Force / velocity plot\nLoad: %g[g] (eff. pressure %g[kPa]), viscosity:%g [mNs/m]',mc.Loads(inidx),mc.Pressures(inidx),mu(1)),...
                         'Velocity [mm/ms]','Force [N]');
                     plot(h,o(1,:),o(2,:),'r');
                     

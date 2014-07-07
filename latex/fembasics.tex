@@ -1,4 +1,4 @@
-We specify a master hexahedron/volume/element $\Om = [-1,1]^3$ with corners
+We specify a hexahedral master element $\Om = [-1,1]^3$ with corners
 \begin{align*}
 	\vX_{master} := \m{-1 & 1 & -1 & 1 & -1 & 1 & -1 &1\\-1 & -1 & 1 & 1 & -1 & -1 & 1 &1\\-1 & -1 & -1 & -1 & 1 & 1 & 1 &1\\}.
 \end{align*}
@@ -123,7 +123,7 @@ We define the shorthands
 With the above, and the transformation theorem and the local support of the basis function $\varphi_k$ we now have for any integrable $f(X,t)$ that
 \begin{align}
    \intl{\Or}{}f(X,t)\varphi_k(X)dX &= \suml{m=1}{M}\intl{\Omega_m}{}f(X,t)\varphi_k(X)dX = \sumvk\intl{\Omega_m}{}f(X,t)\varphi_k(X)dX\nonumber\\
-    &= \sumvk\intl{\Phi_m(\Omega)}{}f(X,t)\varphi_k(X)dX\nonumber\\
+    &= \sumvk\intl{\Phi_m(\Om)}{}f(X,t)\varphi_k(X)dX\nonumber\\
 	&= \sumvk\intl{\Om}{}f(\Phi_m(X),t)\varphi_k(\Phi_m(X))|\det J\Phi_m(X)|dX\nonumber\\
 	& \re{def:gaussintapprox} \sumvk\sumgp w_pf(\pmp,t)\varphi_k(\pmp)|\det J\Phi_m(X_p)|\nonumber\\
 	& \re{def:referencebasisfun} \sumvk\sumgp w_pf(\pmp,t)N_{l(k,m)}(\Phi_m^{-1}(\pmp))|\det J\Phi_m(X_p)|\nonumber\\

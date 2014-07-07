@@ -90,9 +90,9 @@ function duvw = evaluate(this, uvwdof, t)
             
             %% Anisotropic part (Invariant I4 related)
             if havefibres
-                a0pos = (m-1)*num_gausspoints + gp;
-                a0B = sys.a0Base(:,:,a0pos);
-                lambdaf = norm(F*a0B(:,1));
+                fibrenr = (m-1)*num_gausspoints + gp;
+                fibres = sys.a0Base(:,:,fibrenr);
+                lambdaf = norm(F*fibres(:,1));
                 
                 % Evaluate g function
                 % Using a subfunction is 20% slower!
@@ -112,19 +112,19 @@ function duvw = evaluate(this, uvwdof, t)
                     markert = (b1/lambdaf^2)*(lambdaf^d1-1);
                 end
                 gval = markert + (Pmax/lambdaf)*fl*alpha; %+ 1000*max(0,(lambdaf-1))*alpha;
-                P = P + gval*F*sys.a0oa0(:,:,a0pos);
+                P = P + gval*F*sys.a0oa0(:,:,fibrenr);
                 
                 %% Cross-fibre stiffness part
                 if usecrossfibres
-                    lambdaf = norm(F*a0B(:,2));
+                    lambdaf = norm(F*fibres(:,2));
                     if lambdaf > .999
                         g1 = (b1cf/lambdaf^2)*(lambdaf^d1cf-1);
-                        P = P + g1*F*sys.a0oa0n1(:,:,a0pos);
+                        P = P + g1*F*sys.a0oa0n1(:,:,fibrenr);
                     end
-                    lambdaf = norm(F*a0B(:,3));
+                    lambdaf = norm(F*fibres(:,3));
                     if lambdaf > .999
                         g2 = (b1cf/lambdaf^2)*(lambdaf^d1cf-1);
-                        P = P + g2*F*sys.a0oa0n2(:,:,a0pos);
+                        P = P + g2*F*sys.a0oa0n2(:,:,fibrenr);
                     end
                 end
             end

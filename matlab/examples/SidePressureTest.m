@@ -6,11 +6,6 @@ classdef SidePressureTest < muscle.AModelConfig
 % different viscosities
 % 
 %
-% Material set from
-% Article (Hawkins1994)
-% Hawkins, D. & Bey, M.
-% A comprehensive approach for studying muscle-tendon mechanics
-% Journal of Biomechanical Engineering, 1994, 116, 51-55
 
     properties(Constant)
         OutputDir = fullfile(fileparts(which(mfilename)),'sidepressure');
