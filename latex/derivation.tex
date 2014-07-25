@@ -247,7 +247,7 @@ for which we have
 Since we consider incompressible material, $\Psi$ will not depend on the third invariant $I_3 = \det\vC = 1$ as this is already captured in the hydrostatic pressure. 
 In the following, we will specify different $\Psi(I_1,I_2,I_4,I_5)$ depending on different invariants to create an additive split as 
 \begin{align}
-	\vS(X,t) = p(X,t)\vC^{-1}(X,t) + \vSi(X,t) + \vSa(X,t) + \vSf(X,t)\label{def:S_split}
+	\vS(X,t) = p(X,t)\vC^{-1}(X,t) + \vSi(X,t) + \vSa(X,t) + \vSf(X,t) +\vSv(X,t) \label{def:S_split}
 \end{align}
 
 \subsubsection{Isotropic stress tensor $\vSi$}
@@ -315,17 +315,30 @@ This gives
 	\vPf(X,t) &= \frac{p^{max}}{\lambda_f(X,t)}f_l(\lambda_f(X,t))\gamma\left(\alpha,\d{\lambda_f}{t}(X,t)\right)\vF(X,t)\va_0(X)\otimes\va_0(X)
 \end{align}
 
+\subsubsection{Viscous damping tensor $\vSv$/$\vPv$}
+We introduce the viscous part of the stress tensor in the current configuration by defining
+\begin{align}
+\vPv(X,t) := \eta\,\dot{\vF}(X,t) \,,
+\end{align}
+where $\eta$ is a parameter describing the viscosity. 
+\\
+For the second Piola-Kirchhoff tensor that means
+\begin{align}
+\vSv(X,t) := \eta\,\vF^{-1}\dot{\vF}(X,t) \,.
+\end{align}
+
 \subsubsection{Overall stress tensor}
 Adding the different parts together as given in \eqref{def:S_split} now gives
 \begin{align}
 	\vS(X,t) &= p(X,t)\vC^{-1}(X,t) + 2(c_{10} + I_1c_{01})\vI - 2c_{01}\vC(X,t)\label{def:overallS}\\
 			 &\quad+\Biggl[\frac{b_1}{\lambda_f^2(X,t)}\left(\lambda_f^{d_1}(X,t) - 1\right)\nonumber\\
-			 &\quad+\frac{p^{max}}{\lambda_f(X,t)}f_l(\lambda_f(X,t))\gamma\left(\alpha,\d{\lambda_f}{t}(X,t)\right)\Biggr]\va_0(X)\otimes\va_0(X)\nonumber\\
+			 &\quad+\frac{p^{max}}{\lambda_f(X,t)}f_l(\lambda_f(X,t))\gamma\left(\alpha,\d{\lambda_f}{t}(X,t)\right)\Biggr]\va_0(X)\otimes\va_0(X)\\
+			 &\quad+\vSv(X,t)\nonumber\\
 	g(\lambda)&:= \frac{b_1}{\lambda^2}\left(\lambda^{d_1} - 1\right)
 		+\frac{p^{max}}{\lambda}f_l(\lambda)\gamma\left(\alpha,\d{}{t}\lambda\right)\label{def:g}\\			 
 	\vP(X,t) &= \vF(X,t)\vS(X,t)\label{def:completeP}\\
 			 &= p(X,t)\vF^{-T}(X,t) + 2(c_{10} + I_1(\vC(X,t))c_{01})\vF(X,t) - 2c_{01}\vF(X,t)\vC(X,t)\nonumber\\
-			 &\quad+g(\lambda_f(X,t))\vF(X,t)\va_0(X)\otimes\va_0(X)\nonumber
+			 &\quad+g(\lambda_f(X,t))\vF(X,t)\va_0(X)\otimes\va_0(X)+\eta\,\dot{\vF}(X,t)\nonumber
 \end{align}
 
 \subsubsection{Initial conditions}
@@ -334,13 +347,14 @@ With the incompressibility conditions we also have
 \begin{align*}
 	\vF &= \vC = \vI_3, & \det(\vF) &= 1\\
 	I_1(\vC) &= \tr(\vI_3) = 3, & I_4(\vC,\va_0) & = \vI_3 : \va_0(X)\otimes\va_0(X)\\
-		&&&	= \tr(\va_0(X)\otimes\va_0(X)) = \no{\va_0}^2 = 1,\\
+		\dot{\vF}&=\vnull,&&	= \tr(\va_0(X)\otimes\va_0(X)) = \no{\va_0}^2 = 1,\\
 		\lambda_f &= 1,\quad f_l(1) = 1, & \gamma(\alpha,\d{}{t}\lambda_f) &= 0,
 \end{align*}
 Hence we obtain from \eqref{def:overallS}
 \begin{align}
 	0 &= \vS(X,0) = p(X,0)\vI + 2(c_{10} + 3c_{01})\vI - 2c_{01}\vI\\
-			 &\quad+\left(\frac{b_1}{1}\left(1 - 1\right)+\frac{p^{max}}{1}1\gamma\left(0,0\right)\right)\va_0(X)\otimes\va_0(X)\nonumber\\
+			 &\quad+\left(\frac{b_1}{1}\left(1 - 1\right)+\frac{p^{max}}{1}1\gamma\left(0,0\right)\right)\va_0(X)\otimes\va_0(X)
+			 +\eta\vI\vnull\nonumber\\
 			 & = (p(X,0) + 2c_{10} + 4c_{01})\vI\\
 			 p(X,0) &= -(2c_{10} + 4c_{01})
 \end{align}

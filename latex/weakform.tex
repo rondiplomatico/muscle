@@ -19,7 +19,7 @@ With \eqref{def:chi} we deduce the discrete quantities
 		   				\vdots & \ddots & \vdots\\
 		   				c_{i,3}\d{\varphi_i}{X_1} & \dots & c_{i,3}\d{\varphi_i}{X_3}}\\
 		   &=\sumi \vc_i(t)\cdot \grad\varphi_i(X) = \sumi \vc_i(t)\otimes \dpi,\\
-	\vF'(X,t) &= \sumi \vc'_i(t)\otimes \dpi.
+	\dot{\vF}(X,t) &= \sumi \vc'_i(t)\otimes \dpi.
 \end{align*}
 
 Now, equation \eqref{def:maineq} and the incompressibility constraint give the system 
@@ -70,17 +70,21 @@ The most elaborative part is to evaluate the stress tensor $\vP$ at all volumes 
 We have from \eqref{def:completeP} that
 \begin{align*}
 		\vP(\pmp,t) &= p(\pmp,t)\vF^{-T}(\pmp,t) + 2(c_{10} + I_1(\vC(\pmp,t))c_{01})\vF(\pmp,t)\\
-			 &- 2c_{01}\vF(\pmp,t)\vC(\pmp,t)+g(\lambda_f(\pmp,t))\vF(\pmp,t)\va_0(\pmp)\otimes\va_0(\pmp).
+			 &- 2c_{01}\vF(\pmp,t)\vC(\pmp,t)+g(\lambda_f(\pmp,t))\vF(\pmp,t)\va_0(\pmp)\otimes\va_0(\pmp)\\
+			 & + \eta \dot{\vF}(\pmp,t).
 \end{align*}
 In the following we derive representations of the various components of $\vP$, where we assume $X\in\Or$.
 \begin{align*}
 	\vF(\pmp,t) &= \sumi \vc_i(t)\otimes \dNimp,\\
-	I_1(\vC(X,t)) &= \tr\vC(X,t) = \tr(\vF(X,t)^T\vF(X,t)) = \vF(X,t) : \vF(X,t)\\
-	&= \sumi \vc_i(t)\otimes \dpi : \sumi \vc_i(t)\otimes \dpi\\
-	&= \sumi\sumj \left(\vc_i(t)\otimes \dpi\right) : (\vc_j(t)\otimes \dpj)\\
-	&= \sumi\sumj (\vc_i(t) \cdot \vc_j(t))(\dpi \cdot \dpj),\\
-	\Rightarrow I_1(\vC(\pmp,t)) &= \sumi\sumj (\vc_i(t) \cdot \vc_j(t))(\dNimp \cdot \dNjmp),\\
-\end{align*}
+	\dot{\vF}(\pmp,t) &= \sumi \vc_i'(t)\otimes \dNimp,
+\end{align*}	
+\begin{align}
+	I_1(\vC(X,t)) &= \tr\vC(X,t) = \tr(\vF(X,t)^T\vF(X,t)) = \vF(X,t) : \vF(X,t)\nonumber\\
+	&= \sumi \vc_i(t)\otimes \dpi : \sumi \vc_i(t)\otimes \dpi\nonumber\\
+	&= \sumi\sumj \left(\vc_i(t)\otimes \dpi\right) : (\vc_j(t)\otimes \dpj)\nonumber\\
+	&= \sumi\sumj (\vc_i(t) \cdot \vc_j(t))(\dpi \cdot \dpj),\label{eq:I1_basis}\\
+	\Rightarrow I_1(\vC(\pmp,t)) &= \sumi\sumj (\vc_i(t) \cdot \vc_j(t))(\dNimp \cdot \dNjmp),\nonumber
+\end{align}
 Expression for fibre stretch $\lambda_f$:
 \begin{align*}
 % 	\vF(X,t)^T\vF(X,t) &= \sumi\sumj \bigl(\vc_i(t)\otimes\dpi\bigr)^T\vc_j(t)\otimes\dpj\\
@@ -124,3 +128,5 @@ For later maybe:
 	%&= \suml{i,j,q\in E_m}{}(\vc_i(t)\cdot \vc_j(t))(\nabla N_{l(q,m)}(X_p)\cdot\nabla N_{l(i,m)}(X_p))(\vc_q(t)\otimes\nabla N_{l(j,m)}(X_p))\\
 	%&= \suml{i,j\in E_m}{} (\vc_i(t)\cdot \vc_j(t))\left(\nabla N_{l(i,m)}(X_p)\cdot a_0(\pmp)\right)(\nabla N_{l(j,m)}(X_p))\cdot a_0(\pmp))\nonumber
 	%&= \suml{i\in E_m}{} (\vc_i(t)\otimes \va_0(\pmp))(\nabla N_{l(i,m)}(X_p)\cdot\va_0(\pmp))\nonumber
+
+	
