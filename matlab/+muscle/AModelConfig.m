@@ -55,6 +55,13 @@ classdef AModelConfig < handle
             % do nothing by default
         end
         
+        function prepareSimulation(this, mu, inputidx)
+            % Overload this method to initialize model-specific quantities
+            % that are fixed for each simulation
+            
+            % do nothing by default
+        end
+        
         function P = getBoundaryPressure(~, elemidx, faceidx)
             % Determines the neumann forces on the boundary.
             %

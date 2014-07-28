@@ -70,6 +70,13 @@ classdef Model < models.BaseFullModel
 %             end
         end
         
+        function [t, x, time, cache] = computeTrajectory(this, mu, inputidx)
+            % Allows to also call prepareSimulation for any quantities set
+            % by the AModelConfig class.
+            this.Config.prepareSimulation(mu, inputidx);
+            [t, x, time, cache] = computeTrajectory@models.BaseFullModel(this, mu, inputidx);
+        end
+        
         function t = getConfigTable(this)
             f = this.System.f;
             t = PrintTable('Configuration of Model %s',this.Name);

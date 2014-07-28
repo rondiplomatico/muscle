@@ -107,8 +107,6 @@ classdef System < models.BaseDynSystem
        % Flag to indicate if this system should use stiffness terms
        % (Markert) for cross-fibre directions.
        %
-       % The Dynamics.
-       %
        % @type logaical @default false
        UseCrossFibreStiffness;
     end
@@ -275,7 +273,7 @@ classdef System < models.BaseDynSystem
             if r.Vid
                 avifile = fullfile(pwd,'output.avi');
                 vw = VideoWriter(avifile);
-                vw.FrameRate = 30;
+                vw.FrameRate = 25;
                 vw.open;
             end
             
