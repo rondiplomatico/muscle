@@ -12,28 +12,49 @@ for the $x,y,z$ components of the $i$-th coefficient and hence identify
 \[
 	\vF(X,t) = \sumi \vc_i(t)\otimes \nabla\varphi_i(X) = \sumi \vu[i](t)\otimes \nabla\varphi_i(X) =: \vF(X,\vu(t)).
 \]
-also carrying the arguments through to $\vP(X,t) = \vP(X,\vu(t),\vw(t))$.
+
+From \eqref{def:discreteVphidX} we obtain a mass matrix $\vM\in\R^{3N\times 3N}$ via the operator $\vM$:
+\begin{align*}
+  \vM[k](\vu(t)) &:= \sumi \vc_i''(t)\sumvk\sumgp w_p \rho_0(\pmp)N_{l(i,m)}(X_p) \Nkmp\jmp, && k=1\ldots N,\\
+	\vM\bigl[[i],[k]\bigr] &:= \m{1&0&0\\0&1&0\\0&0&1} \sumvk\sumgp w_p \rho_0(\pmp)N_{l(i,m)}(X_p) \Nkmp\jmp, && i,k=1\ldots N.
+\end{align*}
+	
+We now split the stress tensor into a nonlinear and a linear part:
+\begin{align}
+  \vP(X,t) &= \underbrace{p(X,t)\vF^{-T}(X,t) + \vPi + \vPa + \vPf}_{\displaystyle=:\vPnl} + \underbrace{\vPv}_{\displaystyle=:\vPl}
+  \label{def:splitPnllin}
+\end{align}
+For the linear part, we obtain with \eqref{def:discretePgradphidX} the damping matrix $\vD\in\R^{3N\times 3N}$ via the operator $\vD$:
+\begin{align}
+    \vD[k](\vu(t))&:=
+		\intor\vPl(X,t)\dpk dX \nonumber\\
+		&=\sumvk\sumgp w_p\vPl(\pmp,t)\dNkmp\jmp\nonumber\\
+		&=\sumvk\sumgp w_p \eta \sumi \vc_i'(t) \otimes \dNimp \dNkmp\jmp\nonumber\\
+		&=\sumi \vc_i'(t) \sumvk\sumgp w_p \eta \dNimp \cdot \dNkmp\jmp
+		&& k=1\ldots N.\label{def:discretePviscgradphidX}
+\end{align}
+\begin{align*}
+	\vD\bigl[[i],[k]\bigr] &:= \m{1&0&0\\0&1&0\\0&0&1} \sumvk\sumgp w_p \eta \dNimp \cdot \dNkmp \jmp, && i,k=1\ldots N.
+\end{align*}
+
+Also carrying the arguments through to $\vPnl(X,t) = \vPnl(X,\vu(t),\vw(t))$.
 This allows us to define operators $\vK: \R^{3N\times N_P}\to\R^{3N}, \vg:\R^{3N}\to\R^{N_P}$ (by components) as
 \begin{align}
-	\vK[k](\vu(t),\vw(t)) &:= \intor\vP(X,\vu(t),\vw(t))\dpk dX\\
-	&\re{def:discretePgradphidX} \sumvk\sumgp w_p\vP(\pmp,\vu(t),\vw(t))\dNkmp\jmp\in\R^3, && k=1\ldots N,\\
+	\vK[k](\vu(t),\vw(t)) &:= \intor\vPnl(X,\vu(t),\vw(t))\dpk dX\\
+	&\re{def:discretePgradphidX} \sumvk\sumgp w_p\vPnl(\pmp,\vu(t),\vw(t))\dNkmp\jmp\in\R^3, && k=1\ldots N,\\
 	\vg_k(\vu(t)) &:= \intor (\det\vF(X,\vu(t))-1)\psi_k(X)dX\\
 	&\re{eq:weak_incomp_condition}\sumvk\sumgp w_p (\det\vF(\pmp,\vu(t))-1) \Nkmp\jmp, && k=1\ldots N_P.
 \end{align}
-Furthermore, from \eqref{def:discreteVphidX} we obtain a mass matrix $\vM\in\R^{3N\times 3N}$ via
-\begin{align*}
-	\vM\bigl[[i],[k]\bigr] &:= \m{1&0&0\\0&1&0\\0&0&1} \sumvk\sumgp w_p \rho_0(\pmp)N_{l(i,m)}(X_p) \Nkmp\jmp, && i,k=1\ldots N.
-\end{align*}
 
 Altogether, the system of equations \eqref{def:mainsys1_weak_kparts},\eqref{def:maineq_cond_weak_kparts} yields the constrained second order differential equation
 or differential-algebraic equation (DAE)
 \begin{align}
-	\vM\vu''(t) + \vK(\vu(t),\vw(t)) &= \vnull,\\
+	\vM\vu''(t) + \vK(\vu(t),\vw(t)) + \vD\vu'(t) &= \vnull,\\
 		\text{s.t.}\quad \vg(\vu(t)) &= \vnull,
 \end{align}
 which can be transformed to a first-order system with the substitution $\vv(t) := \vu'(t)$:
 \begin{align}
-	\m{\vI & \vnull\\ \vnull & \vM}\m{\vu'(t)\\ \vv'(t)} &= \m{\vv(t) \\ -\vK(\vu(t),\vw(t))},\\
+	\m{\vI & \vnull\\ \vnull & \vM}\m{\vu'(t)\\ \vv'(t)} &= \m{\vv(t) \\ -\vK(\vu(t),\vw(t)) - \vD\vv(t)},\\
 	\text{s.t.}\quad \vg(\vu(t))		&= \vnull.
 \end{align}
 
@@ -41,12 +62,14 @@ which can be transformed to a first-order system with the substitution $\vv(t) :
 For the time-discretization we use the notation $\vu_i := \vu(t_i), t_i := i\Delta t, i=0\ldots N_t\in\N, \Delta t > 0$, similarly for $\vv,\vw$.
 Using the standard backward-Euler scheme results in the implicit system
 \begin{align}
-	\frac{1}{\Delta t}\m{\vI & \vnull\\ \vnull & \vM}\m{\vu_{i+1}-\vu_i\\\vv_{i+1}-\vv_i} &= \m{\vv_{i+1}\\-\vK(\vu_{i+1},\vw_{i+1})},\\
+	\frac{1}{\Delta t}\m{\vI & \vnull\\ \vnull & \vM}\m{\vu_{i+1}-\vu_i\\\vv_{i+1}-\vv_i} 
+	&= \m{\vv_{i+1}\\-\vK(\vu_{i+1},\vw_{i+1})-\vD\vv_{i+1}},\\
 	\vg(\vu_{i+1})		&= \vnull.
 \end{align}
 Writing the overall system as 
 \begin{align}
-	\vf([\vu; \vv; \vw]) &:= \m{\frac{1}{\Delta t}\m{\vI & \vnull\\ \vnull & \vM}\m{\vu-\vu_i\\\vv-\vv_i} + \m{-\vv\\\vK(\vu,\vw)}\\
+	\vf([\vu; \vv; \vw]) &:= \m{\frac{1}{\Delta t}\m{\vI & \vnull\\ \vnull & \vM}\m{\vu-\vu_i\\\vv-\vv_i} 
+	+ \m{-\vv\\\vK(\vu,\vw)+\vD\vv}\\
 		\vg(\vu)},
 \end{align}
 we apply the standard Newton-Iteration
@@ -58,7 +81,7 @@ to find $\vu_{i+1}$ etc.
 Here we have the Jacobian
 \begin{align}
 	 \nabla \vf([\vu; \vv; \vw]) &:= \m{\frac{1}{\Delta t} \vI & -\vI & \vnull & \Bigl\rbrace3N\\
-	 									\nabla_{\vu}\vK(\vu,\vw) & \frac{1}{\Delta t}\vM & \nabla_{\vw}\vK(\vu,\vw) & \Bigl\rbrace3N\\
+	 									\nabla_{\vu}\vK(\vu,\vw) & \frac{1}{\Delta t}\vM+\vD & \nabla_{\vw}\vK(\vu,\vw) & \Bigl\rbrace3N\\
 	 									\underbrace{\nabla_{\vu}\vg(\vu)}_{3N} & \underbrace{\vnull}_{3N} & \underbrace{\vnull}_{N_P} & \Bigl\rbrace N_P}.
 \end{align}
 
@@ -108,16 +131,16 @@ In detail, we have
 	 	\vdots & \ddots & \vdots\\
 	   \nabla_{\vu[1]}\vK[N](\vu,\vw) & \ldots & \nabla_{\vu[N]}\vK[N](\vu,\vw)}\\
 	\nabla_{\vu[j]}\vK[k](\vu,\vw) &=\m{\d{\vK[k]}{\vu[j]_1}(\vu,\vw) & \ldots & \d{\vK[k]}{\vu[j]_3}(\vu,\vw)}\in\R^{3\times 3},\quad j,k=1\ldots N\\
-	\d{\vK[k]}{\vu[j]_i}(\vu,\vw) &= \d{}{\vu[j]_i} \intor\vP(X,\vu,\vw)\dpk dX\\
-		&=  \intor\d{\vP}{\vu[j]_i}(X,\vu,\vw) \dpk dX\\
-		&= \sumvk\sumgp w_p \d{\vP}{\vu[j]_i}(\pmp,\vu,\vw) \dNkmp\jmp\in\R^3
+	\d{\vK[k]}{\vu[j]_i}(\vu,\vw) &= \d{}{\vu[j]_i} \intor\vPnl(X,\vu,\vw)\dpk dX\\
+		&=  \intor\d{\vPnl}{\vu[j]_i}(X,\vu,\vw) \dpk dX\\
+		&= \sumvk\sumgp w_p \d{\vPnl}{\vu[j]_i}(\pmp,\vu,\vw) \dNkmp\jmp\in\R^3
 \end{align*}
-Recall from \eqref{def:completeP} that
+Recall from \eqref{def:splitPnllin} that
 \begin{align*}
-\vP(X,\vu,\vw) &= p(X,\vw)\vF^{-T}(X,\vu) + 2(c_{10} + I_1(\vC(X,\vu))c_{01})\vF(X,\vu) - 2c_{01}\vF(X,\vu)\vC(X,\vu)\\
+\vPnl(X,\vu,\vw) &= p(X,\vw)\vF^{-T}(X,\vu) + 2(c_{10} + I_1(\vC(X,\vu))c_{01})\vF(X,\vu) - 2c_{01}\vF(X,\vu)\vC(X,\vu)\\
 	     &\quad+g(\lambda_f(X,\vu))\vF(X,\vu)\va_0(X)\otimes\va_0(X)
 \end{align*}
-we consider the single summands of $\vP$ to derive $\d{\vP}{\vu[j]_i}(X,\vu,\vw)$:
+we consider the single summands of $\vPnl$ to derive $\d{\vPnl}{\vu[j]_i}(X,\vu,\vw)$:
 \begin{align*}
 	 \d{}{\vu[j]_i}p(X,\vw)\vF^{-T}(X,\vu) &= -p(X,\vw)\vF(X,\vu)^{-T}(\dpj\otimes\ve_i)\vF(X,\vu)^{-T}\in\R^{3\times 3}
 \end{align*}
@@ -178,7 +201,7 @@ we consider the single summands of $\vP$ to derive $\d{\vP}{\vu[j]_i}(X,\vu,\vw)
 	 = \m{\d{\vK[1]}{\vw_1}(\vu,\vw) & \ldots & \d{\vK[1]}{\vw_N}(\vu,\vw)\\
 	 	\vdots & \ddots & \vdots\\
 	   \d{\vK[N]}{\vw_1}(\vu,\vw) & \ldots & \d{\vK[N]}{\vw_N}(\vu,\vw)}\\
-	\d{\vK[k]}{\vw_i}(\vu,\vw) &= \d{}{\vw_i} \intor\vP(X,\vu,\vw)\dpk dX\\
+	\d{\vK[k]}{\vw_i}(\vu,\vw) &= \d{}{\vw_i} \intor\vPnl(X,\vu,\vw)\dpk dX\\
 		&=  \intor\d{}{\vw_i} \left[p\vF^{-T}(X,\vu) +[\ldots] \right] \dpk dX\\
 		&=  \intor\d{}{d_i} \left[\sumi d_j\psi_j(X)\vF^{-T}(X,\vu) +[\ldots] \right] \dpk dX\\
 		&=  \intor \psi_i(X)\vF^{-T}(X,\vu)\dpk dX\\
