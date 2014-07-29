@@ -1,37 +1,46 @@
 classdef FusiformMORexample < muscle.AModelConfig
     
+    properties(Constant)
+       OutputDir = fullfile(fileparts(which(mfilename)),'FusiformMOR_output') 
+    end
+    %
+    %%
     properties(Access=private)
+        
         % number of parts in one quarter of the belly
         NumParts;
         
         Loads;
         Pressures;
     end
-    
+    %
+    %%
     methods
+        
         function this = FusiformMORexample
             % setting up the fusiform muscle geometry
             np = 4;
             belly = Belly.getBelly(np,10,1,.5,2);
             this = this@muscle.AModelConfig(belly);
             this.NumParts = np;
-            % default model parameters
-            this.Model.DefaultMu = [1; 1];
-            
             % specify the definition of bc    
             this.NeumannCoordinateSystem = 'local';
         end
         
-        function prepareSimulation(this, mu, inputidx)
-            % 
-            f = this.Model.System.f;
-            f.alpha = this.getAlphaRamp(mu(2),1);
-            
-        end
-        
         function configureModel(this, model)
-            model.T = 150;
+            model.T = 100;
             model.dt = 0.1;
+            
+            % default model parameters 
+            model.DefaultMu = [1; 50; -10];      % mu = [viscosity; activation duration; NeumannBC (max force)]
+            model.DefaultInput = 1;             % index for u (is a cell)
+            
+            % specify model parameters (mu = [viscosity; activation duration; NeumannBC (max force)])
+            sys = model.System;
+            sys.Params(2).Name = 'alpha-ramp';
+            sys.Params(2).Range = [0 100];
+            sys.Params(2).Desired = 1;
+            sys.addParam('Neumann BC', [0 10], 1);
             
             f = model.System.f;
             % Material set (see main comment)
@@ -46,7 +55,14 @@ classdef FusiformMORexample < muscle.AModelConfig
             os = model.ODESolver;
             os.RelTol = 0.01;
             os.AbsTol = 0.1;
-            
+        end
+        
+        function prepareSimulation(this, mu, inputidx)
+            % 
+            sys = this.Model.System;
+            sys.f.alpha = this.getAlphaRamp(mu(2),1,30);    % (in ..ms, up to maxvalue.., starting at ..ms)
+            %sys.f.alpha = @(t)0;
+            sys.Inputs{1} = this.getAlphaRamp(10,mu(3));    % (in ..ms, up to maxvalue.., starting at ..ms)
         end
         
         function P = getBoundaryPressure(this, elemidx, faceidx)
@@ -61,13 +77,24 @@ classdef FusiformMORexample < muscle.AModelConfig
             end
         end
         
-        function u = getInputs(this)
-            % vector u in nl dynamical system
-            u = {@(t)1};
+        function o = getOutputOfInterest(this, model, t, uvw)
+            % Writes the data of interest into o
+            %
+            geo = model.Config.PosFE.Geometry;
+            %[df,nf] = model.getResidualForces(t,uvw);
+            uvw = model.System.includeDirichletValues(t,uvw);
+            % get displacement of loose/right end
+            facenode_idx = [];
+            for k = geo.NumElements-3:geo.NumElements
+                facenode_idx = [facenode_idx; model.getFaceDofsGlobal(k,4,2)];
+            end
+            facenode_idx = unique(facenode_idx);
+            o = uvw(facenode_idx,:);
         end
         
     end
-    
+    %
+    %%
     methods(Access=protected)
         
         function displ_dir = setPositionDirichletBC(this, displ_dir)
@@ -82,9 +109,11 @@ classdef FusiformMORexample < muscle.AModelConfig
             % fibres in y direction
             anull(2,:,:) = 1;
         end
+        
     end
-   
-    % Test
+    %
+    %%
+    % Testscript
     methods(Static)
         
         function runTest
@@ -92,12 +121,10 @@ classdef FusiformMORexample < muscle.AModelConfig
             geo = modconf.PosFE.Geometry;
             model = muscle.Model(modconf);
             [t,y] = model.simulate;
+            model.plot(t,y);
         end
 
-    
     end
-
-    
     
 end
 
