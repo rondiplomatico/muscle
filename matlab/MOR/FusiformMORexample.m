@@ -28,8 +28,9 @@ classdef FusiformMORexample < muscle.AModelConfig
         end
         
         function configureModel(this, model)
-            model.T = 100;
+            model.T = 250;
             model.dt = 0.1;
+            model.EnableTrajectoryCaching = true;
             
             % default model parameters 
             model.DefaultMu = [1; 50; -10];      % mu = [viscosity; activation duration; NeumannBC (max force)]
@@ -49,8 +50,8 @@ classdef FusiformMORexample < muscle.AModelConfig
             f.b1 = 2.756e-5; % [kPa]
             f.d1 = 43.373; % [-]
 
-            f.Pmax = 250; % [kPa]
-            f.lambdafopt = 1; % [-]
+            f.Pmax = 73; % [kPa]
+            f.lambdafopt = 1.2; % [-]
            
             os = model.ODESolver;
             os.RelTol = 0.01;
@@ -89,7 +90,8 @@ classdef FusiformMORexample < muscle.AModelConfig
                 facenode_idx = [facenode_idx; model.getFaceDofsGlobal(k,4,2)];
             end
             facenode_idx = unique(facenode_idx);
-            o = uvw(facenode_idx,:);
+%             o = uvw(facenode_idx,:);            % gives matrix, where each rowvector shows positon of one node over time
+            o = mean(uvw(facenode_idx,:),1);    % gives rowvector of mean node-position for all timesteps
         end
         
     end
