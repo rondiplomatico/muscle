@@ -38,10 +38,11 @@ classdef FusiformMORexample < muscle.AModelConfig
             
             % specify model parameters (mu = [viscosity; activation duration; NeumannBC (max force)])
             sys = model.System;
+            sys.Params(1).Range = [0.01 10];
             sys.Params(2).Name = 'alpha-ramp';
-            sys.Params(2).Range = [0 100];
-            sys.Params(2).Desired = 1;
-            sys.addParam('Neumann BC', [0 10], 1);
+            sys.Params(2).Range = [10 200];
+            sys.Params(2).Desired = 50;
+            sys.addParam('Neumann BC', [-150 0], 70);
             
             f = model.System.f;
             % Material set (see main comment)
@@ -61,7 +62,7 @@ classdef FusiformMORexample < muscle.AModelConfig
         function prepareSimulation(this, mu, inputidx)
             % 
             sys = this.Model.System;
-            sys.f.alpha = this.getAlphaRamp(mu(2),1,30);    % (in ..ms, up to maxvalue.., starting at ..ms)
+            sys.f.alpha = this.getAlphaRamp(mu(2),1,20);    % (in ..ms, up to maxvalue.., starting at ..ms)
             %sys.f.alpha = @(t)0;
             sys.Inputs{1} = this.getAlphaRamp(10,mu(3));    % (in ..ms, up to maxvalue.., starting at ..ms)
         end
