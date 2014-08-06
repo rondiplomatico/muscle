@@ -16,11 +16,12 @@ else
 end
 %
 %%
-disp('start viscosity tests');
+pi1 = ProcessIndicator('viscosity test',1,false,1);
+%disp('start viscosity tests');
 o_visc = zeros(100,size(model.Times,2));
 j=1;
 for k = 0.01:0.1:10
-    k
+    %k
     % simulate/calculate solution
     [t,y] = model.simulate([k;50;-10]);
     % plot solution
@@ -28,8 +29,10 @@ for k = 0.01:0.1:10
     % get some output of interest
     o_visc(j,:) = modconf.getOutputOfInterest(model,t,y);
     j=j+1;
+    pi1.step(1/100);
 end
-disp('simulation done')
+pi1.stop;
+%disp('simulation done')
 %
 %%
 % plot data
@@ -42,11 +45,12 @@ ylabel('mean position of nodes at right end in y-direction');
 title('apply force for 10ms up to -10, after 20ms activate for 50ms from 0>1, different viscosities in [0.01,10]')    
 %
 %%
-disp('start activation tests');
+pi2 = ProcessIndicator('activation test',1,false,1);
+%disp('start activation tests');
 o_alpha = zeros(20,size(model.Times,2));
 j=1;
 for k = 10:10:200
-    k
+    %k
     % simulate/calculate solution
     [t,y] = model.simulate([1;k;-5]);
     % plot solution
@@ -54,8 +58,10 @@ for k = 10:10:200
     % get some output of interest
     o_alpha(j,:) = modconf.getOutputOfInterest(model,t,y);
     j=j+1;
+    pi2.step(1/20);
 end
-disp('simulation done')
+pi2.stop;
+%disp('simulation done')
 %
 %%
 % plot data
@@ -68,11 +74,12 @@ legend('alpha-ramp=10ms','alpha-ramp=30ms','alpha-ramp=50ms','alpha-ramp=70ms',.
 title('apply force for 10ms up to -5, after 20ms activate for value legend ms from 0>1, viscosity=1')    
 %
 %%
-disp('start force tests');
+pi3 = ProcessIndicator('force test',1,false,1);
+%disp('start force tests');
 o_force = zeros(16,size(model.Times,2));
 j=1;
 for k = 0:10:150
-    k
+    %k
     % simulate/calculate solution
     [t,y] = model.simulate([1;50;-k]);
     % plot solution
@@ -80,8 +87,10 @@ for k = 0:10:150
     % get some output of interest
     o_force(j,:) = modconf.getOutputOfInterest(model,t,y);
     j=j+1;
+    pi3.step(1/16);
 end
-disp('simulation done')
+pi3.stop;
+%disp('simulation done')
 %
 %%
 % plot data
@@ -95,7 +104,8 @@ legend('force=0','force=-10','force=-20','force=-30','force=-40',...
 title('apply force for 10ms up to value legend, after 20ms activate for 50ms from 0>1, viscosity=1')
 %
 %%
-disp('start extremes tests');
+pi4 = ProcessIndicator('extremes test',1,false,1);
+%disp('start extremes tests');
 %o = zeros(8,size(model.Times,2));
 % viscosity range [0.01,10]
 mu1_min = 0.01;
@@ -117,13 +127,15 @@ extremes_tests(:,7) = [mu1_max; mu2_max; mu3_min];
 extremes_tests(:,8) = [mu1_max; mu2_max; mu3_max];
 % test extremes
 for k = 1:8
-    k
+    %k
     % simulate/calculate solution
     [t,y] = model.simulate(extremes_tests(:,k));
     % get some output of interest
     o(k,:) = modconf.getOutputOfInterest(model,t,y);
+    pi4.step(1/8);
 end
-disp('simulation done')
+pi4.stop;
+%disp('simulation done')
 %
 %
 %%
