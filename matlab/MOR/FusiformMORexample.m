@@ -19,8 +19,10 @@ classdef FusiformMORexample < muscle.AModelConfig
         
         function this = FusiformMORexample
             % setting up the fusiform muscle geometry
-            np = 4;
-            belly = Belly.getBelly(np,10,1,.5,2);
+%             np = 4;
+%             belly = Belly.getBelly(np,10,1,.5,2);
+            np = 12;
+            belly = Belly.getBelly(np,50,3,.5,15);
             this = this@muscle.AModelConfig(belly);
             this.NumParts = np;
             % specify the definition of bc    
@@ -32,17 +34,21 @@ classdef FusiformMORexample < muscle.AModelConfig
             model.dt = 0.1;
             model.EnableTrajectoryCaching = true;
             
+            model.Data.useFileTrajectoryData;
+            model.ComputeTrajectoryFxiData = true;
+            
             % default model parameters 
             model.DefaultMu = [1; 50; -10];      % mu = [viscosity; activation duration; NeumannBC (max force)]
             model.DefaultInput = 1;             % index for u (is a cell)
             
             % specify model parameters (mu = [viscosity; activation duration; NeumannBC (max force)])
             sys = model.System;
-            sys.Params(1).Range = [0.01 10];
+            sys.Params(1).Range = [1e-3 10];
+            sys.Params(1).Desired = 5;
             sys.Params(2).Name = 'alpha-ramp';
-            sys.Params(2).Range = [10 200];
-            sys.Params(2).Desired = 50;
-            sys.addParam('Neumann BC', [-150 0], 70);
+            sys.Params(2).Range = [1 200];
+            sys.Params(2).Desired = 5;
+            sys.addParam('Neumann BC', [-1e3 0], 5);
             
             f = model.System.f;
             % Material set (see main comment)
@@ -73,8 +79,10 @@ classdef FusiformMORexample < muscle.AModelConfig
             % The unit for the applied quantities is kiloPascal [kPa]
             %
             % See also: NeumannCoordinateSystem
+            geo = this.PosFE.Geometry;
             P = [];
-            if any(elemidx == [13:16]) && faceidx == 4
+%             if any(elemidx == [13:16]) && faceidx == 4
+            if any(elemidx == [geo.NumElements-3:geo.NumElements]) && faceidx == 4
                 P = 1;
             end
         end

@@ -108,14 +108,14 @@ pi4 = ProcessIndicator('extremes test',1,false,1);
 %disp('start extremes tests');
 %o = zeros(8,size(model.Times,2));
 % viscosity range [0.01,10]
-mu1_min = 0.01;
+mu1_min = 1e-4;
 mu1_max = 10;
 % activation duration range [10ms, 200ms]
-mu2_min = 10;
+mu2_min = 1;
 mu2_max = 200;
 % force range [0,-150]
 mu3_min = 0;
-mu3_max = -150;
+mu3_max = -1e3;
 %
 extremes_tests(:,1) = [mu1_min; mu2_min; mu3_min];
 extremes_tests(:,2) = [mu1_min; mu2_min; mu3_max];
