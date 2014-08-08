@@ -9,16 +9,9 @@ close all;
 clear classes;
 clc;
 % build model
-file = fullfile(FusiformMORexample.OutputDir,'FusiformMOR_secondtest.mat');
-saveit = true;
-if exist(file,'file') == 2
-    load(file);
-    saveit = false;
-else
-    modconf = FusiformMORexample;
-    geo = modconf.PosFE.Geometry;
-    model = muscle.Model(modconf);
-end
+modconf = FusiformMORexample;
+geo = modconf.PosFE.Geometry;
+model = muscle.Model(modconf);
 %
 %%
 % create parameter grid
@@ -28,6 +21,9 @@ model.Sampler = s;
 
 model.off1_createParamSamples;
 
+model.Data.ParamSamples = model.Data.ParamSamples(:,1:3);
 model.TrainingInputs = 1;
 model.off2_genTrainingData;
+model.save;
 
+%save(fullfile(FusiformMORexample.OutputDir,'trajectoryData'),'model');
