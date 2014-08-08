@@ -20,8 +20,7 @@ s = sampling.GridSampler;
 model.Sampler = s;
 
 model.off1_createParamSamples;
-
-model.Data.ParamSamples = model.Data.ParamSamples(:,1:3);
+%model.Data.ParamSamples = model.Data.ParamSamples(:,1:3);
 model.TrainingInputs = 1;
 model.off2_genTrainingData;
 model.save;
