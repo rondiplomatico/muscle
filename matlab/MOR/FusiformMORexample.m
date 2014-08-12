@@ -60,9 +60,9 @@ classdef FusiformMORexample < muscle.AModelConfig
             f.Pmax = 73; % [kPa]
             f.lambdafopt = 1.2; % [-]
            
-            os = model.ODESolver;
-            os.RelTol = 0.01;
-            os.AbsTol = 0.2;%0.1;
+            %os = model.ODESolver;
+            %os.RelTol = 0.01;
+            %os.AbsTol = 0.09;%0.1;
         end
         
         function prepareSimulation(this, mu, inputidx)
