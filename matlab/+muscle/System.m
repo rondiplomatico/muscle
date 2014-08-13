@@ -209,7 +209,7 @@ classdef System < models.BaseDynSystem
             prepareSimulation@models.BaseDynSystem(this, mu, inputidx);
         end
         
-        function pm = plot(this, t, uvw, varargin)
+        function [pm, h] = plot(this, t, uvw, varargin)
             i = inputParser;
             i.KeepUnmatched = true;
             i.addParamValue('Vid',false,@(v)islogical(v));
@@ -219,7 +219,7 @@ classdef System < models.BaseDynSystem
             i.addParamValue('Fibres',true,@(v)islogical(v));
             i.addParamValue('Skel',false,@(v)islogical(v));
             i.addParamValue('Pool',length(t)>1,@(v)islogical(v));
-            i.addParamValue('pm',[],@(v)isa(v,'PlotManager'));
+            i.addParamValue('PM',[],@(v)isa(v,'PlotManager'));
             i.addParamValue('DF',[]);
             i.addParamValue('NF',[]);
             i.parse(varargin{:});
@@ -230,7 +230,7 @@ classdef System < models.BaseDynSystem
             
             mc = this.Model.Config;
             
-            if isempty(r.pm)
+            if isempty(r.PM)
                 if ~isempty(mc.Pool) && r.Pool
                     pm = PlotManager(false,2,1);
                 else
@@ -238,7 +238,7 @@ classdef System < models.BaseDynSystem
                 end
                 pm.LeaveOpen = true;
             else
-                pm = r.pm;
+                pm = r.PM;
             end
             
             dfem = mc.PosFE;
@@ -448,7 +448,7 @@ classdef System < models.BaseDynSystem
                 vw.close;
             end
 
-            if isempty(r.pm)
+            if isempty(r.PM)
                 pm.done;
             end
         end
