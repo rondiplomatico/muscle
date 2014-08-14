@@ -43,7 +43,7 @@ classdef FusiformMORexample < muscle.AModelConfig
             
             % specify model parameters (mu = [viscosity; activation duration; NeumannBC (max force)])
             sys = model.System;
-            sys.Params(1).Range = [1e-3 10];
+            sys.Params(1).Range = [1e-3 5];
             sys.Params(1).Desired = 5;
             sys.Params(1).Spacing = 'log';
             sys.Params(2).Name = 'alpha-ramp';
@@ -64,8 +64,9 @@ classdef FusiformMORexample < muscle.AModelConfig
             f.lambdafopt = 1.2; % [-]
            
             %os = model.ODESolver;
-            %os.RelTol = 0.01;
-            %os.AbsTol = 0.09;%0.1;
+            %os.RelTol = 0.02;%0.01;
+            %os.AbsTol = 0.1;%0.1;
+
         end
         
         function prepareSimulation(this, mu, inputidx)
