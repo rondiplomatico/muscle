@@ -30,7 +30,7 @@ classdef FusiformMORexample < muscle.AModelConfig
         end
         
         function configureModel(this, model)
-            model.T = 250;
+            model.T = 350;
             model.dt = 0.1;
             model.EnableTrajectoryCaching = true;
             
@@ -45,10 +45,13 @@ classdef FusiformMORexample < muscle.AModelConfig
             sys = model.System;
             sys.Params(1).Range = [1e-3 5];
             sys.Params(1).Desired = 5;
+            sys.Params(1).Spacing = 'log';
             sys.Params(2).Name = 'alpha-ramp';
-            sys.Params(2).Range = [1 200];
+            sys.Params(2).Range = [1 300];
             sys.Params(2).Desired = 5;
+            sys.Params(2).Spacing = 'log';
             sys.addParam('Neumann BC', [-1e3 0], 5);
+            sys.Params(3).Spacing = 'log';
             
             f = model.System.f;
             % Material set (see main comment)
