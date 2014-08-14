@@ -13,6 +13,10 @@ modconf = FusiformMORexample;
 geo = modconf.PosFE.Geometry;
 model = muscle.Model(modconf);
 %
+% vary tolerances
+%%
+model.ODESolver.RelTol = 1e-1;
+model.ODESolver.AbsTol = 1e-1;
 %%
 % create parameter grid
 % 
