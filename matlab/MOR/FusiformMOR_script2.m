@@ -15,8 +15,8 @@ model = muscle.Model(modconf);
 %
 % vary tolerances
 %%
-model.ODESolver.RelTol = 1e-1;
-model.ODESolver.AbsTol = 1e-1;
+model.ODESolver.RelTol = 1e-2;
+model.ODESolver.AbsTol = 1e-2;
 %%
 % create parameter grid
 % 
