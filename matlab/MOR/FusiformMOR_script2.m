@@ -17,8 +17,8 @@ model = muscle.Model(modconf);
 %
 %%
 % vary tolerances
-model.ODESolver.RelTol = 0.5;
-model.ODESolver.AbsTol = 0.5;
+model.ODESolver.RelTol = 1e-3;
+model.ODESolver.AbsTol = 1e-3;
 %
 %%
 % create parameter grid
@@ -37,9 +37,9 @@ model.save;
 % do offline phase 3 
 %
 % first simple
-%model.SpaceReducer.MaxSubspaceSize = 1000;
-%model.off3_computeReducedSpace;
-%model.save;
+model.SpaceReducer.MaxSubspaceSize = 1000;
+model.off3_computeReducedSpace;
+model.save;
 %
 % then test including fxi data
 %IncludeTrajectoryFxiData = true;
