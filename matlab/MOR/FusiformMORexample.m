@@ -43,14 +43,14 @@ classdef FusiformMORexample < muscle.AModelConfig
             
             % specify model parameters (mu = [viscosity; activation duration; NeumannBC (max force)])
             sys = model.System;
-            sys.Params(1).Range = [1e-3 5];
+            sys.Params(1).Range = [1e-3 10];
             sys.Params(1).Desired = 5;
             sys.Params(1).Spacing = 'log';
             sys.Params(2).Name = 'alpha-ramp';
             sys.Params(2).Range = [1 300];
             sys.Params(2).Desired = 5;
             sys.Params(2).Spacing = 'log';
-            sys.addParam('Neumann BC', [-1e3 0], 5);
+            sys.addParam('Neumann BC', [0.1 1e3], 5);
             sys.Params(3).Spacing = 'log';
             
             f = model.System.f;
@@ -87,7 +87,7 @@ classdef FusiformMORexample < muscle.AModelConfig
             P = [];
 %             if any(elemidx == [13:16]) && faceidx == 4
             if any(elemidx == [geo.NumElements-3:geo.NumElements]) && faceidx == 4
-                P = 1;
+                P = -1;
             end
         end
         
@@ -142,4 +142,3 @@ classdef FusiformMORexample < muscle.AModelConfig
     end
     
 end
-
