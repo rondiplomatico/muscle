@@ -10,7 +10,8 @@ clear classes;
 clc;
 %
 %%
-load('/home/mordhorst/data/musclemodel__id-2129151/musclemodel_.mat');
+%load('/home/mordhorst/data/musclemodel__id-2129151/musclemodel_.mat');%LEAD
+load('/data/homes/mordhorst/data/musclemodel__id-2129151/musclemodel_.mat');%local
 %
 pi = ProcessIndicator('get trajectory data',1,false,1);
 j = 1;
@@ -38,6 +39,7 @@ pm.done;
 pm.SaveFormats = {'jpg'};
 pm.JPEGQuality = '95';
 pm.UseFileTypeFolders = false;
-pm.savePlots('/home/mordhorst/data/MORresults');
+%pm.savePlots('/home/mordhorst/data/MORresults');%LEAD
+pm.savePlots('/data/homes/mordhorst/data/MORresults');%local
 %
 %%
