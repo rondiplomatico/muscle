@@ -38,6 +38,7 @@
 % % compute trajectories and trajectories_fxi
 % %
 % model.TrainingInputs = 1;
+% model.ComputeParallel = true;
 % model.off2_genTrainingData;
 % model.save;
 %
@@ -45,6 +46,7 @@
 % do offline phase 3 
 %
 % model.SpaceReducer.MaxSubspaceSize = 1000;
+% model.SpaceReducer.MinRelImprovement = 1e-7;
 % model.off3_computeReducedSpace;
 % model.save;
 %
