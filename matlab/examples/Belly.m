@@ -63,46 +63,71 @@ classdef Belly < muscle.AModelConfig
     end
     
     methods(Static)
-        function geo27 = getBelly(parts, length, radius, inner_radius, gamma)
-            if nargin < 5
-                gamma = 2;
-                if nargin < 4
-                    inner_radius = .5;
-                    if nargin < 3
-                        radius = 1;
-                         if nargin < 2
-                             length = 10;
-                             if nargin < 1
-                                 parts = 4;
+        function geo27 = getBelly(parts, length, radius, inner_radius, gamma, minz)
+            if nargin < 6
+                minz = [];
+                if nargin < 5
+                    gamma = 2;
+                    if nargin < 4
+                        inner_radius = .5;
+                        if nargin < 3
+                            radius = 1;
+                             if nargin < 2
+                                 length = 10;
+                                 if nargin < 1
+                                     parts = 4;
+                                 end
                              end
-                         end
+                        end
                     end
                 end
             end
-            k = kernels.GaussKernel;
-            k.Gamma = gamma;
-            x = linspace(-length/2,length/2,parts*2+1);
-            fx = k.evaluate(x,0)*radius;
+            x = linspace(0,length,parts*2+1);
+            if isa(radius,'function_handle')
+                fx = radius(x);
+                if size(fx,1) == 1
+                    fx = [fx; fx];
+                end
+            else
+                if isscalar(gamma)
+                    gamma = [gamma gamma];
+                end
+                if isscalar(radius)
+                    radius = [radius radius];
+                end
+                k = kernels.GaussKernel;
+                k.Gamma = gamma(1);
+                fx(1,:) = k.evaluate(x,length/2)'*radius(1);
+                k.Gamma = gamma(2);
+                fx(2,:) = k.evaluate(x,length/2)'*radius(2);
+            end
+            if isscalar(inner_radius)
+                inner_radius = [1 1]*inner_radius;
+            end
 
             c = sin(pi/4);
             c8 = cos(pi/8);
             s8 = sin(pi/8);
             baseplane(:,:,1) = [0 .5 1  0 .5*c c8 0 s8 c
                                 0  0 0 .5 .5*c s8 1 c8 c];
-            R = [0 -1; 1 0];
-            baseplane(:,:,2) = R*baseplane(:,[7 4 1 8 5 2 9 6 3],1);
-            baseplane(:,:,3) = R*baseplane(:,[7 4 1 8 5 2 9 6 3],2);
-            baseplane(:,:,4) = R*baseplane(:,[7 4 1 8 5 2 9 6 3],3);
+            % Mirror first segment
+            baseplane(:,:,2) = [-1 0; 0 1]*baseplane(:,[3 2 1 6 5 4 9 8 7],1);
+            % Rotate others by 180°
+            baseplane(:,:,3) = -baseplane(:,9:-1:1,1);
+            baseplane(:,:,4) = -baseplane(:,9:-1:1,2);
             
             npp = 27*parts;
             nodes = zeros(3,npp*4);
             for p = 1:parts
                 elempos = (p-1)*2 + (1:3);
-                r = ones(9,1) * (inner_radius + fx(elempos)');
+                rx = ones(9,1) * (inner_radius(1) + fx(1,elempos));
+                ry = ones(9,1) * (inner_radius(2) + fx(2,elempos));
                 z = ones(9,1) * x(elempos);
                 for rotpart = 1:4
                     nodepos = ((p-1)*4 + (rotpart-1))*27 + (1:27);
-                    nodes(:,nodepos) = [bsxfun(@times,repmat(baseplane(:,:,rotpart),1,3),r(:)'); z(:)'];
+                    nodes(1,nodepos) = bsxfun(@times,repmat(baseplane(1,:,rotpart),1,3),rx(:)');
+                    nodes(2,nodepos) = bsxfun(@times,repmat(baseplane(2,:,rotpart),1,3),ry(:)');
+                    nodes(3,nodepos) = z(:);
                 end
             end
 
@@ -110,8 +135,45 @@ classdef Belly < muscle.AModelConfig
             [nodes, ~, elems] = unique(nodes','rows','stable');
             nodes = nodes';
             elems = reshape(elems,27,[])';
+            
+            % This little hack allows to restrict the minimum z node
+            % position to a certain value, so as if the muscle belly is
+            % "lying on a table"
+            %
+            % This only works on the "downside" faces, so if the threshold
+            % is larger than the intermediate node position of the side
+            % faces, the muscle geometry will appear "dented".
+            if ~isempty(minz)
+                hlp_g27 = geometry.Cube27Node;
+                centerline_facenodeidx = hlp_g27.MasterFaces(3,:);
+                for elem = [3:4:4*parts 4:4:4*parts]
+                    centerline_nodes = elems(elem,centerline_facenodeidx);
+                    toScale = nodes(2,centerline_nodes) < minz;
+                    factor = minz./nodes(2,centerline_nodes(toScale));
+                    nodes(2,centerline_nodes(toScale)) = minz;
+                    % Also scale inner node positions
+                    inner_nodes = elems(elem,[4:6 13:15 22:24]);
+                    nodes(2,inner_nodes(toScale)) = nodes(2,inner_nodes(toScale)).*factor;
+                end
+            end
+            
             geo27 = geometry.Cube27Node(nodes,elems);
             geo27.swapYZ;
+        end
+        
+        function res = test_BellyGeometrieGeneration
+            g = Belly.getBelly;
+            g = Belly.getBelly(4,35,1,.2,7);
+            g = Belly.getBelly(4,35,1,[.2 .6],5);
+            g = Belly.getBelly(4,35,1,.2,[10 20]);
+            g = Belly.getBelly(4,35,1,[.2 .6],[10 20]);
+            g = Belly.getBelly(4,35,[4 2],.5,[10 20]);
+            g = Belly.getBelly(4,35,@(x)[sqrt(abs(x)); 1./(x-34).^2],.2);
+            g = Belly.getBelly(4,35,@(x)sqrt(abs(x)));
+            g.plot;
+            g = Belly.getBelly(4,35,[4 2],.5,[10 20],-1.5);
+            g.plot;
+            res = 1;
         end
     end
     
