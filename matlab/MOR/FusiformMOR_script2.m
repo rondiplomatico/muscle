@@ -73,4 +73,8 @@ model.off5_computeApproximation;
 model.save;
 %
 %%
+% build reduced model
 %
+%rmodel = model.buildReducedModel;
+%
+%%

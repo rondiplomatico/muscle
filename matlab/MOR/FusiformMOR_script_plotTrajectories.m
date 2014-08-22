@@ -37,7 +37,7 @@ save(fullfile(FusiformMORexample.OutputDir,'script_plotTraj_out'),'o');
 pm = PlotManager;
 pm.LeaveOpen = true;
 pm.FilePrefix = 'ypos_of_precomp_traj';
-h = pm.nextPlot('plottag','Visualisation of  precomputed trajectories (115)',...
+h = pm.nextPlot('plottag','Visualisation of  precomputed trajectories',...
             'time [ms]','y-position of right end');
 % ALL
 plot(h,t,o);
