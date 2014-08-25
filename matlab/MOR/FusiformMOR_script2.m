@@ -1,46 +1,80 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
 % script for the FusiformMORexample - start offline phase of MOR
 %
-% use GridSampler to create different parameter combinations
-% do off1 and off2 (in BaseFullModel.m)
-%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
-clear all;
-close all;
-clear classes;
-clc;
+% clear all;
+% close all;
+% clear classes;
+% clc;
 %
 %%
 % build model
-modconf = FusiformMORexample;
-geo = modconf.PosFE.Geometry;
-model = muscle.Model(modconf);
+%
+% modconf = FusiformMORexample;
+% geo = modconf.PosFE.Geometry;
+% model = muscle.Model(modconf);
 %
 %%
 % vary tolerances
-model.ODESolver.RelTol = 1e-3;
-model.ODESolver.AbsTol = 1e-3;
+%
+% model.ODESolver.RelTol = 1e-3;
+% model.ODESolver.AbsTol = 1e-3;
 %
 %%
+% do offline phase 1&2
+%
 % create parameter grid
-s = sampling.GridSampler;
-model.Sampler = s;
 %
-model.Data.TrajectoryData.UniformTrajectories = false;
-model.Data.TrajectoryFxiData.UniformTrajectories = false;
-%
-model.off1_createParamSamples;
-model.TrainingInputs = 1;
-model.off2_genTrainingData;
-model.save;
+% s = sampling.GridSampler;
+% model.Sampler = s;
+% %
+% model.Data.TrajectoryData.UniformTrajectories = false;
+% model.Data.TrajectoryFxiData.UniformTrajectories = false;
+% %
+% model.off1_createParamSamples;
+% %
+% % compute trajectories and trajectories_fxi
+% %
+% model.TrainingInputs = 1;
+% model.ComputeParallel = true;
+% model.off2_genTrainingData;
+% model.save;
 %
 %%
 % do offline phase 3 
 %
-% first simple
-model.SpaceReducer.MaxSubspaceSize = 1000;
-model.off3_computeReducedSpace;
+% model.SpaceReducer.MaxSubspaceSize = 1000;
+% model.SpaceReducer.MinRelImprovement = 1e-7;
+% model.off3_computeReducedSpace;
+% model.save;
+%
+% test including fxi data
+%IncludeTrajectoryFxiData = true;
+%
+%%
+% do offline phase 4
+%
+sel = data.selection.LinspaceSelector;
+sel.EnsureUniqueData = true;
+sel.Size = 40000;
+a = approx.DEIM(model.System);
+a.TrainDataSelector = sel;
+model.Approx = a;
+model.off4_genApproximationTrainData;
 model.save;
 %
-% then test including fxi data
-%IncludeTrajectoryFxiData = true;
-
+%%
+% offline phase 5
+%
+a.MaxOrder = 1000;
+model.off5_computeApproximation;
+model.save;
+%
+%%
+% build reduced model
+%
+%rmodel = model.buildReducedModel;
+%
+%%
