@@ -182,6 +182,17 @@ classdef BaseFEM < handle
                 a = a + this.FaceAreas(g.Faces(1,:) == elemidx(k) & g.Faces(2,:) == faceidx(k));
             end
         end
+        
+        function v = getElementVolume(this, elemidx)
+            % Returns the volume of the element with the specified index in
+            % [mm³]
+            v = this.elem_detjac(elemidx,:)*this.GaussWeights;
+        end
+        
+        function v = getTotalVolume(this)
+            % Returns the total geometry volume in [mm³]
+            v = sum(this.elem_detjac*this.GaussWeights);
+        end
                 
         function plot(this, pm)
             if nargin < 2

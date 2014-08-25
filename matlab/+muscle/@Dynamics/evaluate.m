@@ -133,9 +133,8 @@ function duvw = evaluate(this, uvwdof, t)
 %             if visc > 0
 %                 v = uvwcomplete(elemidx_velo);
 %                 P = P + visc * v * dtn;
-% %                 P = P + visc * 2 * F' * (v * dtn);
 %             end
-            
+
             weight = fe_pos.GaussWeights(gp) * fe_pos.elem_detjac(m,gp);
 
             integrand_pos = integrand_pos + weight * P * dtn';
