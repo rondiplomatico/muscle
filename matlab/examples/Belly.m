@@ -64,7 +64,7 @@ classdef Belly < muscle.AModelConfig
     
     methods(Static)
         function geo27 = getBelly(parts, length, radius, inner_radius, gamma, minz)
-            if nargin < 6
+            if nargin < 6 || minz == 0
                 minz = [];
                 if nargin < 5
                     gamma = 2;

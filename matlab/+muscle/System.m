@@ -133,6 +133,17 @@ classdef System < models.BaseDynSystem
             this.f = muscle.Dynamics(this);
         end
         
+        function rsys = buildReducedSystem(this, rmodel)
+            % Overrides the default buildReducedModel method in order to
+            % temporarily set the A component used in projection.
+            %
+            % (So far the extra efficiency of "no A" for mu(1) == 0 is
+            % neglected in any reduced model)
+            this.A = this.fD;
+            rsys = buildReducedSystem@models.BaseDynSystem(this, rmodel);
+            this.A = [];
+        end
+        
         function configUpdated(this)
             mc = this.Model.Config;
             if ~isempty(mc)
@@ -222,6 +233,7 @@ classdef System < models.BaseDynSystem
             i.addParamValue('PM',[],@(v)isa(v,'PlotManager'));
             i.addParamValue('DF',[]);
             i.addParamValue('NF',[]);
+            i.addParamValue('F',[]);
             i.parse(varargin{:});
             r = i.Results;
             if ~isempty(r.NF)
@@ -247,6 +259,18 @@ classdef System < models.BaseDynSystem
             vstart = posdofs+1;
             pstart = 2*posdofs+1;
             e = geo.Edges;
+            
+            % "Speedup" factor for faster plots
+            if ~isempty(r.F)
+                t = t(1:r.F:end);
+                uvw = uvw(:,1:r.F:end);
+                if ~isempty(r.DF)
+                    r.DF = r.DF(:,1:r.F:end);
+                end
+                if ~isempty(r.NF)
+                    r.NF = r.NF(:,1:r.F:end);
+                end
+            end
             
             %% Re-add the dirichlet nodes
             uvw = this.includeDirichletValues(t, uvw);
@@ -715,6 +739,7 @@ classdef System < models.BaseDynSystem
             geo = fe.Geometry;
             
             anull = mc.geta0;
+            ismastercoord = strcmp(mc.a0CoordinateSystem,'master');
             this.HasFibres = false;
             if any(anull(:))
                 this.HasFibres = true;
@@ -723,6 +748,7 @@ classdef System < models.BaseDynSystem
 
                 % Precomputations
                 dNgp = fe.gradN(fe.GaussPoints);
+                Ngp = fe.N(fe.GaussPoints);
                 
                 anulldyadanull = zeros(3,3,fe.GaussPointsPerElem*geo.NumElements);
                 dNanull = zeros(geo.DofsPerElement,fe.GaussPointsPerElem,geo.NumElements);
@@ -738,7 +764,11 @@ classdef System < models.BaseDynSystem
                         % Transform a0 to local fibre direction
                         pos = [0 fe.GaussPointsPerElem 2*fe.GaussPointsPerElem]+gp;
                         Jac = u*dNgp(:,pos);
-                        loc_anull = Jac * anull(:,gp,m);
+                        if ismastercoord
+                            loc_anull = Jac * anull(:,gp,m);
+                        else
+                            loc_anull = anull(:,gp,m);
+                        end
                         loc_anull = loc_anull/norm(loc_anull);
                         
                         % Compute "the" two normals (any will do)
@@ -752,7 +782,11 @@ classdef System < models.BaseDynSystem
                         
                         % forward transformation of a0 at gauss points
                         % (plotting only so far)
-                        dNanull(:,gp,m) = dNgp(:,pos) * anull(:,gp,m);
+                        if ismastercoord
+                            dNanull(:,gp,m) = dNgp(:,pos) * anull(:,gp,m);
+                        else
+                            dNanull(:,gp,m) = dNgp(:,pos) * (Jac \ anull(:,gp,m));
+                        end
                         
                         % a0 dyad a0
                         pos = (m-1)*fe.GaussPointsPerElem+gp;
