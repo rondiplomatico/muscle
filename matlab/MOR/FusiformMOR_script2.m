@@ -58,7 +58,7 @@
 %
 sel = data.selection.LinspaceSelector;
 sel.EnsureUniqueData = true;
-sel.Size = 40000;
+sel.Size = 100000;
 a = approx.DEIM(model.System);
 a.TrainDataSelector = sel;
 model.Approx = a;
@@ -76,5 +76,7 @@ model.save;
 % build reduced model
 %
 %rmodel = model.buildReducedModel;
+%ma = Model.Analyser(rmodel);
+%ma.plotReductionOverview
 %
 %%

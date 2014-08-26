@@ -38,7 +38,7 @@ classdef FusiformMORexample < muscle.AModelConfig
             model.ComputeTrajectoryFxiData = true;
             
             % default model parameters 
-            model.DefaultMu = [1; 50; -10];      % mu = [viscosity; activation duration; NeumannBC (max force)]
+            model.DefaultMu = [1; 50; 10];      % mu = [viscosity; activation duration; NeumannBC (max force)]
             model.DefaultInput = 1;             % index for u (is a cell)
             
             % specify model parameters (mu = [viscosity; activation duration; NeumannBC (max force)])
