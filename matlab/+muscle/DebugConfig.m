@@ -87,7 +87,7 @@ classdef DebugConfig < muscle.AModelConfig
                 ftw(:,5,:) = .2;
                 ftw(:,6,:) = .2;
                 this.FibreTypeWeights = ftw;
-                p = motorunit.Pool;
+                p = models.motorunit.Pool;
                 p.FibreTypes = types;
                 this.Pool = p;
                 m.ODESolver.RelTol = .01;

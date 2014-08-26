@@ -34,7 +34,7 @@ For the linear part, we obtain with \eqref{def:discretePgradphidX} the damping m
 		&& k=1\ldots N.\label{def:discretePviscgradphidX}
 \end{align}
 \begin{align*}
-	\vD\bigl[[i],[k]\bigr] &:= \m{1&0&0\\0&1&0\\0&0&1} \sumvk\sumgp w_p \eta \dNimp \cdot \dNkmp \jmp, && i,k=1\ldots N.
+	\vD\bigl[[i],[k]\bigr] &:= \eta\m{1&0&0\\0&1&0\\0&0&1} \sumvk\sumgp w_p \dNimp \cdot \dNkmp \jmp, && i,k=1\ldots N.
 \end{align*}
 
 Also carrying the arguments through to $\vPnl(X,t) = \vPnl(X,\vu(t),\vw(t))$.
@@ -54,7 +54,8 @@ or differential-algebraic equation (DAE)
 \end{align}
 which can be transformed to a first-order system with the substitution $\vv(t) := \vu'(t)$:
 \begin{align}
-	\m{\vI & \vnull\\ \vnull & \vM}\m{\vu'(t)\\ \vv'(t)} &= \m{\vv(t) \\ -\vK(\vu(t),\vw(t)) - \vD\vv(t)},\\
+	\m{\vI & \vnull\\ \vnull & \vM}\m{\vu'(t)\\ \vv'(t)} 
+	&= \m{\vv(t) \\ -\vK(\vu(t),\vw(t))} - \m{\vnull &\vnull\\ \vnull &\vD \\}\m{\vu \\ \vv},\\
 	\text{s.t.}\quad \vg(\vu(t))		&= \vnull.
 \end{align}
 
@@ -63,13 +64,13 @@ For the time-discretization we use the notation $\vu_i := \vu(t_i), t_i := i\Del
 Using the standard backward-Euler scheme results in the implicit system
 \begin{align}
 	\frac{1}{\Delta t}\m{\vI & \vnull\\ \vnull & \vM}\m{\vu_{i+1}-\vu_i\\\vv_{i+1}-\vv_i} 
-	&= \m{\vv_{i+1}\\-\vK(\vu_{i+1},\vw_{i+1})-\vD\vv_{i+1}},\\
+	&= \m{\vv_{i+1}\\-\vK(\vu_{i+1},\vw_{i+1})} - \m{\vnull &\vnull\\ \vnull &\vD \\}\m{\vu_{i+1} \\ \vv_{i+1}},\\
 	\vg(\vu_{i+1})		&= \vnull.
 \end{align}
 Writing the overall system as 
 \begin{align}
 	\vf([\vu; \vv; \vw]) &:= \m{\frac{1}{\Delta t}\m{\vI & \vnull\\ \vnull & \vM}\m{\vu-\vu_i\\\vv-\vv_i} 
-	+ \m{-\vv\\\vK(\vu,\vw)+\vD\vv}\\
+	+ \m{-\vv\\\vK(\vu,\vw)} + \m{\vnull &\vnull\\ \vnull &\vD \\}\m{\vu \\ \vv}\\
 		\vg(\vu)},
 \end{align}
 we apply the standard Newton-Iteration

@@ -27,6 +27,19 @@ classdef AModelConfig < handle
         %
         % @type char @default 'local'
         NeumannCoordinateSystem = 'local';
+        
+        % The coordinate system in which to interpret the a0 vectors of
+        % fibre directions.
+        %
+        % 'master' applies the given directions at the master element
+        % coordinate system and transforms the directions according to the
+        % transformation of the respective element.
+        % 
+        % 'reference' applies the given directions with respect to the
+        % reference coordinate system, e.g. "as-is" at the gauss points.
+        %
+        % @type char @default 'master'
+        a0CoordinateSystem = 'master';
     end
     
     methods
