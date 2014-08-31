@@ -7,15 +7,30 @@ classdef LongMORexample < muscle.AModelConfig
     end
     %
     %%
+    properties  % TODO: set access to what?
+        
+        % element divisions in x-, y-, z-direction
+        Partsx;
+        Partsy;
+        Partsz;
+
+    end
+    %%
     methods
         function this = LongMORexample(devi)
             if nargin < 1
                 devi = .2;
             end
+            px = -10:5:10;%-10:2.5:10;
+            py = -40:5:40;%-40:2.5:40;
+            pz = 0:5:10;%0:2.5:10;
             % Single cube with same config as reference element
-            [pts, cubes] = geometry.Cube20Node.DemoGrid(-10:2.5:10,-40:2.5:40, 0:2.5:10, devi);
+            [pts, cubes] = geometry.Cube20Node.DemoGrid(px, py, pz, devi);
             geo = geometry.Cube20Node(pts, cubes);
             this = this@muscle.AModelConfig(geo);
+            this.Partsx = px;
+            this.Partsy = py;
+            this.Partsz = pz;
         end
         
         function configureModel(this, model)
@@ -58,23 +73,7 @@ classdef LongMORexample < muscle.AModelConfig
             sys = this.Model.System;
             sys.f.alpha = this.getAlphaRamp(mu(2),1);    % (in ..ms, up to maxvalue.., starting at ..ms)
         end
-        
-        function o = getOutputOfInterest(this, model, t, uvw)
-            % Writes the data of interest into o
-            %
-            geo = model.Config.PosFE.Geometry;
-            %[df,nf] = model.getResidualForces(t,uvw);
-            uvw = model.System.includeDirichletValues(t,uvw);
-            % get displacement of loose/right end
-            facenode_idx = [];
-            for k = geo.NumElements-3:geo.NumElements
-                facenode_idx = [facenode_idx; model.getFaceDofsGlobal(k,4,2)];
-            end
-            facenode_idx = unique(facenode_idx);
-%             o = uvw(facenode_idx,:);            % gives matrix, where each rowvector shows positon of one node over time
-            o = mean(uvw(facenode_idx,:),1);      % gives rowvector of mean node-position for all timesteps
-        end
-        
+                
     end
     %
     %%
@@ -83,14 +82,20 @@ classdef LongMORexample < muscle.AModelConfig
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             % Dirichlet conditions: Position (fix both sides)
             geo = this.PosFE.Geometry;
-            %left
-            for k = 1:32
-                displ_dir(:,geo.Elements(k,geo.MasterFaces(3,:))) = true;
+            
+            NrEltsx = size(this.Partsx,2) -1;
+            NrEltsy = size(this.Partsy,2) -1;
+            NrEltsz = size(this.Partsz,2) -1;            
+            
+            for ix = 1:NrEltsx
+                for iz = 1:NrEltsz
+                    % left side
+                    displ_dir(:,geo.Elements((ix-1)*NrEltsy*NrEltsz+iz,geo.MasterFaces(3,:))) = true;
+                    % right side
+                    displ_dir(:,geo.Elements(ix*NrEltsy*NrEltsz-(iz-1),geo.MasterFaces(4,:))) = true;
+                end
             end
-            %right
-            for k = geo.NumElements-31:geo.NumElements
-                displ_dir(:,geo.Elements(k,geo.MasterFaces(4,:))) = true;
-            end
+
         end
         
         function anull = seta0(this, anull)
@@ -98,22 +103,22 @@ classdef LongMORexample < muscle.AModelConfig
             if fe.GaussPointsPerElem ~= 27
                 warning('a0 designed for 27 gauss points!');
             end
-            x = linspace(0,1,8*3);
-            basea0 = [sin(x*pi); cos(x*pi)]; %; zeros(size(x))
-            front = fe.GaussPoints(2,:) < 0;
-            mid = fe.GaussPoints(2,:) == 0;
-            back = fe.GaussPoints(2,:) > 0;
-            % Direction is x
-            for m = 1:8
-                off = (m-1)*3;
-                anull([1 3],front,[m m+8]) = basea0(2,off+1);
-                anull([1 3],mid,[m m+8]) = basea0(2,off+2);
-                anull([1 3],back,[m m+8]) = basea0(2,off+3);
-                
-                anull(2,front,[m m+8]) = basea0(1,off+1);
-                anull(2,mid,[m m+8]) = basea0(1,off+2);
-                anull(2,back,[m m+8]) = basea0(1,off+3);
+            
+            NrEltsx = size(this.Partsx,2) -1;
+            NrEltsy = size(this.Partsy,2) -1;
+            NrEltsz = size(this.Partsz,2) -1;
+            
+            x = linspace(0,1,NrEltsy);
+            basea0 = [-sin(x*pi); cos(x*pi)];
+            for ix = 1:NrEltsx
+                for iy = 1:NrEltsy
+                    for iz = 1:NrEltsz
+                        anull(2,:,(ix-1)*iy*iz+iz) = basea0(2,iy);
+                        anull(3,:,(ix-1)*iy*iz+iz) = basea0(1,iy);
+                    end
+                end
             end
+            
         end
         
     end
