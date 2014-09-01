@@ -60,12 +60,8 @@ pm.done;
 pm.SaveFormats = {'jpg'};
 pm.ExportDPI = 300;
 pm.UseFileTypeFolders = false;
-<<<<<<< HEAD
+pm.NoTitlesOnSave = true;
 %pm.savePlots('/home/mordhorst/data/MORresults');%LEAD
 pm.savePlots('/data/homes/mordhorst/data/MORresults');%local
-=======
-pm.NoTitlesOnSave = true;
-pm.savePlots('/home/mordhorst/data/MORresults');
->>>>>>> c0ea32858b015fd6e1cd25c61ed8f6c6d2139484
 %
 %%
