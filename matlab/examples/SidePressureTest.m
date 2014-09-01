@@ -238,10 +238,11 @@ classdef SidePressureTest < muscle.AModelConfig
             c = ColorMapCreator;
             c.useJet([0.01 0.05 0.1 .5]);
             
-            mus = [.01 .1 1];
+            %mus = [.01 .1 1];
+            mus = .1;
             mus = [mus; zeros(size(mus))];
             m.Data.ParamSamples = mus;
-            nparams = length(mus);
+            nparams = size(mus,2);
             pi = ProcessIndicator('Running %d scenarios',nparams*m.System.InputCount,false,nparams*m.System.InputCount);
             for k=1:nparams
                 mu = mus(:,k);
@@ -260,7 +261,7 @@ classdef SidePressureTest < muscle.AModelConfig
                     h = pm.nextPlot(sprintf('force_velo_load%g_visc%g',mc.Loads(inidx),mu(1)),...
                         sprintf('Force plot\nLoad: %g[g] (eff. pressure %g[kPa]), viscosity:%g [mNs/m]',mc.Loads(inidx),mc.Pressures(inidx),mu(1)),...
                         'Time [ms]','Force [N]');
-                    plot(h,t,o(1,:),'r');
+                    plot(h,t,o(1,:),'r','LineWidth',2);
                     
                     pi.step;
                 end

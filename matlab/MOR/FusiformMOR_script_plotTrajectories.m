@@ -13,28 +13,32 @@ clc;
 % load('/home/mordhorst/data/musclemodel__id-2129151/musclemodel_.mat');%0.5 LEAD
 % load('/data/homes/mordhorst/data/musclemodel__id-2129151/musclemodel_.mat');%0.5 local
 % load('/home/mordhorst/data/musclemodel__id-2140558/musclemodel_.mat');%1e-3
-load('/home/mordhorst/data/musclemodel__id-2112992/musclemodel_.mat');%0.1
+% load('/home/mordhorst/data/musclemodel__id-2112992/musclemodel_.mat');%0.1
+load('/home/cbm/data/musclemodel__id-2101435/musclemodel_.mat');%logspace, 1e-3
 %
-pi = ProcessIndicator('get trajectory data',1,false,1);
-j = 1;
-for k = 1:125
-%     if ~any(k == [1 11 16 21 31 36 41 46 81 86])
-%     if ~any(k == [1 6 11 16 21 46 51 56 61 66 71 76 78 81 86 91 96 101])
-    if ~any(k == [6 11 16 21 28 31 36 41 46 56 61 71 91])
-        [t,y] = m.simulate(m.Data.ParamSamples(:,k));
-        o(j,:) = m.Config.getOutputOfInterest(m,t,y);
-%         o(k,:) = m.Config.getOutputOfInterest(m,t,y);
-        j = j+1;
-        pi.step(1/115);
-    end
+
+np = m.Data.SampleCount;
+o = -Inf(np,length(m.Times));
+pi = ProcessIndicator('Reading %d trajectories',np,false,np);
+for k = 1:np
+    [t,y] = m.simulate(m.Data.ParamSamples(:,k));
+    o(k,1:length(t)) = m.Config.getOutputOfInterest(m,t,y);
+    pi.step;
 end
 pi.stop;
+
+save(fullfile(FusiformMORexample.OutputDir,'script_plotTraj_out'),'o');
+
+% ggf unvollst. löschen
+% incomplete = find(m.TrajectoriesCompleted(3,:) == 0);
+% o(incomplete,:) = [];
+
 %
 %%
 pm = PlotManager;
 pm.LeaveOpen = true;
 pm.FilePrefix = 'ypos_of_precomp_traj';
-h = pm.nextPlot('plottag','Visualisation of  precomputed trajectories (115)',...
+h = pm.nextPlot('plottag','Visualisation of  precomputed trajectories',...
             'time [ms]','y-position of right end');
 % ALL
 plot(h,t,o);
@@ -57,11 +61,11 @@ pm.done;
 %
 %%
 % save
-pm.SaveFormats = {'jpg'};
+pm.SaveFormats = {'jpg','eps'};
 pm.ExportDPI = 300;
 pm.UseFileTypeFolders = false;
 pm.NoTitlesOnSave = true;
-%pm.savePlots('/home/mordhorst/data/MORresults');%LEAD
-pm.savePlots('/data/homes/mordhorst/data/MORresults');%local
+
+pm.savePlots(FusiformMORexample.OutputDir);
 %
 %%

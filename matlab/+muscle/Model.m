@@ -8,6 +8,10 @@ classdef Model < models.BaseFullModel
     %
     % @author Daniel Wirtz @date 2012-11-22
     
+    properties
+        MuscleDensity = 1.1e-6; % [kg/mm³] (1100kg/m³)
+    end
+    
     properties(SetAccess=private)
         % Seed that can be used by random number generator instances in order to enable result
         % reproduction.
@@ -15,8 +19,6 @@ classdef Model < models.BaseFullModel
         RandSeed = 1;
         
         Config;
-        
-        MuscleDensity = 1.1e-6; % [kg/mm³] (1100kg/m³)
         
         Gravity = 9.80665; % [m/s²]
     end
@@ -93,7 +95,7 @@ classdef Model < models.BaseFullModel
             end
             f = this.System.f;
             
-            lambda = 0:.005:2;
+            lambda = .5:.005:2;
             fl = (f.Pmax / f.lambdafopt) * f.ForceLengthFun(lambda/f.lambdafopt);
             markertf = max(0,(f.b1./lambda.^2).*(lambda.^f.d1-1));
 %             markertf = (f.b1./lambda.^2).*(lambda.^f.d1-1);
@@ -160,7 +162,7 @@ classdef Model < models.BaseFullModel
             pm.done;
         end
         
-        function plotGeometrySetup(this, pm)
+        function varargout = plotGeometrySetup(this, pm)
             args = {};
             if nargin == 2
                 args = {'PM',pm};
@@ -170,7 +172,7 @@ classdef Model < models.BaseFullModel
             if ~isempty(nf)
                 args(end+1:end+2) = {'NF',nf};
             end
-            this.System.plot(0,x0,args{:});
+            [varargout{1:nargout}] = this.System.plot(0,x0,args{:});
         end
         
         function [residuals_dirichlet, residuals_neumann] = getResidualForces(this, t, uvw)
@@ -326,6 +328,7 @@ classdef Model < models.BaseFullModel
                 sobj = this;
                 this = muscle.Model;
                 this.RandSeed = sobj.RandSeed;
+                this.Config = sobj.Config;
                 this = loadobj@models.BaseFullModel(this, sobj);
             else
                 this = loadobj@models.BaseFullModel(this);

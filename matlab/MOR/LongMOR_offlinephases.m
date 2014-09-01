@@ -1,20 +1,28 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% script for the FusiformMORexample - start offline phase of MOR
+% script for the LongMORexample - offline phase of MOR
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
-% clear all;
-% close all;
-% clear classes;
-% clc;
+%
+%matlabpool open
+%
+%%
+clear all;
+close all;
+clear classes;
+clc;
 %
 %%
 % build model
 %
-% modconf = FusiformMORexample;
-% geo = modconf.PosFE.Geometry;
-% model = muscle.Model(modconf);
+modconf = LongMORexample;
+geo = modconf.PosFE.Geometry;
+model = muscle.Model(modconf);
+%
+%%
+% runtime test
+[t,y,time] = model.simulate([5;40]);
 %
 %%
 % vary tolerances
@@ -37,8 +45,8 @@
 % %
 % % compute trajectories and trajectories_fxi
 % %
-% model.TrainingInputs = 1;
-% model.ComputeParallel = true;
+% %model.TrainingInputs = 1;   % needed here??
+% %model.ComputeParallel = true;
 % model.off2_genTrainingData;
 % model.save;
 %
@@ -50,27 +58,24 @@
 % model.off3_computeReducedSpace;
 % model.save;
 %
-% test including fxi data
-%IncludeTrajectoryFxiData = true;
-%
 %%
 % do offline phase 4
 %
-sel = data.selection.LinspaceSelector;
-sel.EnsureUniqueData = true;
-sel.Size = 100000;
-a = approx.DEIM(model.System);
-a.TrainDataSelector = sel;
-model.Approx = a;
-model.off4_genApproximationTrainData;
-model.save;
+% sel = data.selection.LinspaceSelector;
+% sel.EnsureUniqueData = true;
+% sel.Size = 100000;
+% a = approx.DEIM(model.System);
+% a.TrainDataSelector = sel;
+% model.Approx = a;
+% model.off4_genApproximationTrainData;
+% model.save;
 %
 %%
 % offline phase 5
 %
-a.MaxOrder = 1000;
-model.off5_computeApproximation;
-model.save;
+% a.MaxOrder = 1000;
+% model.off5_computeApproximation;
+% model.save;
 %
 %%
 % build reduced model
@@ -80,3 +85,6 @@ model.save;
 %ma.plotReductionOverview
 %
 %%
+%
+%matlabpool close
+%
