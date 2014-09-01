@@ -22,33 +22,33 @@ model = muscle.Model(modconf);
 %
 %%
 % runtime test
-%[t,y,time] = model.simulate([5;40]);
+[t,y,time] = model.simulate([5;40]);
 %
 %%
 % vary tolerances
 %
-model.ODESolver.RelTol = 1e-3;
-model.ODESolver.AbsTol = 1e-3;
+% model.ODESolver.RelTol = 1e-3;
+% model.ODESolver.AbsTol = 1e-3;
 %
 %%
 % do offline phase 1&2
 %
 % create parameter grid
 %
-s = sampling.GridSampler;
-model.Sampler = s;
-%
-model.Data.TrajectoryData.UniformTrajectories = false;
-model.Data.TrajectoryFxiData.UniformTrajectories = false;
-%
-model.off1_createParamSamples;
-%
-% compute trajectories and trajectories_fxi
-%
-model.TrainingInputs = 1;   % needed here??
-model.ComputeParallel = true;
-model.off2_genTrainingData;
-model.save;
+% s = sampling.GridSampler;
+% model.Sampler = s;
+% %
+% model.Data.TrajectoryData.UniformTrajectories = false;
+% model.Data.TrajectoryFxiData.UniformTrajectories = false;
+% %
+% model.off1_createParamSamples;
+% %
+% % compute trajectories and trajectories_fxi
+% %
+% %model.TrainingInputs = 1;   % needed here??
+% %model.ComputeParallel = true;
+% model.off2_genTrainingData;
+% model.save;
 %
 %%
 % do offline phase 3 
