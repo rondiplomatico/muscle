@@ -4,6 +4,10 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
+%
+%matlabpool open
+%
+%%
 clear all;
 close all;
 clear classes;
@@ -15,6 +19,10 @@ clc;
 modconf = LongMORexample;
 geo = modconf.PosFE.Geometry;
 model = muscle.Model(modconf);
+%
+%%
+% runtime test
+%[t,y,time] = model.simulate([5;40]);
 %
 %%
 % vary tolerances
@@ -77,3 +85,6 @@ model.save;
 %ma.plotReductionOverview
 %
 %%
+%
+%matlabpool close
+%

@@ -21,9 +21,9 @@ classdef LongMORexample < muscle.AModelConfig
             if nargin < 1
                 devi = .2;
             end
-            px = -10:5:10;%-10:2.5:10;
-            py = -40:5:40;%-40:2.5:40;
-            pz = 0:5:10;%0:2.5:10;
+            px = -10:2.5:10;
+            py = -40:2.5:40;
+            pz = 0:2.5:10;
             % Single cube with same config as reference element
             [pts, cubes] = geometry.Cube20Node.DemoGrid(px, py, pz, devi);
             geo = geometry.Cube20Node(pts, cubes);
@@ -113,8 +113,8 @@ classdef LongMORexample < muscle.AModelConfig
             for ix = 1:NrEltsx
                 for iy = 1:NrEltsy
                     for iz = 1:NrEltsz
-                        anull(2,:,(ix-1)*iy*iz+iz) = basea0(2,iy);
-                        anull(3,:,(ix-1)*iy*iz+iz) = basea0(1,iy);
+                        anull(2,:,(ix-1)*NrEltsy*NrEltsz+(iy-1)*NrEltsz+iz) = basea0(2,iy);
+                        anull(3,:,(ix-1)*NrEltsy*NrEltsz+(iy-1)*NrEltsz+iz) = basea0(1,iy);
                     end
                 end
             end
