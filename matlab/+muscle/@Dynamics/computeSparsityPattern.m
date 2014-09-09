@@ -13,8 +13,8 @@ function computeSparsityPattern(this)
     i = (1:3*N)';
     j = ((1:3*N)+3*N)';
 
-    globidx_disp = sys.globidx_displ;
-    globidx_press = sys.globidx_pressure;
+    globidx_disp = sys.idx_u_glob_elems;
+    globidx_press = sys.idx_p_glob_elems;
 
     dofs_displ = N*3;
 %     visc = this.fViscosity;
@@ -77,8 +77,8 @@ function computeSparsityPattern(this)
     end
     J = sparse(double(i),double(j),ones(size(i)),6*N+M,6*N+M);
     % Remove values at dirichlet nodes
-    J(:,sys.bc_dir_idx) = [];
-    J(sys.bc_dir_idx,:) = [];
+    J(:,sys.idx_uv_bc_glob) = [];
+    J(sys.idx_uv_bc_glob,:) = [];
 
     this.JSparsityPattern = logical(J);
     end

@@ -5,8 +5,8 @@ function duvw  = evaluate(this, uvwdof, t)
     geo = fe_pos.Geometry;
     fe_press = mc.PressFE;
     pgeo = fe_press.Geometry;
-    elem_idx_u_glob = sys.globidx_displ;
-    elem_idx_p_glob = sys.globidx_pressure;
+    elem_idx_u_glob = sys.idx_u_glob_elems;
+    elem_idx_p_glob = sys.idx_p_glob_elems;
     unassembled = this.ComputeUnassembled;
 
     num_u_glob = geo.NumNodes*3;
@@ -40,11 +40,11 @@ function duvw  = evaluate(this, uvwdof, t)
 
     % Include dirichlet values to state vector
     uvwcomplete = zeros(2*num_u_glob + pgeo.NumNodes,1);
-    uvwcomplete(sys.dof_idx_global) = uvwdof;
-    uvwcomplete(sys.bc_dir_idx) = sys.bc_dir_val;
+    uvwcomplete(sys.idx_uv_dof_glob) = uvwdof;
+    uvwcomplete(sys.idx_uv_bc_glob) = sys.val_uv_bc_glob;
     % Check if velocity bc's should still be applied
     if t > sys.ApplyVelocityBCUntil
-        uvwcomplete(sys.bc_dir_velo_idx) = 0;
+        uvwcomplete(sys.idx_v_bc_glob) = 0;
     end
     
     dofsperelem_u = geo.DofsPerElement;
@@ -173,15 +173,15 @@ function duvw  = evaluate(this, uvwdof, t)
     end
     
     if unassembled
-        duvw(num_u_glob+this.bc_dir_idx_unass) = [];
+        duvw(this.idx_uv_bc_glob_unass) = [];
     else
         %% Save & remove values at dirichlet pos/velo nodes
-        this.LastBCResiduals = duvw([sys.bc_dir_displ_idx+num_u_glob; sys.bc_dir_velo_idx]);
-        duvw(sys.bc_dir_idx) = [];
+        this.LastBCResiduals = duvw([sys.idx_u_bc_glob+num_u_glob; sys.idx_v_bc_glob]);
+        duvw(sys.idx_uv_bc_glob) = [];
         
         %% If direct mass matrix inversion is used
         if this.usemassinv
-            duvw(sys.dof_idx_velo) = sys.Minv * duvw(sys.dof_idx_velo);
+            duvw(sys.idx_v_dof_glob) = sys.Minv * duvw(sys.idx_v_dof_glob);
         end
     end
 end

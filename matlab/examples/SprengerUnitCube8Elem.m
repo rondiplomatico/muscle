@@ -103,8 +103,8 @@ classdef SprengerUnitCube8Elem < muscle.AModelConfig
             % Compute DoF positions of nodes (x,y,z)
             dofidx = [(idx-1)*3+1 (idx-1)*3+2 (idx-1)*3+3];
             % Get relative position from overall dirichlet index
-            [~, relpos] = intersect(m.System.bc_dir_displ_idx, dofidx);
-            [~, otherrelpos] = setdiff(m.System.bc_dir_displ_idx, dofidx);
+            [~, relpos] = intersect(m.System.idx_u_bc_glob, dofidx);
+            [~, otherrelpos] = setdiff(m.System.idx_u_bc_glob, dofidx);
             
             alphas = [.1 .2];% .3 .4];
             vis = [1 1];% 4 5];

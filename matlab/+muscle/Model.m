@@ -179,15 +179,15 @@ classdef Model < models.BaseFullModel
         
         function [residuals_dirichlet, residuals_neumann] = getResidualForces(this, t, uvw)
             sys = this.System;
-            posvals = length(sys.bc_dir_displ_idx);
-            residuals_dirichlet = zeros(posvals+length(sys.bc_dir_velo_idx),length(t));
+            posvals = length(sys.idx_u_bc_glob);
+            residuals_dirichlet = zeros(posvals+length(sys.idx_v_bc_glob),length(t));
             residuals_neumann = zeros(length(sys.bc_neum_forces_nodeidx),length(t));
             pos_dofs = this.Config.PosFE.Geometry.NumNodes * 3;
             dyall = zeros(2*pos_dofs + this.Config.PressFE.Geometry.NumNodes,1);
             for k=1:length(t)
                 dy = sys.f.evaluate(uvw(:,k),t(k));
                 % Place in global vector
-                dyall(sys.dof_idx_global,:) = dy;
+                dyall(sys.idx_uv_dof_glob,:) = dy;
                 % Select nodes that are exposed to neumann conditions (the
                 % index is in global positions and not effective DoFs)
                 residuals_neumann(:,k) = dyall(pos_dofs+sys.bc_neum_forces_nodeidx);
@@ -225,10 +225,10 @@ classdef Model < models.BaseFullModel
                 dim = 1:3;
             end
             geo = this.Config.PosFE.Geometry;
-            idx_face = false(size(this.System.bc_dir_displ));
+            idx_face = false(size(this.System.bool_u_bc_nodes));
             idx_face(dim,geo.Elements(elem,geo.MasterFaces(face,:))) = true;
-            fidx = find(this.System.bc_dir_displ & idx_face);
-            [~, idx] = intersect(this.System.bc_dir_displ_idx, fidx);
+            fidx = find(this.System.bool_u_bc_nodes & idx_face);
+            [~, idx] = intersect(this.System.idx_u_bc_glob, fidx);
         end
         
         function setConfig(this, value)

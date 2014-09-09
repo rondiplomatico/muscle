@@ -61,13 +61,13 @@ function J = getStateJacobian(this, uvwdof, t)
     s(1:dofs_pos) = 1;
     cur_off = dofs_pos;
     
-    globidx_pos = sys.globidx_displ;
-    globidx_press = sys.globidx_pressure;
+    globidx_pos = sys.idx_u_glob_elems;
+    globidx_press = sys.idx_p_glob_elems;
 
     % Include dirichlet values to state vector
     uvwcomplete = zeros(2*dofs_pos + pgeo.NumNodes,1);
-    uvwcomplete(sys.dof_idx_global) = uvwdof;
-    uvwcomplete(sys.bc_dir_idx) = sys.bc_dir_val;
+    uvwcomplete(sys.idx_uv_dof_glob) = uvwdof;
+    uvwcomplete(sys.idx_uv_bc_glob) = sys.val_uv_bc_glob;
     
     for m = 1:num_elements
         elemidx_pos_XYZ = globidx_pos(:,:,m);
@@ -296,11 +296,11 @@ function J = getStateJacobian(this, uvwdof, t)
     end
     J = sparse(i,j,s,6*N+M,6*N+M);
     % Remove values at dirichlet nodes
-    J(:,sys.bc_dir_idx) = [];
-    J(sys.bc_dir_idx,:) = [];
+    J(:,sys.idx_uv_bc_glob) = [];
+    J(sys.idx_uv_bc_glob,:) = [];
 
     if this.usemassinv
         % Multiply with inverse of Mass matrix!
-        J(sys.dof_idx_velo,:) = sys.Minv*J(sys.dof_idx_velo,:);
+        J(sys.idx_v_dof_glob,:) = sys.Minv*J(sys.idx_v_dof_glob,:);
     end
 end

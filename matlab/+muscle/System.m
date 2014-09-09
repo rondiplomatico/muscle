@@ -10,10 +10,10 @@ classdef System < models.BaseDynSystem
        % The global index of node x,y,z positions within uvw.
        %
        % The velocities are indentically indexed but 3*NumNodes later.
-       globidx_displ;
+       idx_u_glob_elems;
        
        % The global index of node pressures within uvw.
-       globidx_pressure;
+       idx_p_glob_elems;
        
        % Set this to a double value to apply velocity dirichlet conditions
        % only up to a certain time (zero after that)
@@ -30,20 +30,20 @@ classdef System < models.BaseDynSystem
        % 8-corner elements) within the quadratic global node numbering
        %
        % Used for plotting only so far.
-       pressure_to_displ_nodes;
+       idx_p_to_u_nodes;
        
        % The overall values of dirichlet conditions
        %
        % To specify in [mm] for position and [mm/ms] for velocity
        % 
-       % Collected from bc_dir_displ_val, bc_dir_velo_val
-       bc_dir_val;
+       % Collected from val_u_bc, val_v_bc
+       val_uv_bc_glob;
        
-       % The positions of the dirichlet values within the GLOBAL node/xyz
+       % The positions of the dirichlet values within the global node/xyz
        % state space vector
        %
-       % Collected from bc_dir_displ_idx, bc_dir_velo_idx
-       bc_dir_idx;
+       % Collected from idx_u_bc_glob, idx_v_bc_glob
+       idx_uv_bc_glob;
        
        % Boundary conditions: 3 times numnodes logical matrix telling
        % which degree of freedom of which (position) node is fixed
@@ -51,14 +51,14 @@ classdef System < models.BaseDynSystem
        % x | 1    0    0       |
        % y | 1    1    0 ...   |
        % z | 1    0    0       |
-       bc_dir_displ;
-       bc_dir_displ_idx;
-       bc_dir_displ_val; % [mm]
+       bool_u_bc_nodes;
+       idx_u_bc_glob;
+       val_u_bc; % [mm]
        
        % Same
-       bc_dir_velo;
-       bc_dir_velo_idx;
-       bc_dir_velo_val; % [mm/ms]
+       bool_v_bc_nodes;
+       idx_v_bc_glob;
+       val_v_bc; % [mm/ms]
               
        bc_neum_forces_nodeidx; % [N]
        bc_neum_forces_val;
@@ -68,11 +68,20 @@ classdef System < models.BaseDynSystem
        % global indexing.
        %
        % Used to join dofs with dirichlet values
-       dof_idx_global;
+       idx_uv_dof_glob;
        
        % The indices of velocity components in the effective dof vector
-       dof_idx_displ;
-       dof_idx_velo;
+       idx_u_dof_glob;
+       num_u_dof;
+       idx_v_dof_glob;
+       num_v_dof;
+       idx_p_dof_glob;
+       num_p_dof;
+       
+       % Total number of discrete field points including dirichlet values
+       num_uvp_glob;
+       % Total number of discrete field points that are degrees of freedom
+       num_uvp_dof;
        
        Minv;
        
@@ -148,25 +157,28 @@ classdef System < models.BaseDynSystem
             mc = this.Model.Config;
             if ~isempty(mc)
                 tq = mc.PosFE;
-                g = tq.Geometry;
+                geo_uv = tq.Geometry;
                 tl = mc.PressFE;
-                gp = tl.Geometry;
+                geo_p = tl.Geometry;
 
-    %             % Find the indices of the pressure nodes in the displacement
-    %             % nodes geometry (used for plotting)
-                this.pressure_to_displ_nodes = g.getCommonNodesWith(gp);
+                % Find the indices of the pressure nodes in the displacement
+                % nodes geometry (used for plotting)
+                this.idx_p_to_u_nodes = geo_uv.getCommonNodesWith(geo_p);
 
                 % Call subroutine for boundary condition index crunching
                 this.computeDirichletBC;
+                
+                this.num_uvp_glob = geo_uv.NumNodes * 6 + geo_p.NumNodes;
+                this.num_uvp_dof = this.num_uvp_glob - length(this.val_uv_bc_glob);
 
                 %% Construct B matrix
                 % Collect neumann forces
                 [B, this.bc_neum_forces_nodeidx] = this.getSpatialExternalForces;
                 % Only set up forces if present
                 if ~isempty(this.bc_neum_forces_nodeidx)
-                    this.bc_neum_forces_val = B(this.bc_neum_forces_nodeidx + g.NumNodes * 3);
+                    this.bc_neum_forces_val = B(this.bc_neum_forces_nodeidx + geo_uv.NumNodes * 3);
                     % Remove dirichlet DoFs
-                    B(this.bc_dir_idx) = [];
+                    B(this.idx_uv_bc_glob) = [];
                     % Set as constant input conversion matrix
                     this.B = dscomponents.LinearInputConv(B);
                     % Set input function
@@ -181,23 +193,23 @@ classdef System < models.BaseDynSystem
                 % "elems" matrix contains the overall DOF numbers of each
                 % element in the order of the nodes (along row) in the master
                 % element.
-                ne = g.NumElements;
-                globalelementdofs = zeros(3,g.DofsPerElement,ne,'int32');
+                ne = geo_uv.NumElements;
+                globalelementdofs = zeros(3,geo_uv.DofsPerElement,ne,'int32');
                 for m = 1:ne
                     % First index of element dof in global array
-                    hlp = (g.Elements(m,:)-1)*3+1;
+                    hlp = (geo_uv.Elements(m,:)-1)*3+1;
                     % Use first, second and third as positions.
                     globalelementdofs(:,:,m) = [hlp; hlp+1; hlp+2];
                 end
-                this.globidx_displ = globalelementdofs;
+                this.idx_u_glob_elems = globalelementdofs;
 
                 % The same for the pressure
-                globalpressuredofs = zeros(gp.DofsPerElement,gp.NumElements,'int32');
-                off = g.NumNodes * 6;
-                for m = 1:gp.NumElements
-                    globalpressuredofs(:,m) = off + gp.Elements(m,:);
+                globalpressuredofs = zeros(geo_p.DofsPerElement,geo_p.NumElements,'int32');
+                off = geo_uv.NumNodes * 6;
+                for m = 1:geo_p.NumElements
+                    globalpressuredofs(:,m) = off + geo_p.Elements(m,:);
                 end
-                this.globidx_pressure = globalpressuredofs;
+                this.idx_p_glob_elems = globalpressuredofs;
 
                 %% Compile Mass Matrix
                 this.M = this.assembleMassMatrix;
@@ -275,20 +287,20 @@ classdef System < models.BaseDynSystem
             %% Re-add the dirichlet nodes
             uvw = this.includeDirichletValues(t, uvw);
             
-            hlp = sum(this.bc_dir_displ,1);
+            hlp = sum(this.bool_u_bc_nodes,1);
             bc_dir_3pos_applies = hlp == 3;
             bc_dir_2pos_applies = hlp == 2;
             bc_dir_1pos_applies = hlp == 1;
             bc_dir_pos_applies = hlp >= 1; 
-            bc_dir_velo_applies = sum(this.bc_dir_velo,1) >= 1;
-            no_bc = ~bc_dir_pos_applies & ~bc_dir_velo_applies;
+            bool_v_bc_nodes_applies = sum(this.bool_v_bc_nodes,1) >= 1;
+            no_bc = ~bc_dir_pos_applies & ~bool_v_bc_nodes_applies;
             
             if ~isempty(r.DF)
-                have_residuals = bc_dir_pos_applies | bc_dir_velo_applies;
+                have_residuals = bc_dir_pos_applies | bool_v_bc_nodes_applies;
                 % By sorting and combining the pos/velo Dir BC, the
                 % plotting of mixed BCs on one node is plotted correctly.
-                residuals_pos = this.bc_dir_displ | this.bc_dir_velo;
-                [~, sortidx] = sort([this.bc_dir_displ_idx; this.bc_dir_velo_idx-posdofs]);
+                residuals_pos = this.bool_u_bc_nodes | this.bool_v_bc_nodes;
+                [~, sortidx] = sort([this.idx_u_bc_glob; this.idx_v_bc_glob-posdofs]);
                 % Preallocate the residuals matrix
                 residuals = zeros(size(residuals_pos));
                 maxdfval = max(abs(r.DF(:)))/10;
@@ -305,7 +317,7 @@ classdef System < models.BaseDynSystem
                 % Get forces on each node in x,y,z directions
                 % This is where the connection between plane index and
                 % x,y,z coordinate is "restored"
-                forces = zeros(size(this.bc_dir_displ));
+                forces = zeros(size(this.bool_u_bc_nodes));
                 forces(this.bc_neum_forces_nodeidx) = this.bc_neum_forces_val;
                 
                 % Forces at face centers
@@ -323,7 +335,7 @@ classdef System < models.BaseDynSystem
                 forces = forces(:,forces_apply);
                 
                 if ~isempty(r.NF)
-                    residual_neumann_forces = zeros(size(this.bc_dir_displ));
+                    residual_neumann_forces = zeros(size(this.bool_u_bc_nodes));
                 end
             end
             
@@ -381,7 +393,7 @@ classdef System < models.BaseDynSystem
                 plot3(h,u(1,bc_dir_1pos_applies),u(2,bc_dir_1pos_applies),u(3,bc_dir_1pos_applies),'.','MarkerSize',20,'Color',[.7 .7 .7]);
                 
                 % Velocity
-                plot3(h,u(1,bc_dir_velo_applies),u(2,bc_dir_velo_applies),u(3,bc_dir_velo_applies),'g.','MarkerSize',20);
+                plot3(h,u(1,bool_v_bc_nodes_applies),u(2,bool_v_bc_nodes_applies),u(3,bool_v_bc_nodes_applies),'g.','MarkerSize',20);
                 
                 %% Dirichlet Forces
                 if ~isempty(r.DF)
@@ -418,7 +430,7 @@ classdef System < models.BaseDynSystem
                 %% Pressure
                 if r.Pressure
                     p = uvw(pstart:end,ts);
-                    pn = this.pressure_to_displ_nodes;
+                    pn = this.idx_p_to_u_nodes;
                     pneg = p<0;
                     % Negative pressures
                     if any(pneg)
@@ -435,7 +447,7 @@ classdef System < models.BaseDynSystem
                     Ngp = dfem.N(dfem.GaussPoints);
                     for m = 1:geo.NumElements
                         u = uvw(1:vstart-1,ts);
-                        u = u(this.globidx_displ(:,:,m));
+                        u = u(this.idx_u_glob_elems(:,:,m));
                         
                         gps = u*Ngp;
                         anull = u*this.dNa0(:,:,m);
@@ -487,20 +499,14 @@ classdef System < models.BaseDynSystem
         end
         
         function uvwall = includeDirichletValues(this, t, uvw)
-            mc = this.Model.Config;
-            dfem = mc.PosFE;
-            geo = dfem.Geometry;
-            pfem = mc.PressFE;
-            pgeo = pfem.Geometry;
-            
             %% Re-add the dirichlet nodes
-            uvwall = zeros(geo.NumNodes * 6 + pgeo.NumNodes, size(uvw,2));
-            uvwall(this.dof_idx_global,:) = uvw;
-            uvwall(this.bc_dir_idx,:) = repmat(this.bc_dir_val,1,size(uvw,2));
+            uvwall = zeros(this.num_uvp_glob, size(uvw,2));
+            uvwall(this.idx_uv_dof_glob,:) = uvw;
+            uvwall(this.idx_uv_bc_glob,:) = repmat(this.val_uv_bc_glob,1,size(uvw,2));
             
             sys = this.Model.System;
             zerovel = t > sys.ApplyVelocityBCUntil;
-            uvwall(sys.bc_dir_velo_idx,zerovel) = 0;
+            uvwall(sys.idx_v_bc_glob,zerovel) = 0;
         end
         
     end
@@ -544,37 +550,26 @@ classdef System < models.BaseDynSystem
             mc = this.Model.Config;
             tq = mc.PosFE;
             geo = tq.Geometry;
-            tl = mc.PressFE;
-            pgeo = tl.Geometry;
+            
             % All zero, especially the first tq.NumNodes * 3 velocity
             % entries and pressure
-            x0 = zeros(geo.NumNodes * 6 + pgeo.NumNodes,1);
+            x0 = zeros(this.num_uvp_glob,1);
             
             % Fill in the reference configuration positions as initial
             % conditions
             for m = 1:geo.NumElements
-                 dofpos = this.globidx_displ(:,:,m);
+                 dofpos = this.idx_u_glob_elems(:,:,m);
                  x0(dofpos) = geo.Nodes(:,geo.Elements(m,:));
             end
             
             % Initial conditions for pressure (s.t. S(X,0) = 0)
-            x0(geo.NumNodes * 6+1:end) = -2*this.f.c10-4*this.f.c01;
-            
-%             velo_dir = false(3,tq.NumNodes);  
-%             for k = [1 2 7 8]
-%             for k = 1
-%                 % Quadratic
-%                 velo_dir(1,tq.elems(k,[1:3 9 10 13:15])) = true;
-%                 %velo_dir(3,tq.elems(1,[1:3 9 10 13:15])) = true;
-%     %             velo_dir(1,tq.elems(1,[3 10 15])) = true;
-%             end
-%             x0(find(velo_dir)+tq.NumNodes * 3) = .5;
+            x0(geo.NumNodes*6+1 :end) = -2*this.f.c10-4*this.f.c01;
 
             % Give the model config a chance to provide x0
             x0 = mc.getX0(x0);
 
             % Remove dirichlet values
-            x0(this.bc_dir_idx) = [];
+            x0(this.idx_uv_bc_glob) = [];
             
             x0 = dscomponents.ConstInitialValue(x0);
         end
@@ -599,18 +594,18 @@ classdef System < models.BaseDynSystem
                 this.Model.MuscleDensity*MM,sparse(gp.NumNodes,gp.NumNodes));
             
             % Strip out the entries of dirichlet nodes
-            MM(this.bc_dir_idx,:) = [];
-            MM(:,this.bc_dir_idx) = [];
+            MM(this.idx_uv_bc_glob,:) = [];
+            MM(:,this.idx_uv_bc_glob) = [];
             
             % See description of property
             if this.UseDirectMassInversion
-                this.Minv = inv(MM(this.dof_idx_velo,this.dof_idx_velo));
+                this.Minv = inv(MM(this.idx_v_dof_glob,this.idx_v_dof_glob));
                 MM = sparse(I(:),J(:),s(S(:)),3*nd,3*nd);
                 % Use identity on left hand side
                 MM = blkdiag(speye(size(MM)),...
                     speye(size(MM)),sparse(gp.NumNodes,gp.NumNodes));
-                MM(this.bc_dir_idx,:) = [];
-                MM(:,this.bc_dir_idx) = [];
+                MM(this.idx_uv_bc_glob,:) = [];
+                MM(:,this.idx_uv_bc_glob) = [];
             end
             M = dscomponents.ConstMassMatrix(MM);
         end
@@ -633,8 +628,8 @@ classdef System < models.BaseDynSystem
             D = blkdiag(sparse(3*nd,3*nd),D,sparse(gp.NumNodes,gp.NumNodes));
             
             % Strip out the entries of dirichlet nodes
-            D(this.bc_dir_idx,:) = [];
-            D(:,this.bc_dir_idx) = [];
+            D(this.idx_uv_bc_glob,:) = [];
+            D(:,this.idx_uv_bc_glob) = [];
             
             Daff = dscomponents.AffLinCoreFun(this);
             Daff.addMatrix('mu(1)',-D);
@@ -653,39 +648,45 @@ classdef System < models.BaseDynSystem
             num_u_glob = geo.NumNodes * 3;
             
             %% Displacement
-            this.bc_dir_displ = pos_dir;
+            this.bool_u_bc_nodes = pos_dir;
             % Set values to node positions
-            this.bc_dir_displ_val = geo.Nodes(pos_dir);
-            this.bc_dir_displ_idx = int32(find(pos_dir(:)));
+            this.val_u_bc = geo.Nodes(pos_dir);
+            this.idx_u_bc_glob = int32(find(pos_dir(:)));
             
             %% Velocity
             % Add any user-defines values (cannot conflict with position
             % dirichlet conditions, this is checked in AModelConfig.getBC)
-            this.bc_dir_velo = velo_dir;
-            this.bc_dir_velo_idx = int32(num_u_glob + find(velo_dir(:)));
-            this.bc_dir_velo_val = velo_dir_val(velo_dir);
+            this.bool_v_bc_nodes = velo_dir;
+            this.idx_v_bc_glob = int32(num_u_glob + find(velo_dir(:)));
+            this.val_v_bc = velo_dir_val(velo_dir);
             
             % Compile the global dirichlet values index and value vectors.
             % Here we add zero velocities for each point with fixed position, too.
-            [this.bc_dir_idx, sortidx] = sort([this.bc_dir_displ_idx; this.bc_dir_displ_idx+num_u_glob; this.bc_dir_velo_idx]);
-            alldirvals = [this.bc_dir_displ_val; zeros(size(this.bc_dir_displ_val)); this.bc_dir_velo_val];
-            this.bc_dir_val = alldirvals(sortidx);
+            [this.idx_uv_bc_glob, sortidx] = sort([this.idx_u_bc_glob; this.idx_u_bc_glob+num_u_glob; this.idx_v_bc_glob]);
+            alldirvals = [this.val_u_bc; zeros(size(this.val_u_bc)); this.val_v_bc];
+            this.val_uv_bc_glob = alldirvals(sortidx);
             
             % Compute dof positions in global state space vector
             total = geo.NumNodes * 6 + pgeo.NumNodes;
             pos = false(1,total);
             pos(1:num_u_glob) = true;
-            pos(this.bc_dir_idx) = [];
-            this.dof_idx_displ = int32(find(pos));
+            pos(this.idx_uv_bc_glob) = [];
+            this.idx_u_dof_glob = int32(find(pos));
+            this.num_u_dof = length(this.idx_u_dof_glob);
             
             pos = false(1,total);
             pos(num_u_glob+1:num_u_glob*2) = true;
-            pos(this.bc_dir_idx) = [];
-            this.dof_idx_velo = int32(find(pos));
+            pos(this.idx_uv_bc_glob) = [];
+            this.idx_v_dof_glob = int32(find(pos));
+            this.num_v_dof = length(this.idx_v_dof_glob);
+            
+            % no possible dirichlet values for p. so have all
+            this.idx_p_dof_glob = geo.NumNodes*6-length(this.idx_uv_bc_glob) + (1:pgeo.NumNodes);
+            this.num_p_dof = length(this.idx_p_dof_glob);
             
             idx = int32(1:total);
-            idx(this.bc_dir_idx) = [];
-            this.dof_idx_global = idx;
+            idx(this.idx_uv_bc_glob) = [];
+            this.idx_uv_dof_glob = idx;
         end
         
         function [force, nodeidx] = getSpatialExternalForces(this)
