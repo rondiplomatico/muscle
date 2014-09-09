@@ -5,11 +5,12 @@ function duvw  = evaluate(this, uvwdof, t)
     geo = fe_pos.Geometry;
     fe_press = mc.PressFE;
     pgeo = fe_press.Geometry;
-    globidx_disp = sys.globidx_displ;
-    globidx_press = sys.globidx_pressure;
+    elem_idx_u_glob = sys.globidx_displ;
+    elem_idx_p_glob = sys.globidx_pressure;
     unassembled = this.ComputeUnassembled;
 
-    dofs_pos = geo.NumNodes*3;
+    num_u_glob = geo.NumNodes*3;
+    num_v_glob = num_u_glob;
 
     % Cache variables instead of accessing them via this. in loops
     b1 = this.b1;
@@ -38,7 +39,7 @@ function duvw  = evaluate(this, uvwdof, t)
     end
 
     % Include dirichlet values to state vector
-    uvwcomplete = zeros(2*dofs_pos + pgeo.NumNodes,1);
+    uvwcomplete = zeros(2*num_u_glob + pgeo.NumNodes,1);
     uvwcomplete(sys.dof_idx_global) = uvwdof;
     uvwcomplete(sys.bc_dir_idx) = sys.bc_dir_val;
     % Check if velocity bc's should still be applied
@@ -46,30 +47,30 @@ function duvw  = evaluate(this, uvwdof, t)
         uvwcomplete(sys.bc_dir_velo_idx) = 0;
     end
     
-    dofsperelem_pos = geo.DofsPerElement;
-    dofsperelem_press = pgeo.DofsPerElement;
-    num_gausspoints = fe_pos.GaussPointsPerElem;
+    dofsperelem_u = geo.DofsPerElement;
+    dofsperelem_p = pgeo.DofsPerElement;
+    num_gp = fe_pos.GaussPointsPerElem;
     num_elements = geo.NumElements;
 
     % Init result vector duvw
     if unassembled
         % dofs_pos for u', elems*3*dofperelem for v',
         % elems*dofsperelem_press for p'
-        duvw = zeros(dofs_pos + num_elements*(3*dofsperelem_pos+dofsperelem_press),1);
+        duvw = zeros(num_u_glob + num_elements*(3*dofsperelem_u+dofsperelem_p),1);
         % Set u' = v
-        duvw(1:dofs_pos) = uvwcomplete(dofs_pos+1:2*dofs_pos);
-        unass_offset_dvelo = dofs_pos;
-        unass_offset_dpressure = unass_offset_dvelo + num_elements*3*dofsperelem_pos;
+        duvw(1:num_u_glob) = uvwcomplete(num_u_glob + (1:num_v_glob));
+        unass_offset_dvelo = num_u_glob;
+        unass_offset_dpressure = unass_offset_dvelo + num_elements*3*dofsperelem_u;
     else
         duvw = zeros(size(uvwcomplete));
         % Set u' = v
-        duvw(1:dofs_pos) = uvwcomplete(dofs_pos+1:2*dofs_pos);
+        duvw(1:num_u_glob) = uvwcomplete(num_u_glob + (1:num_v_glob));
     end
     
     for m = 1:num_elements
-        elemidx_u = globidx_disp(:,:,m);
-        elemidx_v = elemidx_u+dofs_pos;
-        elemidx_p = globidx_press(:,m);
+        elemidx_u = elem_idx_u_glob(:,:,m); % 1:num_u_glob is all u
+        elemidx_v = num_u_glob + elemidx_u; % num_u_glob next ones are all v
+        elemidx_p = elem_idx_p_glob(:,m);
         
         u = uvwcomplete(elemidx_u);
         w = uvwcomplete(elemidx_p);
@@ -78,9 +79,9 @@ function duvw  = evaluate(this, uvwdof, t)
             ftwelem = fibretypeweights(:,:,m)*FibreForces;
         end
 
-        integrand_pos = zeros(3,dofsperelem_pos);
-        integrand_press = zeros(dofsperelem_press,1);
-        for gp = 1:num_gausspoints
+        integrand_u = zeros(3,dofsperelem_u);
+        integrand_p = zeros(dofsperelem_p,1);
+        for gp = 1:num_gp
 
             % Evaluate the pressure at gauss points
             p = w' * fe_press.Ngp(:,gp,m);
@@ -102,7 +103,7 @@ function duvw  = evaluate(this, uvwdof, t)
             
             %% Anisotropic part (Invariant I4 related)
             if havefibres
-                fibrenr = (m-1)*num_gausspoints + gp;
+                fibrenr = (m-1)*num_gp + gp;
                 fibres = sys.a0Base(:,:,fibrenr);
                 lambdaf = norm(F*fibres(:,1));
                 
@@ -149,33 +150,33 @@ function duvw  = evaluate(this, uvwdof, t)
 
             weight = fe_pos.GaussWeights(gp) * fe_pos.elem_detjac(m,gp);
 
-            integrand_pos = integrand_pos + weight * P * dtn';
+            integrand_u = integrand_u + weight * P * dtn';
 
-            integrand_press = integrand_press + weight * (det(F)-1) * fe_press.Ngp(:,gp,m);
+            integrand_p = integrand_p + weight * (det(F)-1) * fe_press.Ngp(:,gp,m);
         end
         
         % Unassembled or assembled?
         if unassembled
-            pos = unass_offset_dvelo + (1:3*dofsperelem_pos) + (m-1) * 3 * dofsperelem_pos;
-            duvw(pos) = -integrand_pos(:);
-            pos = unass_offset_dpressure + (1:dofsperelem_press) + (m-1) * dofsperelem_press;
-            duvw(pos) = integrand_press(:);
+            pos = unass_offset_dvelo + (1:3*dofsperelem_u) + (m-1) * 3 * dofsperelem_u;
+            duvw(pos) = -integrand_u(:);
+            pos = unass_offset_dpressure + (1:dofsperelem_p) + (m-1) * dofsperelem_p;
+            duvw(pos) = integrand_p(:);
         else
             % We have v' + K(u) = 0, so the values of K(u) must be
             % written at the according locations of v', i.e. elemidx_velo
             %
             % Have MINUS here as the equation satisfies Mu'' + K(u,w) =
             % 0, but KerMor implements Mu'' = -K(u,w)
-            duvw(elemidx_v) = duvw(elemidx_v) - integrand_pos;
-            duvw(elemidx_p) = duvw(elemidx_p) + integrand_press;
+            duvw(elemidx_v) = duvw(elemidx_v) - integrand_u;
+            duvw(elemidx_p) = duvw(elemidx_p) + integrand_p;
         end
     end
     
     if unassembled
-        duvw(this.bc_dir_idx_unass) = [];
+        duvw(num_u_glob+this.bc_dir_idx_unass) = [];
     else
         %% Save & remove values at dirichlet pos/velo nodes
-        this.LastBCResiduals = duvw([sys.bc_dir_displ_idx+dofs_pos; sys.bc_dir_velo_idx]);
+        this.LastBCResiduals = duvw([sys.bc_dir_displ_idx+num_u_glob; sys.bc_dir_velo_idx]);
         duvw(sys.bc_dir_idx) = [];
         
         %% If direct mass matrix inversion is used

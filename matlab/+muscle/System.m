@@ -650,7 +650,7 @@ classdef System < models.BaseDynSystem
             pgeo = fe_press.Geometry;
             
             % Position of position entries in global state space vector
-            num_position_dofs = geo.NumNodes * 3;
+            num_u_glob = geo.NumNodes * 3;
             
             %% Displacement
             this.bc_dir_displ = pos_dir;
@@ -662,29 +662,24 @@ classdef System < models.BaseDynSystem
             % Add any user-defines values (cannot conflict with position
             % dirichlet conditions, this is checked in AModelConfig.getBC)
             this.bc_dir_velo = velo_dir;
-            this.bc_dir_velo_idx = int32(num_position_dofs + find(velo_dir(:)));
+            this.bc_dir_velo_idx = int32(num_u_glob + find(velo_dir(:)));
             this.bc_dir_velo_val = velo_dir_val(velo_dir);
             
-            %% Hydrostatic Pressure Dirichlet conditions
-%             press_dir = false(1,tl.NumNodes);
-%             press_dir(1) = true;
-%             this.bc_dir = [displ_dir; press_dir];
-
             % Compile the global dirichlet values index and value vectors.
             % Here we add zero velocities for each point with fixed position, too.
-            [this.bc_dir_idx, sortidx] = sort([this.bc_dir_displ_idx; this.bc_dir_displ_idx+num_position_dofs; this.bc_dir_velo_idx]);
+            [this.bc_dir_idx, sortidx] = sort([this.bc_dir_displ_idx; this.bc_dir_displ_idx+num_u_glob; this.bc_dir_velo_idx]);
             alldirvals = [this.bc_dir_displ_val; zeros(size(this.bc_dir_displ_val)); this.bc_dir_velo_val];
             this.bc_dir_val = alldirvals(sortidx);
             
             % Compute dof positions in global state space vector
             total = geo.NumNodes * 6 + pgeo.NumNodes;
             pos = false(1,total);
-            pos(1:num_position_dofs) = true;
+            pos(1:num_u_glob) = true;
             pos(this.bc_dir_idx) = [];
             this.dof_idx_displ = int32(find(pos));
             
             pos = false(1,total);
-            pos(num_position_dofs+1:num_position_dofs*2) = true;
+            pos(num_u_glob+1:num_u_glob*2) = true;
             pos(this.bc_dir_idx) = [];
             this.dof_idx_velo = int32(find(pos));
             

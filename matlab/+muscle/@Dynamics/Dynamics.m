@@ -59,6 +59,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
        Sigma;
        % The indices of any dirichlet value in the unassembled vector duvw
        bc_dir_idx_unass;
+       dvw_unass_elem_assoc;
     end
     
     properties(SetAccess=private)
@@ -254,10 +255,10 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             sys = this.System;
             mc = sys.Model.Config;
             geo = mc.PosFE.Geometry;
-            outsize = 3*geo.NumNodes;
+            off_v_glob = 3*geo.NumNodes;
+            outsize = off_v_glob;
             
             % Position part: not assembly as u' = v without FEM
-            S = speye(outsize);
             
             % Velocity part: x,y,z velocities
             [i, ~] = find(mc.PosFE.Sigma);
@@ -270,18 +271,30 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             outsize = outsize + pgeo.NumNodes;
             
             n = numel(I);
-            S = blkdiag(S, sparse(I,1:n,ones(n,1),outsize,n));
+            S = sparse(I,1:n,ones(n,1),outsize,n);
             
             % Take out nodes with dirichlet BC on output side
-            S(sys.bc_dir_idx,:) = [];
+            S([sys.bc_dir_displ_idx; sys.bc_dir_velo_idx-off_v_glob],:) = [];
             % Find corresponding unassembled dofs that would be ignored
-            % (due to dirichlet values)
-            this.bc_dir_idx_unass = find(sum(sys.f.Sigma) == 0);
+            % (due to dirichlet velocity values, pressure dirichlet not
+            % implemented)
+            this.bc_v_glob_unass = find(sum(S,1) == 0);
             % Remove them, too. The unassembled evaluation also removes the
             % corresponding entries of the unassembled vector.
             S(:,this.bc_dir_idx_unass) = [];
             
             this.Sigma = S;
+            
+            hlp = repmat(1:geo.NumElements,3*geo.DofsPerElement,1);
+            pgeo = mc.PressFE.Geometry;
+            hlp2 = repmat(1:geo.NumElements,pgeo.DofsPerElement,1);
+            hlp = [hlp(:); hlp2(:)];
+            hlp(this.bc_dir_idx_unass) = [];
+            ass = false(geo.NumElements,length(hlp));
+            for k = 1:geo.NumElements
+                ass(k,:) = hlp == k;
+            end
+            this.dvw_unass_elem_assoc = ass;
         end
     end
 end

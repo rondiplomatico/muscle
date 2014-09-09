@@ -19,18 +19,25 @@ dofs_unass = off_v_glob + 3*g.NumElements*g.DofsPerElement...
     + pg.NumElements*pg.DofsPerElement ...
     - length(f.bc_dir_idx_unass);
 fxu = zeros(dofs_unass,nt);
-bcidx = [off_v_glob+sys.bc_dir_displ_idx; sys.bc_dir_velo_idx];
 for k = 1:nt
     f.ComputeUnassembled = true;
     fxu(:,k) = f.evaluate(x(:,k),t(k));
     f.ComputeUnassembled = false;
     fx(sys.dof_idx_global,k) = f.evaluate(x(:,k),t(k));
-    %fx(bcidx,k) = f.LastBCResiduals;
 end
-fx_ass(sys.dof_idx_global,:) = sys.f.Sigma * fxu;
+% du part (no assembly)
+ndirdispl = length(sys.dof_idx_displ);
+fx_ass(sys.dof_idx_displ,:) = fxu(1:ndirdispl,:);
+% dvw part (with assembly)
+idx = sys.dof_idx_global;
+idx(1:ndirdispl) = [];
+fx_ass(idx,:) = sys.f.Sigma * fxu(off_v_glob+1:end,:);
 diff = fx_ass - fx;
 Norm.L2(diff)
 
-smc = muscle.SubMeshModelConfig(mc, [1 2]);
-sm = muscle.Model(smc);
-sm.plotGeometrySetup;
+% ass = sys.f.dvw_unass_elem_assoc;
+% 
+% 
+% smc = muscle.SubMeshModelConfig(mc, [1 2]);
+% sm = muscle.Model(smc);
+% sm.plotGeometrySetup;
