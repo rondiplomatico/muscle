@@ -463,7 +463,7 @@ classdef System < models.BaseDynSystem
                 if r.Vid
                     vw.writeVideo(getframe(gcf));
                 else
-                    pause(.1);
+                    pause(.01);
 %                     pause;
                 end
             end

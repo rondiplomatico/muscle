@@ -19,6 +19,9 @@ classdef BaseFEM < handle
         
         % The damping matrix (for linear damping)
         D;
+        
+        % The element-dof to global node assembly matrix
+        Sigma;
                 
         elem_detjac;
         face_detjac;
@@ -55,6 +58,17 @@ classdef BaseFEM < handle
             
             % Get the right gauss points
             this.initGaussPoints;
+            
+            % Build element-dof to global dof assembly matrix
+            flat_el = el';
+            flat_el = flat_el(:)';
+            i = []; j = [];
+            for k=1:np
+                idx = find(flat_el == k);
+                i = [i ones(size(idx))*k];%#ok
+                j = [j idx];%#ok
+            end
+            this.Sigma = sparse(i,j,ones(size(i)),np,g.NumElements*g.DofsPerElement);
             
             %% Precomputations
             % Number of gauss points

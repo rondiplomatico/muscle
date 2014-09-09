@@ -136,11 +136,38 @@ classdef BaseGeometry < handle
         function reverseAxis(this, dim)
             this.reverseElementAxis(dim, 1:this.NumElements);
         end
+        
+        function [sub, nodeidx, faces] = getSubMesh(this, elems, faces)
+            newelems = this.Elements(elems,:)';
+            nodeidx = unique(newelems(:),'stable');
+            newnodes = this.Nodes(:,nodeidx);%#ok
+            % Fit element node reference indices
+            invidx(nodeidx) = 1:length(nodeidx);
+            newelems = invidx(newelems)';%#ok
+            sub = eval([class(this) '(newnodes, newelems)']);
+            
+            % Auto-detect which faces are included for the submesh's
+            % elements if none are specified
+            if nargin < 3
+                isface = false(1,size(this.NumFaces,2));
+                for k = elems
+                    isface = isface | this.Faces(1,:) == k;
+                end
+                faces = find(isface);
+            end
+            sub.Faces = this.Faces(:,faces);
+            
+            % Fit face reference indices
+            invidx = [];
+            invidx(elems) = 1:length(elems);
+            sub.Faces(1,:) = invidx(sub.Faces(1,:));
+            sub.faceComputations;
+        end
            
     end
     
     methods(Access=protected)
-        function [faces, inner] = computeFaces(this)
+        function faces = computeFaces(this)
             % Computes the outward faces of this geometry.
             %
             % Return values:
@@ -177,12 +204,18 @@ classdef BaseGeometry < handle
                 mf = size(this.MasterFaces,1);
                 faces = [ones(1,mf); 1:mf];
             end
-            
+            this.faceComputations(faces);
+        end
+        
+        function faceComputations(this, faces)
             %% Also compute the PatchFaces index matrix
             if ~isempty(this.PatchFacesIdx)
+                if nargin < 2
+                    faces = this.Faces;
+                end
                 nf = size(faces,2);
                 ppf = this.PatchesPerFace;
-                np = size(this.PatchFacesIdx,1);
+                %np = size(this.PatchFacesIdx,1);
                 pf = zeros(nf*ppf,size(this.PatchFacesIdx,2));
                 for k=1:nf
                     elem = faces(1,k);
@@ -274,6 +307,17 @@ classdef BaseGeometry < handle
             geometry.Cube20Node.DemoGrid(-1:1,1:3,-1:1);
             geometry.Cube20Node.DemoGrid(-1:1,1:2,-1:1,.2);
             res = true;
+        end
+        
+        function test_subMesh
+            [n,e] = geometry.Cube27Node.DemoGrid(-1:1,1:2,-1:1,.2);
+            g = geometry.Cube27Node(n,e);
+            [sg, node] = g.getSubMesh(1:3:g.NumElements);
+            sg.plot;
+            [n,e] = geometry.Cube8Node.DemoGrid(-20:1,1:4,-1:1,.2);
+            g = geometry.Cube8Node(n,e);
+            [sg, node] = g.getSubMesh([1 5 9 10 15 56 79 99]);
+            sg.plot;
         end
     end
     

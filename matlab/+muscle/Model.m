@@ -101,9 +101,11 @@ classdef Model < models.BaseFullModel
 %             markertf = (f.b1./lambda.^2).*(lambda.^f.d1-1);
             
             pos = find(markertf > max(fl)*1.4,1,'first');
-            lambda = lambda(1:pos);
-            fl = fl(1:pos);
-            markertf = markertf(1:pos);
+            if ~isempty(pos)
+                lambda = lambda(1:pos);
+                fl = fl(1:pos);
+                markertf = markertf(1:pos);
+            end
             
             h = pm.nextPlot('force_length',sprintf('Force-Length curve for model %s',this.Name),'\lambda [-]','pressure [kPa]');
             plot(h,lambda,fl,'r',lambda,markertf,'g',lambda,fl+markertf,'b');

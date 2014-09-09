@@ -52,6 +52,13 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
        % Alternative
        % ForceLengthFunDeriv = @(ratio)(ratio<=1).*((1/.57)*(((1-ratio)/.57).^3).*exp(-((1-ratio)/.57).^4)) ...
        % - (ratio > 1) .* ((1/.14) .* (((ratio-1)/.14).^2) .* exp(-((ratio-1)/.14).^3));
+       
+       % Unassembled stuff
+       ComputeUnassembled = false;
+       % Sigma assembly matrix
+       Sigma;
+       % The indices of any dirichlet value in the unassembled vector duvw
+       bc_dir_idx_unass;
     end
     
     properties(SetAccess=private)
@@ -103,6 +110,9 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                 this.xDim = d;
                 this.fDim = d;
                 this.computeSparsityPattern;
+                
+                %% Sigma assembly matrix
+                this.precomputeUnassembledData;
             end
         end
         
@@ -237,5 +247,41 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % See also: setPointSet
             
         end
-    end    
+    end
+    
+    methods(Access=private)
+        function precomputeUnassembledData(this)
+            sys = this.System;
+            mc = sys.Model.Config;
+            geo = mc.PosFE.Geometry;
+            outsize = 3*geo.NumNodes;
+            
+            % Position part: not assembly as u' = v without FEM
+            S = speye(outsize);
+            
+            % Velocity part: x,y,z velocities
+            [i, ~] = find(mc.PosFE.Sigma);
+            I = [3*(i'-1)+1; 3*(i'-1)+2; 3*(i'-1)+3];
+            
+            % Pressure part   
+            pgeo = mc.PressFE.Geometry;
+            [i, ~] = find(mc.PressFE.Sigma);
+            I = [I(:); outsize+i];
+            outsize = outsize + pgeo.NumNodes;
+            
+            n = numel(I);
+            S = blkdiag(S, sparse(I,1:n,ones(n,1),outsize,n));
+            
+            % Take out nodes with dirichlet BC on output side
+            S(sys.bc_dir_idx,:) = [];
+            % Find corresponding unassembled dofs that would be ignored
+            % (due to dirichlet values)
+            this.bc_dir_idx_unass = find(sum(sys.f.Sigma) == 0);
+            % Remove them, too. The unassembled evaluation also removes the
+            % corresponding entries of the unassembled vector.
+            S(:,this.bc_dir_idx_unass) = [];
+            
+            this.Sigma = S;
+        end
+    end
 end

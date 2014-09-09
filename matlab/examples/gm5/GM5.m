@@ -9,6 +9,10 @@ classdef GM5 < muscle.AModelConfig
     % Transversal loading experiment:
     % 
     
+    properties(Constant)
+        OutputDir = fullfile(fileparts(which(mfilename)),'data');
+    end
+    
     properties
         velo_time = 20; % [ms]
         target_dist = -6; % [mm]
@@ -28,8 +32,8 @@ classdef GM5 < muscle.AModelConfig
             geo = GM5.createGeometry(l,b,h,plate_at);
             this = this@muscle.AModelConfig(geo);
             
-            this.a0CoordinateSystem = 'reference';
-%             this.a0CoordinateSystem = 'master';
+%             this.a0CoordinateSystem = 'reference';
+            this.a0CoordinateSystem = 'master';
         end
         
         function configureModel(this, m)
@@ -38,15 +42,43 @@ classdef GM5 < muscle.AModelConfig
             
             m.MuscleDensity = 1.056e-6; % [kg/mm³] = 1.056 [g/cm³]
             
+            %% Material setup
+            f = m.System.f;
+            % Material set (see main comment)
+            f.c10 = 6.352e-10; % [kPa]
+            f.c01 = 3.627; % [kPa]
+            f.b1 = 0.00355439810963035; % [kPa]
+            f.d1 = 12.660539325481963;%14.5; % [-]
+            f.Pmax = 120; % [kPa]
+            f.lambdafopt = 1.2; % [-]
+            
+            % FL-Fun nach Schmitt at al
+            f.ForceLengthFun = @(ratio)(ratio<=1).*exp(-((1-ratio)/.57).^4) + (ratio>1).*exp(-((ratio-1)/.14).^3);
+            f.ForceLengthFunDeriv = @(ratio)(ratio<=1).*((1/.57)*(((1-ratio)/.57).^3).*exp(-((1-ratio)/.57).^4)) ...
+                 - (ratio > 1) .* ((1/.14) .* (((ratio-1)/.14).^2) .* exp(-((ratio-1)/.14).^3));
+            
             m.System.ApplyVelocityBCUntil = 20;
             
-            m.T = 200;
-            m.dt = 1;
+            m.T = 100;
+            m.dt = 2;
             m.DefaultMu = [.1; 0];
             m.System.f.alpha = this.getAlphaRamp(50,1,30);
             os = m.ODESolver;
             os.RelTol = .001;
             os.AbsTol = .08;
+        end
+        
+        function o = getOutputOfInterest(this, m, t, uvw)
+            %geo = m.Config.PosFE.Geometry;
+            [df,nf] = m.getResidualForces(t,uvw);
+            %uvw = m.System.includeDirichletValues(t, uvw);
+            
+            % Get average velocity of loose end
+            %facenode_idx = m.getFaceDofsGlobal(1:4,3);
+            idxy = m.getDirichletBCFaceIdx(1:4, 3, 2);
+            idxall = m.getDirichletBCFaceIdx(1:4, 3);
+            o(1,:) = sum(df(idxy,:),1);
+            o(2,:) = sum(df(idxall,:),1);
         end
     end
     
@@ -58,11 +90,14 @@ classdef GM5 < muscle.AModelConfig
             for e = 1:4
                 displ_dir(:,geo.Elements(e,geo.MasterFaces(3,:))) = true;
             end
+            for e = geo.NumElements-3:geo.NumElements
+                displ_dir([1 3],geo.Elements(e,geo.MasterFaces(4,:))) = true;
+            end
         end
         
         function [velo_dir, velo_dir_val] = setVelocityDirichletBC(this, velo_dir, velo_dir_val)
             geo = this.PosFE.Geometry;
-            for e = 9:12
+            for e = geo.NumElements-3:geo.NumElements
                 velo_dir(2,geo.Elements(e,geo.MasterFaces(4,:))) = true;
             end
             velo_dir_val(velo_dir) = this.target_dist/this.velo_time;
@@ -71,7 +106,7 @@ classdef GM5 < muscle.AModelConfig
         function anull = seta0(~, anull)
             % The elements are aligned so that the fibres go in y-direction
             anull(2,:,:) = 1;
-            anull(3,:,:) = .5;
+            %anull(3,:,:) = .5;
             %anull(1,:,:) = 1;
         end
     end
@@ -91,10 +126,10 @@ classdef GM5 < muscle.AModelConfig
             fbase = eval(['@(z)' str '-fzmin;']);
             fzmax = max(fbase(z));%#ok
             fbase = eval(['@(z)(' str '-fzmin)/fzmax;']);
-            plot(z,fbase(z));
+%             plot(z,fbase(z));
 
             fz = @(z)[fbase(z)*w/2; fbase(z)*h/2];
-            geo = Belly.getBelly(3,l,fz,[2 1.5],5,plate_at);
+            geo = Belly.getBelly(6,l,fz,[2 1.5],5,plate_at);
         end
     end
     
