@@ -74,22 +74,24 @@ classdef LongMORexample < muscle.AModelConfig
             sys.f.alpha = this.getAlphaRamp(mu(2),1);    % (in ..ms, up to maxvalue.., starting at ..ms)
         end
                 
-        function o = getOutputOfInterest(this, model, t, uvw)
-            % Writes the data of interest into o
+        function [oy,oz] = getOutputOfInterest(this, model, t, uvw)
+            % Writes the data of interest into oy and oz
             %
             geo = model.Config.PosFE.Geometry;
             %[df,nf] = model.getResidualForces(t,uvw);
             uvw = model.System.includeDirichletValues(t,uvw);
             %
             facenode_idx = [];
-            % get displacement (x,y,z) of middle node (element 445, face 5, node 6)
+            % get displacement (x,y,z) of middle node (element 445, face 5, node 8)
             facenode_idx = [facenode_idx; model.getFaceDofsGlobal(445,5)];
-            % get displacement (x,y,z) of node at 1/3rd (element 413, face 5, node 6)
+            % get displacement (x,y,z) of node at 1/3rd (element 413, face 5, node 8)
             facenode_idx = [facenode_idx; model.getFaceDofsGlobal(413,5)];
             %
-            facenode_idx = unique(facenode_idx);
-            o = uvw(facenode_idx,:);            % gives matrix, where each rowvector shows positon of one node over time
-            %o = mean(uvw(facenode_idx,:),1);    % gives rowvector of mean node-position for all timesteps
+            o = uvw(facenode_idx,:);            % gives matrix, where each rowvector shows x-,y- or z-positon of one node over time
+            % middle node, track z-direction
+            oz = o(24,:);
+            % 1/3rd node, track y-direction
+            oy = o(47,:);
         end
                 
     end
