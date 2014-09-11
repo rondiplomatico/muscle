@@ -60,7 +60,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
        % The indices of any dirichlet value in the unassembled vector duvw
        idx_uv_bc_glob_unass;
        num_uvp_dof_unass;
-       dvw_unass_elem_assoc;
+       idx_vp_dof_unass_elems;
     end
     
     properties(SetAccess=private)
@@ -177,6 +177,15 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % No local properties are to be copied here, as so far everything is done in the
             % constructor.
         end
+        
+        function set.ComputeUnassembled(this, value)
+            if value && ~isempty(this.num_uvp_dof_unass)%#ok
+                this.fDim = this.num_uvp_dof_unass;%#ok
+            elseif ~value && ~isempty(this.System)
+                this.fDim = this.System.num_uvp_dof;
+            end
+            this.ComputeUnassembled = value;
+        end
     end
  
     methods(Access=protected)
@@ -284,16 +293,51 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             
             this.num_uvp_dof_unass = sys.num_u_dof + size(S,2);
             
-%             hlp = repmat(1:geo.NumElements,3*geo.DofsPerElement,1);
-%             pgeo = mc.PressFE.Geometry;
-%             hlp2 = repmat(1:geo.NumElements,pgeo.DofsPerElement,1);
-%             hlp = [hlp(:); hlp2(:)];
-%             hlp(this.idx_uv_bc_glob_unass) = [];
-%             ass = false(geo.NumElements,length(hlp));
-%             for k = 1:geo.NumElements
-%                 ass(k,:) = hlp == k;
-%             end
-%             this.dvw_unass_elem_assoc = ass;
+            % Create boolean array that determines which unassembled dofs
+            % belong to which element
+            % dv dofs
+            hlp = repmat(1:geo.NumElements,3*geo.DofsPerElement,1);
+            pgeo = mc.PressFE.Geometry;
+            % dp dofs
+            hlp2 = repmat(1:geo.NumElements,pgeo.DofsPerElement,1);
+            hlp = [hlp(:); hlp2(:)];
+            hlp(bc_unass) = [];
+            ass = false(geo.NumElements,length(hlp));
+            for k = 1:geo.NumElements
+                ass(k,:) = hlp == k;
+            end
+            this.idx_vp_dof_unass_elems = ass;
+        end
+    end
+    
+    methods(Static)
+        function res = test_UnassembledEvaluation
+            m = muscle.Model(Cube12);
+            mu = m.DefaultMu;
+            [t,~,~,x] = m.simulate(mu);
+            s = m.System;
+            f = s.f;
+            fx = f.evaluate(x(:,1),t(1));
+            f.ComputeUnassembled = true;
+            fxu = f.evaluate(x(:,1),t(1));
+            fx_ass = zeros(size(fx,1),1);
+            % du part (no assembly)
+            fx_ass(1:s.num_u_dof) = fxu(1:s.num_u_dof);
+            % dvw part (with assembly)
+            fx_ass(s.num_u_dof + (1:s.num_v_dof+s.num_p_dof)) = s.f.Sigma * fxu(s.num_u_dof+1:end);
+            res = Norm.L2(fx - fx_ass) < eps;
+            
+            % Multi-eval
+            f.ComputeUnassembled = false;
+            fx = f.evaluateMulti(x,t,mu);
+            f.ComputeUnassembled = true;
+            fxu = f.evaluateMulti(x,t,mu);
+            % du part (no assembly)
+            fx_ass = zeros(size(fx,1),length(t));
+            fx_ass(1:s.num_u_dof,:) = fxu(1:s.num_u_dof,:);
+            % dvw part (with assembly)
+            fx_ass(s.num_u_dof + (1:s.num_v_dof+s.num_p_dof),:) = s.f.Sigma * fxu(s.num_u_dof+1:end,:);
+            res = res & sum(Norm.L2(fx - fx_ass)) < eps;
         end
     end
 end

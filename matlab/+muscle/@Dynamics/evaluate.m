@@ -56,7 +56,7 @@ function duvw  = evaluate(this, uvwdof, t)
     if unassembled
         % dofs_pos for u', elems*3*dofperelem for v',
         % elems*dofsperelem_press for p'
-        duvw = zeros(num_u_glob + num_elements*(3*dofsperelem_u+dofsperelem_p),1);
+        duvw = zeros(this.num_uvp_dof_unass,1);
         % Set u' = v
         duvw(1:num_u_glob) = uvwcomplete(num_u_glob + (1:num_v_glob));
         unass_offset_dvelo = num_u_glob;

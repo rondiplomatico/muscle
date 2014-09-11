@@ -10,11 +10,16 @@ classdef Cube12 < muscle.AModelConfig
         end
         
         function configureModel(this, m)
-            m.T = 20;
-            m.dt = .1;
-            m.DefaultMu = [0; 0];
-            f = m.System.f;
-            f.alpha = this.getAlphaRamp(4,.1);
+            m.T = 40;
+            m.dt = .05;
+            m.DefaultMu = [1; 20; 0; 0];
+            
+            m.System.f.Pmax = 200;
+        end
+        
+        function prepareSimulation(this, mu, ~)
+            sys = this.Model.System;
+            sys.f.alpha = this.getAlphaRamp(mu(2),1);
         end
     end
     
@@ -28,14 +33,14 @@ classdef Cube12 < muscle.AModelConfig
             end
         end
         
-        function [velo_dir, velo_dir_val] = setVelocityDirichletBC(this, velo_dir, velo_dir_val)
-            %% Dirichlet conditions: Position (fix one side)
-            geo = this.PosFE.Geometry;
-            for k = [1 2 7 8]  
-                velo_dir(1,geo.Elements(k,[1:3 9 10 13:15])) = true;
-            end
-            velo_dir_val(velo_dir) = -.1;
-        end
+%         function [velo_dir, velo_dir_val] = setVelocityDirichletBC(this, velo_dir, velo_dir_val)
+%             %% Dirichlet conditions: Position (fix one side)
+%             geo = this.PosFE.Geometry;
+%             for k = [1 2 7 8]  
+%                 velo_dir(1,geo.Elements(k,geo.MasterFaces(3,:))) = true;
+%             end
+%             velo_dir_val(velo_dir) = -.1;
+%         end
         
         function anull = seta0(~, anull)
             % Direction is xz

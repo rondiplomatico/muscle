@@ -133,6 +133,13 @@ classdef System < models.BaseDynSystem
             
             % The muscle viscosity. [mN * mm/ms]
             this.addParam('viscosity',[0 10],10);
+            
+            % The amount of milliseconds over which to activate the model
+            this.addParam('alpha_ramp',[10,300],10);
+            
+            % The force of the faces exposed to neumann conditions
+            this.addParam('neumann_force',[0 400],10);
+            
             % For some variants, we have the mean input current for the
             % motoneuron pool (generating activation)
             this.addParam('mean input current',[0 1],10);

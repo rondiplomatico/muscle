@@ -42,7 +42,11 @@ classdef Model < models.BaseFullModel
             
             this.System = muscle.System(this);
             
-            this.DefaultMu = [1; 1];
+            % This defines a default behaviour for all muscle models.
+            % Override in AModelConfig.configureModel for dependent
+            % behaviour.
+            this.DefaultMu = [1; 50; 0; 0];
+            this.TrainingParams = [1 2];
             
             this.T = 10; % [ms]
             this.dt = .01; % [ms]
