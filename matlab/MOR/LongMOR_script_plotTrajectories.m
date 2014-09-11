@@ -94,16 +94,67 @@ pm.LeaveOpen = true;
 pm.FilePrefix = 'pos_of_precomp_traj';
 %
 % plot over parameter space
-h = pm.nextPlot('ypos','Visualisation of  precomputed trajectories',...
-             'time to full activation','viscosity');
+%
 paramspace_visc = reshape(m.Data.ParamSamples(1,:)',10,10);
 paramspace_act = reshape(m.Data.ParamSamples(2,:)',10,10);
 %
-for i = 1:5
+h = pm.nextPlot('ypos','Visualisation of  precomputed trajectories',...
+    'time to full activation','viscosity');
+zlabel(h,'z-position of middle node');
+axis(h,[20 100 0.5 10 0 8]);
+hold(h,'on');
+%
+for i = 1:101
     mesh_oz = reshape(oz(:,i),10,10);
+    cla(h);
+    %
     mesh(h,paramspace_act,paramspace_visc,mesh_oz);
-    axis([20 100 0.5 10 0 8]);
-    zlabel('z-position of middle node');
+    pause(.1);%drawnow;
+end
+%
+pm.done;
+%
+%
+%%
+% plot or video over parameter space
+video = false;
+%
+pm = PlotManager;
+pm.LeaveOpen = true;
+pm.FilePrefix = 'pos_of_precomp_traj';
+%
+if video
+    avifile = fullfile(LongMORexample.OutputDir,'parameterspace.avi');
+    vw = VideoWriter(avifile);
+    vw.FrameRate = 25;
+    vw.open;
+end
+%
+h = pm.nextPlot('zpos',sprintf('z-position of middle node at t=%g',t(end)),...
+    'time to full activation','viscosity');
+zlabel(h,'z-position of middle node');
+axis(h,[20 100 0.5 10 0 8]);
+hold(h,'on');
+%
+paramspace_visc = reshape(m.Data.ParamSamples(1,:)',10,10);
+paramspace_act = reshape(m.Data.ParamSamples(2,:)',10,10);
+%
+for ts = 1:length(t)
+    mesh_oz = reshape(oz(:,ts),10,10);
+    cla(h);
+    %
+    mesh(h,paramspace_act,paramspace_visc,mesh_oz);
+    title(h,sprintf('z-position of middle node at t=%g',t(ts)));
+    %
+    if video
+        vw.writeVideo(getframe(gcf));
+    else
+        pause(.2);
+    end
+end
+%
+if video
+    vw.close;
 end
 %
 pm.done;
