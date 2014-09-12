@@ -97,7 +97,7 @@ end
 %% FE-DEIM kNN
 % u = Uu;
 u = Uu(:,1:num_UDEIM);
-allk = [1:10 12:2:20 25:30:size(u,1)];
+allk = [1:10 12:2:20 round(linspace(25,size(u,1),20))];
 if allk(end) ~= size(u,1)
     allk(end+1) = size(u,1);
 end
