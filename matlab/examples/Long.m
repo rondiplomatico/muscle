@@ -16,7 +16,7 @@ classdef Long < muscle.AModelConfig
         function configureModel(this, m)
             m.T = 50;
             m.dt = 1;
-            m.DefaultMu = [.1; 0];
+            m.DefaultMu = [.1; 0; 0; 0];
             f = m.System.f;
             f.alpha = this.getAlphaRamp(10,1);
         end

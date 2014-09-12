@@ -207,6 +207,13 @@ classdef BaseFEM < handle
             % Returns the total geometry volume in [mm³]
             v = sum(this.elem_detjac*this.GaussWeights);
         end
+        
+        function gp = getGlobalGaussPoints(this, elemidx)
+            % Returns the positions of all gauss points of the specified
+            % element in global (=reference) coordinates
+            g = this.Geometry;
+            gp = g.Nodes(:,g.Elements(elemidx,:)) * this.Ngp(:,:,elemidx);
+        end
                 
         function plot(this, pm)
             if nargin < 2

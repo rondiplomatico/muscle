@@ -229,6 +229,7 @@ classdef BaseGeometry < handle
         end
         
         function checkOrientation(this)
+            return;
             oi = this.OrientationCheckIndices;
             pi = ProcessIndicator('%s: Checking orientation of %d elements in x,y,z directions',3*this.NumElements,false,class(this),this.NumElements);
             for dim = 1:3

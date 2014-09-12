@@ -34,9 +34,9 @@ classdef Model < models.BaseFullModel
             end
             % Creates a new muscle model
             this = this@models.BaseFullModel;
-            this.Name = sprintf('FEM Muscle model%s','');
+            this.Name = sprintf('FEM Muscle model %s',class(conf));
             
-            this.SaveTag = sprintf('musclemodel_%s','');
+            this.SaveTag = sprintf('musclemodel_%s',class(conf));
             this.Data = data.ModelData(this);
             %this.Data.useFileTrajectoryData;
             
