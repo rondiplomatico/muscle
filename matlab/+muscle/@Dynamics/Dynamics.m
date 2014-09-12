@@ -131,6 +131,39 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             error('Custom projection is implemented and evaluate overridden directly');
         end
         
+        function fx = evaluateComponentSet(this, nr, x, t)
+            % Computes the full or reduced component functions of the given point set.
+            %
+            % Parameters:
+            % nr: The number of the PointSet to use. @type integer
+            % x: The state space location `\vx` @type colvec<double>
+            % t: The corresponding times `t` for the state `\vx` @type double
+            %
+            % See also: PointSet
+            if ~isempty(this.V)
+                fx = this.evaluate(this.V*x,t);
+            else
+                fx = this.evaluate(x,t);
+            end
+            fx = fx(this.PointSets{nr},:);
+        end
+
+        function fx = evaluateComponentSetMulti(this, nr, x, t, mu)
+            % Computes the full component functions of the given point set.
+            %
+            % Parameters:
+            % nr: The number of the PointSet to use. @type integer
+            % x: The state space locations `\vx` @type matrix<double>
+            % t: The corresponding times `t` for the state `\vx` @type
+            % rowvec<double>
+            % mu: The corresponding parameters `\mu`. Can be a single
+            % parameter or as many as the size of x @type matrix<double>
+            %
+            % See also: PointSet
+            fx = this.evaluateMulti(x,t,mu);
+            fx = fx(this.PointSets{nr},:);
+        end
+        
         function res = test_Jacobian(this, full)
             % Overrides the random argument jacobian test as restrictions
             % on the possible x values (detF = 1) hold.
