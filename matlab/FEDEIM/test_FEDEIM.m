@@ -15,6 +15,7 @@ m.TrainingParams = [1 2];
 m.off1_createParamSamples;
 
 %% Training data
+m.ComputeParallel = true;
 m.off2_genTrainingData;
 m.save;
 
@@ -57,9 +58,10 @@ fd = FEDEIM;
 % % err_u = fd.getInterpolErrors(U_dofu, pts_u, dof_u);
  
 %% Classic DEIM
+fprintf('Classic DEIM...\n');
 dof_vp = fx(s.num_u_dof+1:end,:);
 [U,S,V] = svd(dof_vp,'econ');
-num_DEIM = sum(diag(S) > S(1)*eps);
+num_DEIM = sum(diag(S) > eps(S(1)));
 pts_DEIM = d.getInterpolationPoints(U(:,1:num_DEIM));
 err_DEIM = fd.getInterpolErrors(U, pts_DEIM, dof_vp);
 req_elems_DEIM = zeros(1,length(pts_DEIM));
@@ -68,9 +70,10 @@ for k = 1:length(pts_DEIM)
 end
 
 %% UDEIM
+fprintf('UDEIM...\n');
 dof_vp_unass = fxu(s.num_u_dof+1:end,:);
 [Uu,Su,Vu] = svd(dof_vp_unass,'econ');
-num_UDEIM = sum(diag(Su) > Su(1)*eps);
+num_UDEIM = sum(diag(Su) > eps(Su(1)));
 pts_UDEIM = d.getInterpolationPoints(Uu(:,1:num_UDEIM));
 err_UDEIM = fd.getInterpolErrors(Uu, pts_UDEIM, dof_vp_unass);
 % err_UDEIM_to_DEIM = fd.getInterpolErrors(Uu, pts_UDEIM, dof_vp_unass, s.f.Sigma);
@@ -122,6 +125,8 @@ for k = 1:nk
 %     pi.step;
 end
 pi.stop;
+
+save test_withdeim;
 
 %% FE-DEIM Tests
 % u = Uu(:,1:num_UDEIM);
