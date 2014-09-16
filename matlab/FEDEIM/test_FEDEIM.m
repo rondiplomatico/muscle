@@ -2,79 +2,80 @@
 % muscle.Dynamics.test_UnassembledEvaluation;
 
 %% Init
-mc = Config_FEDEIM;
-g = mc.PosFE.Geometry;
-pg = mc.PressFE.Geometry;
-m = muscle.Model(mc);
-s = m.System;
-f = s.f;
-
-m.Sampler = sampling.ManualSampler;
-m.Sampler.Samples = [1 1 5 5; 30 60 30 60];
-m.TrainingParams = [1 2];
-m.off1_createParamSamples;
-
-%% Training data
-m.ComputeParallel = true;
-m.off2_genTrainingData;
-m.save;
-
-%% FX-Evals
-%ftd_fx_unass = data.FileTrajectoryData(fullfile(m.Data.DataDirectory,'fxtraj_unass'));
-ftd_fx_unass = data.MemoryTrajectoryData;
-f.ComputeUnassembled = true;
-t = m.scaledTimes;
-ntraj = m.Data.TrajectoryData.getNumTrajectories;
-pi = ProcessIndicator('Computing unassembled evaluations for %d trajectories',ntraj,false,ntraj);
-for k = 1:ntraj
-    [x,mu] = m.Data.TrajectoryData.getTrajectoryNr(k);
-    f.prepareSimulation(mu);
-    tic;
-    fx_u = f.evaluateMulti(x,t,mu);
-    ct = toc;
-    ftd_fx_unass.addTrajectory(fx_u,mu,[],ct);
-    pi.step;
-end
-pi.stop;
-
-%% Init 2
-fxu = reshape(ftd_fx_unass.TrajectoryData,size(fxu,1),[]);
-fx = zeros(s.num_uvp_dof,size(fxu,2));
-
-% assemble full fx
-fx(1:s.num_u_dof,:) = fxu(1:s.num_u_dof,:);
-% dvw part (with assembly)
-fx(s.num_u_dof + (1:s.num_v_dof+s.num_p_dof),:) = s.f.Sigma * fxu(s.num_u_dof+1:end,:);
-
-save test;
-
-d = general.DEIM;
-fd = FEDEIM;
+% mc = Config_FEDEIM;
+% g = mc.PosFE.Geometry;
+% pg = mc.PressFE.Geometry;
+% m = muscle.Model(mc);
+% s = m.System;
+% f = s.f;
+%
+% m.Sampler = sampling.ManualSampler;
+% m.Sampler.Samples = [1 1 5 5; 30 60 30 60];
+% m.TrainingParams = [1 2];
+% m.off1_createParamSamples;
 % 
-% % %% Positions u
-% % dof_u = fx(1:s.num_u_dof,:);
-% % [U_dofu,S_dofu,V_dofu] = svd(dof_u,'econ');
-% % pts_u = d.getInterpolationPoints(U_dofu);
-% % err_u = fd.getInterpolErrors(U_dofu, pts_u, dof_u);
- 
-%% Classic DEIM
-fprintf('Classic DEIM...\n');
-dof_vp = fx(s.num_u_dof+1:end,:);
-[U,S,V] = svd(dof_vp,'econ');
-num_DEIM = sum(diag(S) > eps(S(1)));
-pts_DEIM = d.getInterpolationPoints(U(:,1:num_DEIM));
-err_DEIM = fd.getInterpolErrors(U, pts_DEIM, dof_vp);
-req_elems_DEIM = zeros(1,length(pts_DEIM));
-for k = 1:length(pts_DEIM)
-    req_elems_DEIM(k) = sum(sum(s.f.Sigma(pts_DEIM(1:k),:)*idx_elems') ~= 0);
-end
-
+% %% Training data
+%m.ComputeParallel = true;
+% m.off2_genTrainingData;
+% m.save;
+% 
+% %% FX-Evals
+% %ftd_fx_unass = data.FileTrajectoryData(fullfile(m.Data.DataDirectory,'fxtraj_unass'));
+% ftd_fx_unass = data.MemoryTrajectoryData;
+% f.ComputeUnassembled = true;
+% t = m.scaledTimes;
+% ntraj = m.Data.TrajectoryData.getNumTrajectories;
+% pi = ProcessIndicator('Computing unassembled evaluations for %d trajectories',ntraj,false,ntraj);
+% for k = 1:ntraj
+%     [x,mu] = m.Data.TrajectoryData.getTrajectoryNr(k);
+%     f.prepareSimulation(mu);
+%     tic;
+%     fx_u = f.evaluateMulti(x,t,mu);
+%     ct = toc;
+%     ftd_fx_unass.addTrajectory(fx_u,mu,[],ct);
+%     pi.step;
+% end
+% pi.stop;
+% 
+% %% Init 2
+% fxu = reshape(ftd_fx_unass.TrajectoryData,size(fx_u,1),[]);
+% fx = zeros(s.num_uvp_dof,size(fxu,2));
+% 
+% % assemble full fx
+% fx(1:s.num_u_dof,:) = fxu(1:s.num_u_dof,:);
+% % dvw part (with assembly)
+% fx(s.num_u_dof + (1:s.num_v_dof+s.num_p_dof),:) = s.f.Sigma * fxu(s.num_u_dof+1:end,:);
+% 
+% save test;
+% 
+% d = general.DEIM;
+% fd = FEDEIM;
+idx_elems = f.idx_vp_dof_unass_elems;
+% % 
+% % % %% Positions u
+% % % dof_u = fx(1:s.num_u_dof,:);
+% % % [U_dofu,S_dofu,V_dofu] = svd(dof_u,'econ');
+% % % pts_u = d.getInterpolationPoints(U_dofu);
+% % % err_u = fd.getInterpolErrors(U_dofu, pts_u, dof_u);
+%  
+% %% Classic DEIM
+% fprintf('Classic DEIM...\n');
+% dof_vp = fx(s.num_u_dof+1:end,:);
+% [U,S,V] = svd(dof_vp,'econ');
+% num_DEIM = sum(diag(S) > eps(S(1)));
+% pts_DEIM = d.getInterpolationPoints(U(:,1:num_DEIM));
+% err_DEIM = fd.getInterpolErrors(U, pts_DEIM, dof_vp);
+% req_elems_DEIM = zeros(1,length(pts_DEIM));
+% for k = 1:length(pts_DEIM)
+%     req_elems_DEIM(k) = sum(sum(s.f.Sigma(pts_DEIM(1:k),:)*idx_elems') ~= 0);
+% end
+% 
 %% UDEIM
-fprintf('UDEIM...\n');
-dof_vp_unass = fxu(s.num_u_dof+1:end,:);
-[Uu,Su,Vu] = svd(dof_vp_unass,'econ');
-num_UDEIM = sum(diag(Su) > eps(Su(1)));
-pts_UDEIM = d.getInterpolationPoints(Uu(:,1:num_UDEIM));
+% fprintf('UDEIM...\n');
+% dof_vp_unass = fxu(s.num_u_dof+1:end,:);
+% [Uu,Su,Vu] = svd(dof_vp_unass,'econ');
+% num_UDEIM = sum(diag(Su) > eps(Su(1)));
+% pts_UDEIM = d.getInterpolationPoints(Uu(:,1:num_UDEIM));
 err_UDEIM = fd.getInterpolErrors(Uu, pts_UDEIM, dof_vp_unass);
 % err_UDEIM_to_DEIM = fd.getInterpolErrors(Uu, pts_UDEIM, dof_vp_unass, s.f.Sigma);
 req_elems_UDEIM = zeros(1,length(pts_UDEIM));
