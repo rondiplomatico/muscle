@@ -107,7 +107,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             if ~isempty(mc)
                 this.xDim = this.System.num_uvp_dof;
                 this.fDim = this.System.num_uvp_dof;
-                this.computeSparsityPattern;
+                this.JSparsityPattern = this.computeSparsityPattern;
                 
                 %% Sigma assembly matrix
                 this.precomputeUnassembledData;
@@ -287,6 +287,8 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % See also: setPointSet
             
         end
+        
+        J = computeSparsityPattern(this);
     end
     
     methods(Access=private)

@@ -175,8 +175,7 @@ classdef System < models.BaseDynSystem
                 % Call subroutine for boundary condition index crunching
                 this.computeDirichletBC;
                 
-                this.num_uvp_glob = geo_uv.NumNodes * 6 + geo_p.NumNodes;
-                this.num_uvp_dof = this.num_uvp_glob - length(this.val_uv_bc_glob);
+                this.updateDofNums(mc);
 
                 %% Construct B matrix
                 % Collect neumann forces
@@ -219,13 +218,13 @@ classdef System < models.BaseDynSystem
                 this.idx_p_glob_elems = globalpressuredofs;
 
                 %% Compile Mass Matrix
-                this.M = this.assembleMassMatrix;
+                this.M = dscomponents.ConstMassMatrix(this.assembleMassMatrix);
 
                 %% Compile Damping Matrix
                 this.fD = this.assembleDampingMatrix;
 
                 %% Initial value
-                this.x0 = this.assembleX0;
+                this.x0 = dscomponents.ConstInitialValue(this.assembleX0);
 
                 this.f.configUpdated;
             end
@@ -550,7 +549,16 @@ classdef System < models.BaseDynSystem
         end
     end
     
-    methods(Access=private)
+    methods(Access=protected)
+        
+        function updateDofNums(this, mc)
+            tq = mc.PosFE;
+            geo_uv = tq.Geometry;
+            tl = mc.PressFE;
+            geo_p = tl.Geometry;
+            this.num_uvp_glob = geo_uv.NumNodes * 6 + geo_p.NumNodes;
+            this.num_uvp_dof = this.num_uvp_glob - length(this.val_uv_bc_glob);
+        end
         
         function x0 = assembleX0(this)
             % Constant initial values as current node positions
@@ -577,11 +585,9 @@ classdef System < models.BaseDynSystem
 
             % Remove dirichlet values
             x0(this.idx_uv_bc_glob) = [];
-            
-            x0 = dscomponents.ConstInitialValue(x0);
         end
         
-        function M = assembleMassMatrix(this)
+        function MM = assembleMassMatrix(this)
             %% Compile Mass Matrix
             
             mc = this.Model.Config;
@@ -614,7 +620,6 @@ classdef System < models.BaseDynSystem
                 MM(this.idx_uv_bc_glob,:) = [];
                 MM(:,this.idx_uv_bc_glob) = [];
             end
-            M = dscomponents.ConstMassMatrix(MM);
         end
         
         function Daff = assembleDampingMatrix(this)

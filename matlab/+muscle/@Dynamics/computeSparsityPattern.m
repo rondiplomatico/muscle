@@ -1,4 +1,4 @@
-function computeSparsityPattern(this)
+function J = computeSparsityPattern(this)
     sys = this.System;
     mc = sys.Model.Config;
     fe_pos = mc.PosFE;
@@ -80,6 +80,6 @@ function computeSparsityPattern(this)
     J(:,sys.idx_uv_bc_glob) = [];
     J(sys.idx_uv_bc_glob,:) = [];
 
-    this.JSparsityPattern = logical(J);
+    J = logical(J);
     end
 
