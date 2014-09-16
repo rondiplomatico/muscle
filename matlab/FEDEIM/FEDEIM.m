@@ -12,11 +12,11 @@ classdef FEDEIM < KerMorObject
             end
             np = length(pts);
             err = zeros(out,np);
-            pi = ProcessIndicator('Computing error for %d points on %dx%d data',np,false,np,size(data,1),size(data,2));
+            pi = ProcessIndicator('Computing error for %d points on %dx%d data (fast)',np,false,np,size(data,1),size(data,2));
             for k=1:np
                 P = sparse(pts(1:k),1:k,ones(k,1),size(basis,1),k);
-                c = (P'*basis) \ (P'*data);
-                residual = data - basis*c;
+                c = basis / (P'*basis);
+                residual = data - c*(P'*data);
                 err(1,k) = max(abs(residual(:)));
                 err(2,k) = max(Norm.L2(residual));
                 err(3,k) = mean(Norm.L2(residual));
