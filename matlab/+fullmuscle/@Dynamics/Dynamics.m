@@ -38,6 +38,35 @@ classdef Dynamics < muscle.Dynamics;
         % See also: Dynamics.initSarcoConst
         SarcoConst_dynpos;
     end
+    
+    %% Properties for motoneuron - sarcomere linking
+    properties
+        % The `V_s` value of the motoneuron input at which the MSLink_MaxFactor should be attained
+        %
+        % @type double @default 40
+        MSLink_MaxFactorSignal = 40;
+        
+        % The maximal factor with which the `V_s` value of the motoneuron should be amplified
+        % when added to the sarcomere equations
+        %
+        % @type double @default 7
+        MSLink_MaxFactor = 7;
+        
+        % The minimal factor at which the `V_s` value of the motoneuron should be amplified
+        % when added to the sarcomere equations.
+        %
+        % Between both limits, an exponential Gaussian weight is applied with a certain radius,
+        % so that the amplification factor has its minimum value at zero and maximum value at
+        % MSLink_MaxFactorSignal.
+        %
+        % See also FibreDynamics.getLinkFactor
+        %
+        % @type double @default .3
+        MSLink_MinFactor = .3;
+        
+        moto_sarco_link_moto_out;
+        moto_sarco_link_sarco_in;
+    end
 
     properties(Transient, Access=private)
         
@@ -50,7 +79,8 @@ classdef Dynamics < muscle.Dynamics;
         end
         
         function configUpdated(this)
-            ft = this.System.Model.FibreTypes;
+            sys = this.System;
+            ft = sys.Model.FibreTypes;
             this.nfibres = length(ft);
             
             configUpdated@muscle.Dynamics(this);
@@ -60,6 +90,9 @@ classdef Dynamics < muscle.Dynamics;
             this.xDim = this.xDim + (6+56)*this.nfibres;
             this.motoconst = this.getMotoConst(ft);
             this.sarcoconst = this.getSarcoConst(ft);
+            
+            this.moto_sarco_link_moto_out = sys.off_moto + (1:6:6*this.nfibres);
+            this.moto_sarco_link_sarco_in = sys.off_sarco + (1:56:56*this.nfibres);
         end
         
 %         function prepareSimulation(this, mu, inputidx)
@@ -74,7 +107,7 @@ classdef Dynamics < muscle.Dynamics;
             %% Mechanics
             uvp_pos = 1:sys.num_uvp_dof;
             uvp = y(uvp_pos);
-            dy(uvp_pos) = evaluate@muscle.Dynamics(this, uvp, t);
+            dy(uvp_pos) = evaluate@muscle.Dynamics(this, [uvp; y(sys.sarco_output_idx)], t);
             
             %% Motoneurons
             moto_pos = sys.off_moto+(1:sys.num_motoneuron_dof);
@@ -102,6 +135,20 @@ classdef Dynamics < muscle.Dynamics;
             ys = reshape(y(sarco_pos),56,[]);
             dys = this.dydt_sarcomere(ys, t);
             dy(sarco_pos) = dys(:);
+            
+            %% Link of motoneurons to sarcomeres
+            moto_out = y(this.moto_sarco_link_moto_out);
+            
+%             fac = this.MSLink_MaxFactor;
+%             if moto_out < this.MSLink_MaxFactorSignal
+                fac = this.MSLink_MinFactor + exp(-(moto_out-this.MSLink_MaxFactorSignal).^2/150)...
+                    *(this.MSLink_MaxFactor-this.MSLink_MinFactor);
+%             end
+            % "Link" at the corresponding sarcomeres
+            signal = fac.*moto_out./this.sarcoconst(1,:)';
+            
+            % Add signal to corresponding locations
+            dy(this.moto_sarco_link_sarco_in) = dy(this.moto_sarco_link_sarco_in) + signal;
         end
         
         function J = getStateJacobian(this, y, t)
@@ -175,11 +222,12 @@ classdef Dynamics < muscle.Dynamics;
     end
     
     methods(Access=private)
-        function c = getMotoConst(~, fibretypes)
+        function c = getMotoConst(this, fibretypes)
             % getMotoConst: private getter function for motoneuron
             % constants, vectorial implementation
             %
             % mu_fibretype values are assumed to be in [0,1]
+            sys = this.System;
             
             % Membrane capacitance (NOT to be confused with Cm of the
             % sarcomere model!)
@@ -188,14 +236,14 @@ classdef Dynamics < muscle.Dynamics;
             Ri=70/1000;
             c = zeros(11,length(fibretypes));
             % cf. Cisi and Kohn 2008, Table 2, page 7
-            Rmd = 14.4+6.05-coolExp(6.05,14.4,fibretypes);
-            Rms=1.15+0.65-coolExp(0.65,1.15,fibretypes);
+            Rmd = 14.4+6.05-sys.coolExp(6.05,14.4,fibretypes);
+            Rms=1.15+0.65-sys.coolExp(0.65,1.15,fibretypes);
             
-            ld=coolExp(0.55,1.06,fibretypes);
-            ls=coolExp(77.5e-6*100,113e-6*100,fibretypes);
+            ld=sys.coolExp(0.55,1.06,fibretypes);
+            ls=sys.coolExp(77.5e-6*100,113e-6*100,fibretypes);
             
-            rd=coolExp(41.5e-6*100,92.5e-6*100,fibretypes)/2;
-            rs=coolExp(77.5e-6*100,113e-6*100,fibretypes)/2;
+            rd=sys.coolExp(41.5e-6*100,92.5e-6*100,fibretypes)/2;
+            rs=sys.coolExp(77.5e-6*100,113e-6*100,fibretypes)/2;
             
             c(1,:) = 2*pi*rd.*ld./Rmd;   % para.Gld
             c(2,:) = 4*2*pi*rs.*ls;      % para.Gkf
@@ -209,10 +257,6 @@ classdef Dynamics < muscle.Dynamics;
             c(9,:) = 120*s;     % para.Vna
             c(10,:) = -10*s;     % para.Vk
             c(11,:) = 0*s;     % para.Vl
-            
-            function v = coolExp(a,b,mu)
-                v = exp(log(100)*mu)*(b-a)/100 + a;
-            end
         end
         
         function sc = getSarcoConst(this, fibretypes)

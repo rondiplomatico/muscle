@@ -20,7 +20,7 @@ function duvw  = evaluate(this, uvwdof, t)
     flfun = this.ForceLengthFun;
     alphaconst = this.alpha(t);
     havefibres = sys.HasFibres;
-    havefibretypes = havefibres && ~isempty(mc.Pool);
+    havefibretypes = havefibres && size(uvwdof,1) > sys.num_uvp_dof;
     usecrossfibres = havefibres && this.crossfibres;
     if usecrossfibres
         b1cf = this.b1cf;
@@ -34,13 +34,14 @@ function duvw  = evaluate(this, uvwdof, t)
 %         forceargs = [this.muprep; t*ones(1,size(this.muprep,2))];
         % This is the learned 
 %         FibreForces = this.APExp.evaluate(forceargs)';
-        FibreForces = mc.Pool.getActivation(t);
+%         FibreForces = mc.Pool.getActivation(t);
+        FibreForces = uvwdof(sys.num_uvp_dof+1:end);
 %         FibreForces = alphaconst*ones(size(this.muprep,2),1);
     end
 
     % Include dirichlet values to state vector
     uvwcomplete = zeros(2*num_u_glob + pgeo.NumNodes,1);
-    uvwcomplete(sys.idx_uv_dof_glob) = uvwdof;
+    uvwcomplete(sys.idx_uv_dof_glob) = uvwdof(1:sys.num_uvp_dof);
     uvwcomplete(sys.idx_uv_bc_glob) = sys.val_uv_bc_glob;
     % Check if velocity bc's should still be applied
     if t > sys.ApplyVelocityBCUntil

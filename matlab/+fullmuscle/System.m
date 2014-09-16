@@ -20,8 +20,14 @@ classdef System < muscle.System;
     properties(SetAccess=private)
         num_motoneuron_dof;
         num_sarco_dof;
+        num_all_dof;
         off_moto;
         off_sarco;
+        off_moto_full;
+        off_sarco_full;
+        
+        input_motoneuron_link_idx;
+        sarco_output_idx;
         
         % Membrane capacitance. Different values for different fibre types, 
         % due to different action potential propagation speeds
@@ -31,6 +37,8 @@ classdef System < muscle.System;
         % models.muscle.FibreDynamics.initSarcoConst @type double
         C_m_slow = 0.58;
         C_m_fast = 1;
+        
+        noiseGen;
     end
     
     properties(Access=private)
@@ -42,19 +50,102 @@ classdef System < muscle.System;
             this = this@muscle.System(model);
             this.nfibres = length(model.FibreTypes);
             this.f = fullmuscle.Dynamics(this);
+            
+            ng = models.motoneuron.NoiseGenerator; 
+            % TODO
+            ng.setFibreType(0);
+            this.noiseGen = ng;
+            this.Inputs{1} = @ng.getInput;
         end
         
-        function plot(this, t, y, varargin)
-            plot@muscle.System(this, t, y(1:this.num_uvp_dof,:), varargin{:});
-        end
-        
-%         function configUpdated(this)
-%             configUpdated@muscle.System(this);
-%              
+%         function prepareSimulation(this, mu, inputidx)
+%             prepareSimulation@muscle.Dynamics(this, mu, inputidx);
 %         end
+        
+        function uvwall = includeDirichletValues(this, t, uvw)
+            uvwall_mech = includeDirichletValues@muscle.System(this, t, uvw(1:this.num_uvp_dof,:));
+            uvwall = [uvwall_mech; uvw(this.num_uvp_dof+1:end,:)];
+        end
+        
+        function [pm, h_mech] = plot(this, t, y, varargin)
+            i = inputParser;
+            i.KeepUnmatched = true;
+            i.addParamValue('PM',[],@(v)isa(v,'PlotManager'));
+            %i.addParamValue('F',[]);
+            i.parse(varargin{:});
+            r = i.Results;
+            
+            if ~isempty(r.PM)
+                pm = r.PM;
+            else
+                pm = PlotManager(false,2,2);
+                pm.LeaveOpen = true;
+            end
+            varargin(end+1:end+4) = {'Pool', false, 'PM', pm};
+            [~, h_mech] = plot@muscle.System(this, t, y, varargin{:});
+        end
+        
+        function configUpdated(this)
+            configUpdated@muscle.System(this);
+            
+            %% Add input matrix B
+            this.B = this.assembleB;
+        end
+        
+        function v = coolExp(~, a, b, mu)
+            v = exp(log(100)*mu)*(b-a)/100 + a;
+        end
     end
     
     methods(Access=protected)
+        
+        function h = initRefinedPlot(this, t, y, r, pm)
+            h = [];
+            if length(t) > 1
+                h = pm.nextPlot('signal','Motoneuron signal','t [ms]','V_m');
+                xlim(h,[0 t(end)]);
+                %axis(h,[0 t(end) 0 1]);
+                hold(h,'on');
+                
+                h2 = pm.nextPlot('force','Action potential','t [ms]','V_m');
+                xlim(h2,[0 t(end)]);
+                %axis(h,[0 t(end) 0 1]);
+                hold(h2,'on');
+                
+                h3 = pm.nextPlot('force','Activation','t [ms]','A_s');
+                xlim(h3,[0 t(end)]);
+                %axis(h,[0 t(end) 0 1]);
+                hold(h3,'on');
+                
+                h = [h h2 h3];
+            end
+        end
+        
+        function refinedPlot(this, h, t, y, r, ts)
+            if ts > 1
+                times = t(1:ts);
+                pos = this.num_uvp_glob + (2:6:6*this.nfibres);
+                signal = y(pos,1:ts);
+                %walpha = mc.FibreTypeWeights(1,:,1) * signal;
+                cla(h(1));
+                plot(h(1),times,signal);
+                %plot(h,times,walpha,'LineWidth',2);
+                
+                pos = this.num_uvp_glob + this.num_motoneuron_dof + (1:56:56*this.nfibres);
+                force = y(pos,1:ts);
+                %walpha = mc.FibreTypeWeights(1,:,1) * signal;
+                cla(h(2));
+                plot(h(2),times,force);
+                
+                pos = this.num_uvp_glob + this.num_motoneuron_dof + (53:56:56*this.nfibres);
+                force = y(pos,1:ts);
+                %walpha = mc.FibreTypeWeights(1,:,1) * signal;
+                cla(h(3));
+                plot(h(3),times,force);
+                %plot(h,times,walpha,'LineWidth',2);
+            end
+        end
+        
         function updateDofNums(this, mc)
             updateDofNums@muscle.System(this, mc);
             
@@ -65,6 +156,14 @@ classdef System < muscle.System;
             % Sarcomeres are beginning after motoneurons
             this.num_sarco_dof = 56*this.nfibres;
             this.off_sarco = this.off_moto + this.num_motoneuron_dof;
+            
+            this.num_all_dof = this.off_sarco + this.num_sarco_dof;
+            
+            % Get the positions where the input signal is mapped to the
+            % motoneurons
+            this.input_motoneuron_link_idx = this.off_moto + (2:6:6*this.nfibres);
+            
+            this.sarco_output_idx = this.off_sarco + (53:56:56*this.nfibres);
         end
         
         function x0 = assembleX0(this)
@@ -91,6 +190,19 @@ classdef System < muscle.System;
                 % add sarco
                 x0(this.off_sarco + 56*(k-1) + (1:56)) = x0ms(7:end);
             end
+        end
+        
+        function B = assembleB(this)
+            % The divisor in both coefficient functions is the old para.CS
+            % value!!
+            i = this.input_motoneuron_link_idx;
+            j = ones(size(i));
+            s = 1./(pi*this.coolExp(77.5e-4, 0.0113, this.Model.FibreTypes).^2);
+            B = dscomponents.AffLinInputConv;
+            % Base noise input mapping
+            B.addMatrix('1',sparse(i,j,s,this.num_all_dof,2));
+            % Independent noise input mapping with µ_4 as mean current factor
+            B.addMatrix('mu(4)',sparse(i,2*j,s,this.num_all_dof,2));
         end
         
         function Daff = assembleDampingMatrix(this)

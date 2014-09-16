@@ -238,7 +238,7 @@ classdef System < models.BaseDynSystem
             prepareSimulation@models.BaseDynSystem(this, mu, inputidx);
         end
         
-        function [pm, h] = plot(this, t, uvw, varargin)
+        function [pm, h] = plot(this, t, y_dofs, varargin)
             i = inputParser;
             i.KeepUnmatched = true;
             i.addParamValue('Vid',false,@(v)islogical(v));
@@ -281,7 +281,7 @@ classdef System < models.BaseDynSystem
             % "Speedup" factor for faster plots
             if ~isempty(r.F)
                 t = t(1:r.F:end);
-                uvw = uvw(:,1:r.F:end);
+                y_dofs = y_dofs(:,1:r.F:end);
                 if ~isempty(r.DF)
                     r.DF = r.DF(:,1:r.F:end);
                 end
@@ -291,7 +291,7 @@ classdef System < models.BaseDynSystem
             end
             
             %% Re-add the dirichlet nodes
-            uvw = this.includeDirichletValues(t, uvw);
+            y_dofs = this.includeDirichletValues(t, y_dofs);
             
             hlp = sum(this.bool_u_bc_nodes,1);
             bc_dir_3pos_applies = hlp == 3;
@@ -346,14 +346,7 @@ classdef System < models.BaseDynSystem
             end
             
             %% Loop over time
-            if ~isempty(mc.Pool) && r.Pool
-                pool = mc.Pool;
-                ha = pm.nextPlot('force','Activation force','t [ms]','alpha');
-                axis(ha,[0 t(end) 0 1]);
-                hold(ha,'on');
-                dt = this.Model.dt;
-                typeweights = mc.FibreTypeWeights(1,:,1);
-            end
+            ax_extra = this.initRefinedPlot(t,y_dofs,r,pm);
             
             h = pm.nextPlot('geo',sprintf('Deformation at t=%g',t(end)),'x [mm]','y [mm]');
             zlabel(h,'z [mm]');
@@ -363,7 +356,7 @@ classdef System < models.BaseDynSystem
                 musclecol = [0.854688, 0.201563, 0.217188];
             end
             
-            axis(h, this.getPlotBox(uvw));
+            axis(h, this.getPlotBox(y_dofs));
             daspect([1 1 1]);
             view(h, [46 30]);
             hold(h,'on');
@@ -373,8 +366,8 @@ classdef System < models.BaseDynSystem
                 if ~ishandle(h)
                     break;
                 end
-                u = reshape(uvw(1:vstart-1,ts),3,[]);
-                v = reshape(uvw(vstart:pstart-1,ts),3,[]);
+                u = reshape(y_dofs(1:vstart-1,ts),3,[]);
+                v = reshape(y_dofs(vstart:pstart-1,ts),3,[]);
                 cla(h);
                 
                 if r.Skel
@@ -435,7 +428,7 @@ classdef System < models.BaseDynSystem
                 
                 %% Pressure
                 if r.Pressure
-                    p = uvw(pstart:end,ts);
+                    p = y_dofs(pstart:this.num_uvp_dof,ts);
                     pn = this.idx_p_to_u_nodes;
                     pneg = p<0;
                     % Negative pressures
@@ -452,7 +445,7 @@ classdef System < models.BaseDynSystem
                 if this.HasFibres && r.Fibres
                     Ngp = dfem.N(dfem.GaussPoints);
                     for m = 1:geo.NumElements
-                        u = uvw(1:vstart-1,ts);
+                        u = y_dofs(1:vstart-1,ts);
                         u = u(this.idx_u_glob_elems(:,:,m));
                         
                         gps = u*Ngp;
@@ -469,19 +462,14 @@ classdef System < models.BaseDynSystem
                 title(h,sprintf('Deformation at t=%g',t(ts)));
 %                 hold(h,'off');
 
-                if ~isempty(mc.Pool) && r.Pool
-                    times = 0:dt:ts*dt;
-                    alpha = pool.getActivation(times);
-                    walpha = typeweights * alpha;
-                    cla(ha);
-                    plot(ha,times,alpha);
-                    plot(ha,times,walpha,'LineWidth',2);
-                end
+                % Call a subroutine for further plots at time step ts
+                this.refinedPlot(ax_extra, t, y_dofs, r, ts);
                 
                 if r.Vid
                     vw.writeVideo(getframe(gcf));
                 else
-                    pause(.01);
+%                     pause(.01);
+                      drawnow;
 %                     pause;
                 end
             end
@@ -550,6 +538,29 @@ classdef System < models.BaseDynSystem
     end
     
     methods(Access=protected)
+        
+        function h = initRefinedPlot(this, t, y, r, pm)
+            mc = this.Model.Config;
+            h = [];
+            if ~isempty(mc.Pool) && r.Pool
+                h = pm.nextPlot('force','Activation force','t [ms]','alpha');
+                axis(h,[0 t(end) 0 1]);
+                hold(h,'on');
+            end
+        end
+        
+        function refinedPlot(this, h, t, y, r, ts)
+            mc = this.Model.Config;
+            if ~isempty(mc.Pool) && r.Pool
+                dt = this.Model.dt;
+                times = 0:dt:ts*dt;
+                alpha = mc.Pool.getActivation(times);
+                walpha = mc.FibreTypeWeights(1,:,1) * alpha;
+                cla(h);
+                plot(h,times,alpha);
+                plot(h,times,walpha,'LineWidth',2);
+            end
+        end
         
         function updateDofNums(this, mc)
             tq = mc.PosFE;

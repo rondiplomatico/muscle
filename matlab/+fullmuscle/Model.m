@@ -21,7 +21,7 @@ classdef Model < muscle.Model
     methods
         function this = Model(conf)
             if nargin < 1
-                conf = muscle.DebugConfig;
+                conf = fullmuscle.DebugConfig;
             end
             this = this@muscle.Model(conf);
             
@@ -30,11 +30,19 @@ classdef Model < muscle.Model
             % Call the config-specific model configuration
             conf.Model = this;
             conf.configureModel(this);
+        
+            this.DefaultMu = [1 0 0 3]';
+            this.DefaultInput = 1;
             
             % Set the config to the model, triggering geometry related
             % pre-computations
             this.setConfig(conf);
         end
+        
+%         function [residuals_dirichlet, residuals_neumann] = getResidualForces(this, t, uvw)
+%             % Restrict to effective part of mechanics
+%             [residuals_dirichlet, residuals_neumann] = getResidualForces@muscle.Model(this, t, uvw(1:this.System.num_uvp_dof,:));
+%         end
     end
     
 end
