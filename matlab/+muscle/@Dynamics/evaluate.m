@@ -18,24 +18,27 @@ function duvw  = evaluate(this, uvwdof, t)
     lfopt = this.lambdafopt;
     Pmax = this.Pmax;
     flfun = this.ForceLengthFun;
-    alphaconst = this.alpha(t);
     havefibres = sys.HasFibres;
-    havefibretypes = havefibres && size(uvwdof,1) > sys.num_uvp_dof;
-    usecrossfibres = havefibres && this.crossfibres;
+    havefibretypes = sys.HasFibreTypes;
+    usecrossfibres = this.crossfibres;
     if usecrossfibres
         b1cf = this.b1cf;
         d1cf = this.d1cf;
     end
     
     if havefibretypes
+        alphaconst = [];
         fibretypeweights = mc.FibreTypeWeights;
-        % Input data is x1: fibre type, x2: mean current, x3: time
-%         forceargs = [this.muprep; t*ones(1,size(this.muprep,2))];
-        % This is the learned 
+        if sys.HasMotoPool
+            FibreForces = mc.Pool.getActivation(t);
+        elseif sys.HasForceArgument
+            FibreForces = uvwdof(sys.num_uvp_dof+1:end) * min(1,t);
+        else
+            error('No implemented');
+        end
 %         FibreForces = this.APExp.evaluate(forceargs)';
-%         FibreForces = mc.Pool.getActivation(t);
-        FibreForces = uvwdof(sys.num_uvp_dof+1:end) * min(1,t);
-%         FibreForces = alphaconst*ones(size(this.muprep,2),1);
+    else
+        alphaconst = this.alpha(t);
     end
 
     % Include dirichlet values to state vector
@@ -111,9 +114,11 @@ function duvw  = evaluate(this, uvwdof, t)
                 % Using a subfunction is 20% slower!
                 % So: direct implementation here
                 fl = flfun(lambdaf/lfopt);
-                alpha = alphaconst;
+                
                 if havefibretypes
                     alpha = ftwelem(gp);
+                else
+                    alpha = alphaconst;
                 end
                 markert = 0;
                 % Using > 1 is deadly. All lambdas are equal to one at t=0

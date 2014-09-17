@@ -21,24 +21,28 @@ function J = getStateJacobian(this, uvwdof, t)
     d1 = this.d1;
     lfopt = this.lambdafopt;
     Pmax = this.Pmax;
-%     visc = this.mu(1);
-    alphaconst = this.alpha(t);
+
     havefibres = sys.HasFibres;
-    havefibretypes = havefibres && ~isempty(mc.Pool);
-    usecrossfibres = havefibres && this.crossfibres;
+    havefibretypes = sys.HasFibreTypes;
+    usecrossfibres = this.crossfibres;
     if usecrossfibres
         b1cf = this.b1cf;
         d1cf = this.d1cf;
     end
     
     if havefibretypes
+        alphaconst = [];
         fibretypeweights = mc.FibreTypeWeights;
-        % Input data is x1: fibre type, x2: mean current, x3: time
-%         forceargs = [this.muprep; t*ones(1,size(this.muprep,2))];
-        % This is the learned 
+        if sys.HasMotoPool
+            FibreForces = mc.Pool.getActivation(t);
+        elseif sys.HasForceArgument
+            FibreForces = uvwdof(sys.num_uvp_dof+1:end) * min(1,t);
+        else
+            error('No implemented');
+        end
 %         FibreForces = this.APExp.evaluate(forceargs)';
-%         FibreForces = alphaconst*ones(size(this.muprep,2),1);
-        FibreForces = mc.Pool.getActivation(t);
+    else
+        alphaconst = this.alpha(t);
     end
     
     %% Precompute the size of i,j,s for speed
@@ -66,7 +70,7 @@ function J = getStateJacobian(this, uvwdof, t)
 
     % Include dirichlet values to state vector
     uvwcomplete = zeros(2*dofs_pos + pgeo.NumNodes,1);
-    uvwcomplete(sys.idx_uv_dof_glob) = uvwdof;
+    uvwcomplete(sys.idx_uv_dof_glob) = uvwdof(1:sys.num_uvp_dof);
     uvwcomplete(sys.idx_uv_bc_glob) = sys.val_uv_bc_glob;
     
     for m = 1:num_elements

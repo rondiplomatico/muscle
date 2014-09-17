@@ -116,15 +116,13 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         
         function prepareSimulation(this, mu)
             prepareSimulation@dscomponents.ACompEvalCoreFun(this, mu);
-            mc = this.System.Model.Config;
-%             if ~isempty(mc.FibreTypes)
-%                 this.muprep = [mc.FibreTypes; ones(size(mc.FibreTypes))*mu(2)];
-%             end
+            sys = this.System;
+            mc = sys.Model.Config;
             if ~isempty(mc.Pool)
-                mc.Pool.prepareSimulation(this.System.Model.T,mu(2));
+                mc.Pool.prepareSimulation(sys.Model.T,mu(4));
             end
-            this.usemassinv = this.System.UseDirectMassInversion;
-            this.crossfibres = this.System.UseCrossFibreStiffness;
+            this.usemassinv = sys.UseDirectMassInversion;
+            this.crossfibres = sys.HasFibres && sys.UseCrossFibreStiffness;
         end
         
         function evaluateCoreFun(varargin)

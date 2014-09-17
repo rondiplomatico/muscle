@@ -87,6 +87,12 @@ classdef System < models.BaseDynSystem
        
        %% Fibre stuff
        HasFibres = false;
+       HasFibreTypes = false;
+       HasMotoPool = false;
+       % Property only useful when fullmodel.System is used.. comes due to
+       % use of inheritance. Better solutions could be thought of, but this
+       % is to get it going!
+       HasForceArgument = false;
        a0;
        a0oa0;
        dNa0;
@@ -193,6 +199,10 @@ classdef System < models.BaseDynSystem
 
                 % Init fibre directions and precomputable values
                 this.inita0;
+                
+                this.HasMotoPool = this.HasFibres && ~isempty(mc.Pool);
+                this.HasFibreTypes = this.HasFibres && ~isempty(mc.FibreTypeWeights);
+                this.HasForceArgument = this.HasFibreTypes && isa(this,'fullmuscle.System');
 
                 % Construct global indices in uvw from element nodes. Each dof in
                 % an element is used three times for x,y,z displacement. The
