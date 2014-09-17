@@ -25,24 +25,10 @@ function J = getStateJacobian(this, uvwdof, t)
     havefibres = sys.HasFibres;
     havefibretypes = sys.HasFibreTypes;
     usecrossfibres = this.crossfibres;
+    hasforceargument = sys.HasForceArgument;
     if usecrossfibres
         b1cf = this.b1cf;
         d1cf = this.d1cf;
-    end
-    
-    if havefibretypes
-        alphaconst = [];
-        fibretypeweights = mc.FibreTypeWeights;
-        if sys.HasMotoPool
-            FibreForces = mc.Pool.getActivation(t);
-        elseif sys.HasForceArgument
-            FibreForces = uvwdof(sys.num_uvp_dof+1:end) * min(1,t);
-        else
-            error('No implemented');
-        end
-%         FibreForces = this.APExp.evaluate(forceargs)';
-    else
-        alphaconst = this.alpha(t);
     end
     
     %% Precompute the size of i,j,s for speed
@@ -58,6 +44,29 @@ function J = getStateJacobian(this, uvwdof, t)
     i = zeros(totalsize,1);
     j = zeros(totalsize,1);
     s = zeros(totalsize,1);
+    
+    %% Extra stuff if fibres are used
+    if havefibretypes
+        alphaconst = [];
+        fibretypeweights = mc.FibreTypeWeights;
+        nfibres = size(fibretypeweights,2);
+        if sys.HasMotoPool
+            FibreForces = mc.Pool.getActivation(t);
+        elseif hasforceargument
+            FibreForces = uvwdof(sys.num_uvp_dof+1:end) * min(1,t);
+            totalsizeS = num_elements*num_gausspoints*nfibres;
+            iS = zeros(totalsizeS,1);
+            jS = zeros(totalsizeS,1);
+            sS = zeros(totalsizeS,1);
+            cur_offS = 0;
+            columns_sarco_link = 53:56:56*nfibres;
+        else
+            error('No implemented');
+        end
+%         FibreForces = this.APExp.evaluate(forceargs)';
+    else
+        alphaconst = this.alpha(t);
+    end
 
     %% -I part in u'(t) = -v(t)
     i(1:dofs_pos) = (1:dofs_pos)';
@@ -121,7 +130,8 @@ function J = getStateJacobian(this, uvwdof, t)
                 if havefibretypes
                     alpha = ftwelem(gp);
                 end
-                g_value = (Pmax/lambda_a0)*fl*alpha;
+                alpha_prefactor = (Pmax/lambda_a0)*fl;
+                g_value = alpha_prefactor*alpha;
                 dg_dlam = (Pmax/lambda_a0^2)*alpha*(dfl - fl);
                 % Using > 1 is deadly. All lambdas are equal to one at t=0
                 % (reference config, analytical), but numerically this is
@@ -288,13 +298,26 @@ function J = getStateJacobian(this, uvwdof, t)
                 s(cur_off + relidx_press) = sum(diag(Finv*U3k)) * precomp;
                 cur_off = cur_off + dofsperelem_press;
             end
-            %% Grad_w K(u,v,w)
+            
+            %% Grad_w K(u,w)
             for k = 1:dofsperelem_press
                 i(cur_off + relidx_pos) = elemidx_velo_linear;
                 j(cur_off + relidx_pos) = elemidx_pressure(k);
                 snew = -weight * fe_press.Ngp(k,gp,m) * Finv' * dtn';
                 s(cur_off + relidx_pos) = snew(:);
                 cur_off = cur_off + numXYZDofs_pos;
+            end
+            
+            %% Grad_s K(u,w,s)
+            if hasforceargument
+                for k = 1:nfibres
+                    dPsk = alpha_prefactor * fibretypeweights(gp,k,m) * F *a0;
+                    iS(cur_offS + relidx_pos) = elemidx_velo_linear-dofs_pos;
+                    jS(cur_offS + relidx_pos) = columns_sarco_link(k);
+                    snew = -weight * dPsk * dtn';
+                    sS(cur_offS + relidx_pos) = snew(:);
+                    cur_offS = cur_offS + numXYZDofs_pos;
+                end
             end
         end
     end
@@ -306,5 +329,12 @@ function J = getStateJacobian(this, uvwdof, t)
     if this.usemassinv
         % Multiply with inverse of Mass matrix!
         J(sys.idx_v_dof_glob,:) = sys.Minv*J(sys.idx_v_dof_glob,:);
+    end
+    
+    if hasforceargument
+        JS = sparse(iS,jS,sS,3*N,nfibres*56);
+        % Remove those that are connected to dirichlet values
+        JS([sys.idx_u_bc_glob; sys.idx_v_bc_glob],:) = [];
+        this.JS = JS;
     end
 end

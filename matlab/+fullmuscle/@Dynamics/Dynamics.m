@@ -69,9 +69,6 @@ classdef Dynamics < muscle.Dynamics;
         
         moto_sarco_link_moto_out;
         moto_sarco_link_sarco_in;
-        
-        forces_scaling;
-        forces_scaling_poly = [-28.9060   53.8167  -24.1155   -7.2909    7.3932];
     end
 
     properties(Transient, Access=private)
@@ -86,7 +83,7 @@ classdef Dynamics < muscle.Dynamics;
         
         function configUpdated(this)
             sys = this.System;
-            ft = sys.Model.FibreTypes;
+            ft = sys.Model.Config.FibreTypes;
             this.nfibres = length(ft);
             
             configUpdated@muscle.Dynamics(this);
@@ -99,19 +96,17 @@ classdef Dynamics < muscle.Dynamics;
             
             this.moto_sarco_link_moto_out = sys.off_moto + (2:6:6*this.nfibres);
             this.moto_sarco_link_sarco_in = sys.off_sarco + (1:56:56*this.nfibres);
-            
-            this.forces_scaling = 1./polyval(this.forces_scaling_poly,ft)';
         end
         
         function prepareSimulation(this, mu)
             prepareSimulation@muscle.Dynamics(this, mu);
             % Create function handles for the link function
             diff = this.MSLink_MaxFactor-this.MSLink_MinFactor;
-            funstr = sprintf('%g + exp(-(x-%g)^2/150)*%g',...
+            funstr = sprintf('%g + exp(-(x-%g).^2/150)*%g',...
                 this.MSLink_MinFactor,...
                 this.MSLink_MaxFactorSignal,diff);
             this.MSLinkFun = eval(['@(x)' funstr ';']);
-            funstr = sprintf('-exp(-(x-%g)^2/150)*%g*(x-%g)/75',...
+            funstr = sprintf('-exp(-(x-%g).^2/150).*(%g*(x-%g))/75',...
                 this.MSLink_MaxFactorSignal,...
                 diff,...
                 this.MSLink_MaxFactorSignal);
@@ -125,10 +120,9 @@ classdef Dynamics < muscle.Dynamics;
             
             %% Mechanics
             uvp_pos = 1:sys.num_uvp_dof;
-            uvp = y(uvp_pos);
-            % Forces from sarcomeres
-            forces = y(sys.sarco_output_idx).*this.forces_scaling;
-            dy(uvp_pos) = evaluate@muscle.Dynamics(this, [uvp; forces], t);
+            % Use uvp as argument and also pass in s (=sarco forces)
+            uvps = y([uvp_pos sys.sarco_output_idx]);
+            dy(uvp_pos) = evaluate@muscle.Dynamics(this, uvps, t);
             
             %% Motoneurons
             moto_pos = sys.off_moto+(1:sys.num_motoneuron_dof);
@@ -170,8 +164,8 @@ classdef Dynamics < muscle.Dynamics;
             
             %% Mechanics
             uvp_pos = 1:sys.num_uvp_dof;
-            uvp = [y(uvp_pos); y(sys.sarco_output_idx).*this.forces_scaling];
-            J = getStateJacobian@muscle.Dynamics(this, uvp, t);
+            uvps = y([uvp_pos sys.sarco_output_idx]);
+            J = getStateJacobian@muscle.Dynamics(this, uvps, t);
             
             %% Motoneuron
             J_m = zeros(6,6);
@@ -214,7 +208,7 @@ classdef Dynamics < muscle.Dynamics;
             end
             
             %% Sarcomere to mechanics coupling
-            
+            J(sys.num_u_dof + (1:sys.num_v_dof), sys.off_sarco+(1:sys.num_sarco_dof)) = this.JS;
         end
     end
     
@@ -238,11 +232,20 @@ classdef Dynamics < muscle.Dynamics;
             for k=1:this.nfibres
                 J = blkdiag(J, J_sarco);
             end
+            
+            sys = this.System;
+            
+            % Moto -> Sarco link
             for k=1:this.nfibres
                 % first entry of sarco gets 2nd output of motoneuron
-                off_sarco = this.System.off_sarco + (k-1)*56 + 1;
-                off_moto = this.System.off_moto + (k-1)*6 + 2;
+                off_sarco = sys.off_sarco + (k-1)*56 + 1;
+                off_moto = sys.off_moto + (k-1)*6 + 2;
                 J(off_sarco,off_moto) = true;
+            end
+            
+            % Sarco -> Mechanics link
+            for k=1:this.nfibres
+                J(sys.num_u_dof + (1:sys.num_v_dof),sys.sarco_output_idx(k)) = true;
             end
         end
     end

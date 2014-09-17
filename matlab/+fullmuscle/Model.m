@@ -19,11 +19,6 @@ classdef Model < muscle.Model
 % - \c Documentation http://www.agh.ians.uni-stuttgart.de/documentation/kermor/
 % - \c License @ref licensing
     
-    properties
-        % The different discrete fibre types this full muscle knows
-        FibreTypes = 0:.2:1;
-    end
-    
     methods
         function this = Model(conf)
             if nargin < 1
@@ -43,6 +38,8 @@ classdef Model < muscle.Model
             % Set the config to the model, triggering geometry related
             % pre-computations
             this.setConfig(conf);
+            
+            this.System.prepareSimulation(this.DefaultMu, this.DefaultInput);
         end
     end
     

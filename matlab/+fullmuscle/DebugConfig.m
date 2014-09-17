@@ -1,4 +1,4 @@
-classdef DebugConfig < muscle.AModelConfig
+classdef DebugConfig < fullmuscle.AModelConfig
     % A simple configuration for Debug purposes.
     % 
     % Uses a single undeformed cube with triquadratic position shape
@@ -39,39 +39,20 @@ classdef DebugConfig < muscle.AModelConfig
                 version = 1;
             end
             % Single cube with same config as reference element
-            [pts, cubes] = geometry.Cube8Node.DemoGrid([0 1],[0 1],[0 1]);
+            [pts, cubes] = geometry.Cube8Node.DemoGrid([0 .5 1],[0 .5 1],[0 1]);
             geo = geometry.Cube8Node(pts, cubes);
-            this = this@muscle.AModelConfig(geo.toCube27Node);
+            this = this@fullmuscle.AModelConfig(geo.toCube27Node);
             
             this.Version = version;
         end
         
         function configureModel(this, m)
-%             sys = m.System;
-%             m.T = 1;
-%             m.dt = .01;
-%             m.ODESolver.RelTol = .00001;
-%             m.ODESolver.AbsTol = .002;
-
-%             m.System.f.alpha = this.getAlphaRamp(50,.1);
+            configureModel@fullmuscle.AModelConfig(this, m);
             
             switch this.Version
             case 1
                 m.T = 100;
                 m.dt = .1;
-                %m.FibreTypes = [0 .2 .4 .6 .8 1];
-                m.FibreTypes = 0;
-                fe = this.PosFE;
-                geo = fe.Geometry;
-                ftw = zeros(fe.GaussPointsPerElem,length(m.FibreTypes),geo.NumElements);
-                % Test: Use only slow-twitch muscles
-                ftw(:,1,:) = 1;
-%                 ftw(:,2,:) = .6;
-%                 ftw(:,3,:) = .05;
-%                 ftw(:,4,:) = .1;
-%                 ftw(:,5,:) = .2;
-%                 ftw(:,6,:) = .2;
-                this.FibreTypeWeights = ftw;
                 
                 m.ODESolver.RelTol = .001;
                 m.ODESolver.AbsTol = .01;
@@ -93,16 +74,27 @@ classdef DebugConfig < muscle.AModelConfig
                 end
             end
         end
-        
-        function u = getInputs(this)
-            u = {};
-            if this.Version == 10
-                u = {this.getAlphaRamp(this.Model.T/2,1)};
-            end
-        end
     end
     
     methods(Access=protected)
+        
+        function ft = getFibreTypes(~)
+            %ft = [0 .2 .4 .6 .8 1];
+            ft = [0 .4 1];
+        end
+        
+        function ftw = getFibreTypeWeights(this)
+            % Get pre-initialized all zero weights
+            ftw = getFibreTypeWeights@fullmuscle.AModelConfig(this);
+            
+            ftw(:,1,:) = .3;
+            ftw(:,2,:) = .4;
+            ftw(:,3,:) = .3;
+%                 ftw(:,4,:) = .1;
+%                 ftw(:,5,:) = .2;
+%                 ftw(:,6,:) = .2;
+        end
+        
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             geo = this.PosFE.Geometry;
             % Always fix back side

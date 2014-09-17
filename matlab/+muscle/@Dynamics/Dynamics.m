@@ -65,6 +65,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     
     properties(SetAccess=private)
         APExp;
+        JS;
     end
     
     properties(Transient, SetAccess=private)

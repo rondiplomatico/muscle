@@ -129,6 +129,9 @@ classdef AModelConfig < handle
             % conditions.
         end        
         
+        function ftw = getFibreTypeWeights(this)%#ok
+            % do nothing!
+        end
     end
     
     methods(Abstract, Access=protected)
