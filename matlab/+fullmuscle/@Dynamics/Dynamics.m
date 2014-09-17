@@ -43,13 +43,13 @@ classdef Dynamics < muscle.Dynamics;
     properties
         % The `V_s` value of the motoneuron input at which the MSLink_MaxFactor should be attained
         %
-        % @type double @default 40
+        % @type double
         MSLink_MaxFactorSignal = 40;
         
         % The maximal factor with which the `V_s` value of the motoneuron should be amplified
         % when added to the sarcomere equations
         %
-        % @type double @default 7
+        % @type double
         MSLink_MaxFactor = 7;
         
         % The minimal factor at which the `V_s` value of the motoneuron should be amplified
@@ -61,8 +61,11 @@ classdef Dynamics < muscle.Dynamics;
         %
         % See also FibreDynamics.getLinkFactor
         %
-        % @type double @default .3
+        % @type double
         MSLink_MinFactor = .3;
+        
+        MSLinkFun;
+        MSLinkFunDeriv;
         
         moto_sarco_link_moto_out;
         moto_sarco_link_sarco_in;
@@ -100,9 +103,20 @@ classdef Dynamics < muscle.Dynamics;
             this.forces_scaling = 1./polyval(this.forces_scaling_poly,ft)';
         end
         
-%         function prepareSimulation(this, mu, inputidx)
-%             prepareSimulation@muscle.Dynamics(this, mu, inputidx);
-%         end
+        function prepareSimulation(this, mu)
+            prepareSimulation@muscle.Dynamics(this, mu);
+            % Create function handles for the link function
+            diff = this.MSLink_MaxFactor-this.MSLink_MinFactor;
+            funstr = sprintf('%g + exp(-(x-%g)^2/150)*%g',...
+                this.MSLink_MinFactor,...
+                this.MSLink_MaxFactorSignal,diff);
+            this.MSLinkFun = eval(['@(x)' funstr ';']);
+            funstr = sprintf('-exp(-(x-%g)^2/150)*%g*(x-%g)/75',...
+                this.MSLink_MaxFactorSignal,...
+                diff,...
+                this.MSLink_MaxFactorSignal);
+            this.MSLinkFunDeriv = eval(['@(x)' funstr ';']);
+        end
         
         function dy = evaluate(this, y, t)
             sys = this.System;
@@ -145,15 +159,8 @@ classdef Dynamics < muscle.Dynamics;
             
             %% Link of motoneurons to sarcomeres
             moto_out = y(this.moto_sarco_link_moto_out);
-            
-%             fac = this.MSLink_MaxFactor;
-%             if moto_out < this.MSLink_MaxFactorSignal
-                fac = this.MSLink_MinFactor + exp(-(moto_out-this.MSLink_MaxFactorSignal).^2/150)...
-                    *(this.MSLink_MaxFactor-this.MSLink_MinFactor);
-%             end
-            % "Link" at the corresponding sarcomeres
+            fac = min(this.MSLink_MaxFactor,this.MSLinkFun(moto_out));
             signal = fac.*moto_out./this.sarcoconst(1,:)';
-            
             % Add signal to corresponding locations
             dy(this.moto_sarco_link_sarco_in) = dy(this.moto_sarco_link_sarco_in) + signal;
         end
@@ -196,6 +203,18 @@ classdef Dynamics < muscle.Dynamics;
                 sarco_pos = sys.off_sarco + 56*(k-1) + (1:56);
                 J = blkdiag(J,this.Jac_Sarco(y(sarco_pos),t,this.sarcoconst(:,k)));
             end
+            
+            %% Motoneuron to Sarcomere coupling
+            moto_out = y(this.moto_sarco_link_moto_out);
+            fac = min(this.MSLink_MaxFactor,this.MSLinkFun(moto_out));
+            dfac = this.MSLinkFunDeriv(moto_out);
+            dsignal_dmotoout = (dfac .* moto_out + fac)./this.sarcoconst(1,:)';
+            for k=1:this.nfibres
+                J(this.moto_sarco_link_sarco_in(k),this.moto_sarco_link_moto_out(k)) = dsignal_dmotoout(k);
+            end
+            
+            %% Sarcomere to mechanics coupling
+            
         end
     end
     
