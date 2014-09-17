@@ -39,6 +39,15 @@ classdef System < muscle.System;
         C_m_fast = 1;
         
         noiseGen;
+        
+        % The upper limit polynomial for maximum mean current dependent on
+        % the fibre type.
+        %
+        % Used at the assembly of B to provide suitable coefficient
+        % functions.
+        %
+        % See also: models.motoneuron.experiments.ParamDomainDetection
+        upperlimit_poly;
     end
     
     properties(Access=private)
@@ -51,6 +60,10 @@ classdef System < muscle.System;
             this.nfibres = length(model.FibreTypes);
             this.f = fullmuscle.Dynamics(this);
             
+            % Load mean current limiting polynomial
+            s = load(models.motoneuron.Model.FILE_UPPERLIMITPOLY);
+            this.upperlimit_poly = s.upperlimit_poly;
+            
             ng = models.motoneuron.NoiseGenerator; 
             % TODO
             ng.setFibreType(0);
@@ -58,9 +71,13 @@ classdef System < muscle.System;
             this.Inputs{1} = @ng.getInput;
         end
         
-%         function prepareSimulation(this, mu, inputidx)
-%             prepareSimulation@muscle.Dynamics(this, mu, inputidx);
-%         end
+        function prepareSimulation(this, mu, inputidx)
+            
+            % Limit mean current depending on fibre type
+            mu(2) = min(polyval(this.upperlimit_poly,mu(1)),mu(2));
+            
+            prepareSimulation@muscle.System(this, mu, inputidx);
+        end
         
         function uvwall = includeDirichletValues(this, t, uvw)
             uvwall_mech = includeDirichletValues@muscle.System(this, t, uvw(1:this.num_uvp_dof,:));
@@ -103,18 +120,23 @@ classdef System < muscle.System;
             h = [];
             if length(t) > 1
                 h = pm.nextPlot('signal','Motoneuron signal','t [ms]','V_m');
-                xlim(h,[0 t(end)]);
-                %axis(h,[0 t(end) 0 1]);
+                pos = this.num_uvp_glob + (2:6:6*this.nfibres);
+                vals = y(pos,:);
+                axis(h,[0 t(end) min(vals(:)) max(vals(:))]);
                 hold(h,'on');
                 
                 h2 = pm.nextPlot('force','Action potential','t [ms]','V_m');
-                xlim(h2,[0 t(end)]);
-                %axis(h,[0 t(end) 0 1]);
+                pos = this.num_uvp_glob + this.num_motoneuron_dof + (1:56:56*this.nfibres);
+                vals = y(pos,:);
+                axis(h2,[0 t(end) min(vals(:)) max(vals(:))]);
                 hold(h2,'on');
                 
                 h3 = pm.nextPlot('force','Activation','t [ms]','A_s');
-                xlim(h3,[0 t(end)]);
-                %axis(h,[0 t(end) 0 1]);
+                pos = this.num_uvp_glob + this.num_motoneuron_dof + (53:56:56*this.nfibres);
+                vals = y(pos,:);
+                vals = bsxfun(@times,this.f.forces_scaling,vals);
+                vals = bsxfun(@times, min(1,t), vals);
+                axis(h3,[0 t(end) min(vals(:)) max(vals(:))]);
                 hold(h3,'on');
                 
                 h = [h h2 h3];
@@ -123,25 +145,29 @@ classdef System < muscle.System;
         
         function refinedPlot(this, h, t, y, r, ts)
             if ts > 1
-                times = t(1:ts);
+                time_part = t(1:ts);
                 pos = this.num_uvp_glob + (2:6:6*this.nfibres);
                 signal = y(pos,1:ts);
                 %walpha = mc.FibreTypeWeights(1,:,1) * signal;
                 cla(h(1));
-                plot(h(1),times,signal);
+                plot(h(1),time_part,signal);
                 %plot(h,times,walpha,'LineWidth',2);
                 
                 pos = this.num_uvp_glob + this.num_motoneuron_dof + (1:56:56*this.nfibres);
                 force = y(pos,1:ts);
                 %walpha = mc.FibreTypeWeights(1,:,1) * signal;
                 cla(h(2));
-                plot(h(2),times,force);
+                plot(h(2),time_part,force);
                 
                 pos = this.num_uvp_glob + this.num_motoneuron_dof + (53:56:56*this.nfibres);
                 force = y(pos,1:ts);
-                %walpha = mc.FibreTypeWeights(1,:,1) * signal;
+                force = bsxfun(@times,this.f.forces_scaling,force);
+                force = bsxfun(@times, min(1,time_part), force);
+                mc = this.Model.Config;
+                walpha = mc.FibreTypeWeights(1,:,1) * force;
+%                force = [force; walpha]
                 cla(h(3));
-                plot(h(3),times,force);
+                plot(h(3),time_part,force,'r',time_part,walpha,'b');
                 %plot(h,times,walpha,'LineWidth',2);
             end
         end
@@ -196,13 +222,23 @@ classdef System < muscle.System;
             % The divisor in both coefficient functions is the old para.CS
             % value!!
             i = this.input_motoneuron_link_idx;
-            j = ones(size(i));
             s = 1./(pi*this.coolExp(77.5e-4, 0.0113, this.Model.FibreTypes).^2);
             B = dscomponents.AffLinInputConv;
             % Base noise input mapping
-            B.addMatrix('1',sparse(i,j,s,this.num_all_dof,2));
+            B.addMatrix('1',sparse(i,ones(size(i)),s,this.num_all_dof,2));
+            
             % Independent noise input mapping with µ_4 as mean current factor
-            B.addMatrix('mu(4)',sparse(i,2*j,s,this.num_all_dof,2));
+            % We need to restrict the maximum mean input current to a
+            % reasonable value for each fibre type. luckily, we know them
+            % already and hence can provide extra matrices with suitable
+            % coefficient functions.
+            %
+            % See also: 
+            maxvals = polyval(this.upperlimit_poly,this.Model.FibreTypes);
+            for k=1:this.nfibres
+                B.addMatrix(sprintf('min(%g,mu(4))',maxvals(k)),...
+                    sparse(i(k),2,s(k),this.num_all_dof,2));
+            end
         end
         
         function Daff = assembleDampingMatrix(this)

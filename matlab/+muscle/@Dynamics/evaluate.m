@@ -27,7 +27,6 @@ function duvw  = evaluate(this, uvwdof, t)
         d1cf = this.d1cf;
     end
     
-%     visc = this.mu(1);
     if havefibretypes
         fibretypeweights = mc.FibreTypeWeights;
         % Input data is x1: fibre type, x2: mean current, x3: time
@@ -35,7 +34,7 @@ function duvw  = evaluate(this, uvwdof, t)
         % This is the learned 
 %         FibreForces = this.APExp.evaluate(forceargs)';
 %         FibreForces = mc.Pool.getActivation(t);
-        FibreForces = uvwdof(sys.num_uvp_dof+1:end);
+        FibreForces = uvwdof(sys.num_uvp_dof+1:end) * min(1,t);
 %         FibreForces = alphaconst*ones(size(this.muprep,2),1);
     end
 
