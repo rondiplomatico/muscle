@@ -13,10 +13,6 @@ classdef System < muscle.System;
 % - \c Documentation http://www.agh.ians.uni-stuttgart.de/documentation/kermor/
 % - \c License @ref licensing
     
-    properties
-        
-    end
-    
     properties(SetAccess=private)
         num_motoneuron_dof;
         num_sarco_dof;

@@ -159,13 +159,11 @@ classdef Dynamics < muscle.Dynamics;
         end
         
         function J = getStateJacobian(this, y, t)
-            J = this.getStateJacobianFD(y, t);
-            return;
             sys = this.System;
             
             %% Mechanics
             uvp_pos = 1:sys.num_uvp_dof;
-            uvp = y(uvp_pos);
+            uvp = [y(uvp_pos); y(sys.sarco_output_idx).*this.forces_scaling];
             J = getStateJacobian@muscle.Dynamics(this, uvp, t);
             
             %% Motoneuron

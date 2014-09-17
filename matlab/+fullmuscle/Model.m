@@ -1,7 +1,13 @@
 classdef Model < muscle.Model
 % Model: 
 %
-% @docupdate
+% Features:
+% - regionen mit summe der gewichtungen kleiner 1 ist region mit fett?!
+% Scenarios:
+% - breiter block an einer seite fest mit allen fasertypen über die länge drin & entsprechendem
+% muskelverhalten
+% - block mit links fest, rechts per neumann dran ziehen, dann
+% spindel-feedback bei zu starker dehnung sorgt für konktraktion
 %
 % @author Daniel Wirtz @date 2014-09-16
 %
@@ -38,11 +44,6 @@ classdef Model < muscle.Model
             % pre-computations
             this.setConfig(conf);
         end
-        
-%         function [residuals_dirichlet, residuals_neumann] = getResidualForces(this, t, uvw)
-%             % Restrict to effective part of mechanics
-%             [residuals_dirichlet, residuals_neumann] = getResidualForces@muscle.Model(this, t, uvw(1:this.System.num_uvp_dof,:));
-%         end
     end
     
 end

@@ -60,13 +60,13 @@ classdef DebugConfig < muscle.AModelConfig
                 m.T = 100;
                 m.dt = .1;
                 %m.FibreTypes = [0 .2 .4 .6 .8 1];
-                m.FibreTypes = [0 1];
+                m.FibreTypes = 0;
                 fe = this.PosFE;
                 geo = fe.Geometry;
                 ftw = zeros(fe.GaussPointsPerElem,length(m.FibreTypes),geo.NumElements);
                 % Test: Use only slow-twitch muscles
-                ftw(:,1,:) = .4;
-                ftw(:,2,:) = .6;
+                ftw(:,1,:) = 1;
+%                 ftw(:,2,:) = .6;
 %                 ftw(:,3,:) = .05;
 %                 ftw(:,4,:) = .1;
 %                 ftw(:,5,:) = .2;
