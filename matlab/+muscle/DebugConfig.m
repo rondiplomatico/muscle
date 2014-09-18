@@ -39,7 +39,7 @@ classdef DebugConfig < muscle.AModelConfig
                 version = 3;
             end
             % Single cube with same config as reference element
-            [pts, cubes] = geometry.Cube8Node.DemoGrid([0 1],[0 1],[0 1]);
+            [pts, cubes] = geometry.Cube8Node.DemoGrid([0 .5 1],[0 .5 1],[0 1]);
             if version == 11 || version == 12
                 [pts, cubes] = geometry.Cube8Node.DemoGrid([-1 1],[-1 1],[-1 1]);
                 pts(1,[6 8]) = 2;
@@ -71,7 +71,7 @@ classdef DebugConfig < muscle.AModelConfig
                 f.alpha = @(t)0;
             case 2
                 f.alpha = this.getAlphaRamp(.04,1);
-                m.DefaultMu = [.01; 0];
+                m.DefaultMu = [.01; 0; 0; 0];
             case 3
                 m.T = 400;
                 m.dt = 1;

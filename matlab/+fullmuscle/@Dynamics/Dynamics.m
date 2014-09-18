@@ -71,9 +71,9 @@ classdef Dynamics < muscle.Dynamics;
         moto_sarco_link_sarco_in;
     end
 
-    properties(Transient, Access=private)
-        
-    end
+%     properties(Access=private)
+
+%     end
     
     methods
         function this = Dynamics(sys)
@@ -121,7 +121,7 @@ classdef Dynamics < muscle.Dynamics;
             %% Mechanics
             uvp_pos = 1:sys.num_uvp_dof;
             % Use uvp as argument and also pass in s (=sarco forces)
-            uvps = y([uvp_pos sys.sarco_output_idx]);
+            uvps = [y(uvp_pos); max(0,y(sys.sarco_output_idx)-sys.sarco_mech_signal_offset)];
             dy(uvp_pos) = evaluate@muscle.Dynamics(this, uvps, t);
             
             %% Motoneurons
@@ -164,7 +164,7 @@ classdef Dynamics < muscle.Dynamics;
             
             %% Mechanics
             uvp_pos = 1:sys.num_uvp_dof;
-            uvps = y([uvp_pos sys.sarco_output_idx]);
+            uvps = [y(uvp_pos); max(0,y(sys.sarco_output_idx)-sys.sarco_mech_signal_offset)];
             J = getStateJacobian@muscle.Dynamics(this, uvps, t);
             
             %% Motoneuron
@@ -208,6 +208,9 @@ classdef Dynamics < muscle.Dynamics;
             end
             
             %% Sarcomere to mechanics coupling
+            % The JS matrix is generated during the computation of the
+            % mechanics jacobian, as the element/gauss loop is computed
+            % there anyways. its not 100% clean OOP, but works for now.
             J(sys.num_u_dof + (1:sys.num_v_dof), sys.off_sarco+(1:sys.num_sarco_dof)) = this.JS;
         end
     end
@@ -223,7 +226,7 @@ classdef Dynamics < muscle.Dynamics;
             
             % Sarco
             mc = metaclass(this);
-            s = load(fullfile(fileparts(which(mc.Name)),'SarcoSparsityPattern'));
+            s = load(fullfile(fileparts(which(mc.Name)),'JSP_Sarco'));
             J_sarco = s.JP;
             
             for k=1:this.nfibres

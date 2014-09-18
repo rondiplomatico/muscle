@@ -44,6 +44,12 @@ classdef System < muscle.System;
         %
         % See also: models.motoneuron.experiments.ParamDomainDetection
         upperlimit_poly;
+        
+        % The offset for the sarcomere signals at t=0. Used to create
+        % alpha(X,0) = 0
+        %
+        % See also: assembleX0
+        sarco_mech_signal_offset
     end
     
     properties(Access=private)
@@ -156,7 +162,8 @@ classdef System < muscle.System;
                 
                 pos = this.num_uvp_glob + this.num_motoneuron_dof + (53:56:56*this.nfibres);
                 force = y(pos,1:ts);
-                force = bsxfun(@times, min(1,time_part), force);
+                force = bsxfun(@plus, -this.sarco_mech_signal_offset, force);
+                %force = bsxfun(@times, min(1,time_part), force);
                 mc = this.Model.Config;
                 walpha = mc.FibreTypeWeights(1,:,1) * force;
 %                force = [force; walpha]
@@ -203,13 +210,16 @@ classdef System < muscle.System;
             end
             
             ft = this.Model.Config.FibreTypes;
+            smoff = zeros(this.nfibres,1);
             for k=1:this.nfibres
                 x0ms = x0_motorunit.evaluate(ft(k));
                 % add moto
                 x0(this.off_moto + 6*(k-1) + (1:6)) = x0ms(1:6);
                 % add sarco
                 x0(this.off_sarco + 56*(k-1) + (1:56)) = x0ms(7:end);
+                smoff(k) = x0ms(6+53);
             end
+            this.sarco_mech_signal_offset = smoff;
         end
         
         function B = assembleB(this)

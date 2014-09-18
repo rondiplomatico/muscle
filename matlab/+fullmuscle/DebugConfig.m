@@ -39,7 +39,7 @@ classdef DebugConfig < fullmuscle.AModelConfig
                 version = 1;
             end
             % Single cube with same config as reference element
-            [pts, cubes] = geometry.Cube8Node.DemoGrid([0 .5 1],[0 .5 1],[0 1]);
+            [pts, cubes] = geometry.Cube8Node.DemoGrid([0 1],[0 1],[0 1]);
             geo = geometry.Cube8Node(pts, cubes);
             this = this@fullmuscle.AModelConfig(geo.toCube27Node);
             

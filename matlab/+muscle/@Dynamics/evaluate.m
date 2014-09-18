@@ -32,7 +32,8 @@ function duvw  = evaluate(this, uvwdof, t)
         if sys.HasMotoPool
             FibreForces = mc.Pool.getActivation(t);
         elseif sys.HasForceArgument
-            FibreForces = uvwdof(sys.num_uvp_dof+1:end) * min(1,t);
+            FibreForces = uvwdof(sys.num_uvp_dof+1:end);
+            %FibreForces = uvwdof(sys.num_uvp_dof+1:end) * min(1,t);
         else
             error('No implemented');
         end
