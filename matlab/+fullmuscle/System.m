@@ -16,11 +16,14 @@ classdef System < muscle.System;
     properties(SetAccess=private)
         num_motoneuron_dof;
         num_sarco_dof;
+        num_spindle_dof;
         num_all_dof;
         off_moto;
         off_sarco;
+        off_spindle;
         off_moto_full;
         off_sarco_full;
+        off_spindle_full;
         
         input_motoneuron_link_idx;
         sarco_output_idx;
@@ -50,10 +53,14 @@ classdef System < muscle.System;
         %
         % See also: assembleX0
         sarco_mech_signal_offset
+        
+        Spindle;
     end
     
     properties(Access=private)
         nfibres;
+        noise;
+        basenoise;
     end
     
     methods
@@ -65,28 +72,70 @@ classdef System < muscle.System;
             s = load(models.motoneuron.Model.FILE_UPPERLIMITPOLY);
             this.upperlimit_poly = s.upperlimit_poly;
             
-            ng = models.motoneuron.NoiseGenerator; 
-            % TODO
-            ng.setFibreType(0);
-            this.noiseGen = ng;
-            this.Inputs{1} = @ng.getInput;
+            this.Inputs{1} = @(t)1;
+            
+            this.Spindle = fullmuscle.Spindle;
         end
         
         function configUpdated(this)
-            this.nfibres = length(this.Model.Config.FibreTypes);
+            ft = this.Model.Config.FibreTypes;
+            nf = length(ft);
+            this.nfibres = nf;
             
             configUpdated@muscle.System(this);
             
             %% Add input matrix B
             this.B = this.assembleB;
+            
+            %% Assemble noise signal for each fibre
+            ng = models.motoneuron.NoiseGenerator;
+            ng.setFibreType(ft(1));
+            thenoise = zeros(nf,length(ng.indepNoise));
+            thenoise(1,:) = ng.indepNoise;
+            for k=2:nf
+                ng.setFibreType(ft(k));
+                thenoise(k,:) = ng.indepNoise;
+            end
+            this.noise = thenoise;
+            this.basenoise = ng.baseNoise;
         end
         
-        function prepareSimulation(this, mu, inputidx) 
-            % Limit mean current depending on fibre type
-            mu(2) = min(polyval(this.upperlimit_poly,mu(1)),mu(2));
+        function setConfig(this, mu, inputidx)
+            setConfig@models.BaseDynSystem(this, mu, inputidx);
             
-            prepareSimulation@muscle.System(this, mu, inputidx);
+            if ~isempty(inputidx)
+                % Create an input substitute that uses the true external
+                % function and creates the effective noisy signal from it
+                maxcurrents = polyval(this.upperlimit_poly,this.Model.Config.FibreTypes);
+                no = this.noise;
+                bno = this.basenoise;
+                
+                % For nonconstant (=mu(4)) input use this
+                %uin = this.Inputs{inputidx};
+                
+                ustr = '@(t)[bno(round(t)+1); ';
+                for k=1:this.nfibres
+                    % Precompute the factor as the input mean current will
+                    % stay constant (at least from the external source)
+                    uin = min(maxcurrents(k),mu(4));
+                    rowfun = sprintf('no(%d,round(t)+1)*%g; ',k,uin);
+                    
+                    % For nonconstant (=mu(4)) input use this
+                    %rowfun = sprintf('no(%d,round(t)+1)*min(maxcurrents(%d),uin(t))',k,k);
+                    
+                    ustr = [ustr rowfun];%#ok
+                end
+                ustr = [ustr ']'];
+                this.u = eval(ustr);
+            end
         end
+        
+%         function prepareSimulation(this, mu, inputidx) 
+%             % Limit mean current depending on fibre type
+%             mu(2) = min(polyval(this.upperlimit_poly,mu(1)),mu(2));
+%             
+%             prepareSimulation@muscle.System(this, mu, inputidx);
+%         end
         
         function uvwall = includeDirichletValues(this, t, uvw)
             uvwall_mech = includeDirichletValues@muscle.System(this, t, uvw(1:this.num_uvp_dof,:));
@@ -114,6 +163,10 @@ classdef System < muscle.System;
         function v = coolExp(~, a, b, mu)
             v = exp(log(100)*mu)*(b-a)/100 + a;
         end
+        
+%         function n = getNoise(this, t)
+%             n = this.noise(round(t));
+%         end
     end
     
     methods(Access=protected)
@@ -184,7 +237,10 @@ classdef System < muscle.System;
             this.num_sarco_dof = 56*this.nfibres;
             this.off_sarco = this.off_moto + this.num_motoneuron_dof;
             
-            this.num_all_dof = this.off_sarco + this.num_sarco_dof;
+            % Spindles are beginning after sarcomeres
+            this.num_spindle_dof = 11*this.nfibres;
+            this.off_spindle = this.off_sarco + this.num_sarco_dof;
+            this.num_all_dof = this.off_spindle + this.num_spindle_dof;
             
             % Get the positions where the input signal is mapped to the
             % motoneurons
@@ -194,12 +250,12 @@ classdef System < muscle.System;
         end
         
         function x0 = assembleX0(this)
-            x0 = zeros(this.num_uvp_dof ...
-                + this.num_motoneuron_dof + this.num_sarco_dof,1);
+            x0 = zeros(this.num_all_dof,1);
             % Get muscle x0
             x0(1:this.num_uvp_dof) = assembleX0@muscle.System(this);
             
-            % Load x0 coefficients for moto/sarco system from file
+            % Load dynamic/affine x0 coefficients for moto/sarco system
+            % from file
             mc = metaclass(this);
             s = load(fullfile(fileparts(which(mc.Name)),'x0coeff.mat'));
             x0_motorunit = dscomponents.AffineInitialValue;
@@ -218,6 +274,8 @@ classdef System < muscle.System;
                 % add sarco
                 x0(this.off_sarco + 56*(k-1) + (1:56)) = x0ms(7:end);
                 smoff(k) = x0ms(6+53);
+                % add spindle
+                x0(this.off_spindle + 11*(k-1) + (1:11)) = this.Spindle.y0;
             end
             this.sarco_mech_signal_offset = smoff;
         end
@@ -227,36 +285,42 @@ classdef System < muscle.System;
             % value!!
             i = this.input_motoneuron_link_idx;
             s = 1./(pi*this.coolExp(77.5e-4, 0.0113, this.Model.Config.FibreTypes).^2);
-            B = dscomponents.AffLinInputConv;
-            % Base noise input mapping
-            B.addMatrix('1',sparse(i,ones(size(i)),s,this.num_all_dof,2));
-            
-            % Independent noise input mapping with µ_4 as mean current factor
-            % We need to restrict the maximum mean input current to a
-            % reasonable value for each fibre type. luckily, we know them
-            % already and hence can provide extra matrices with suitable
-            % coefficient functions.
-            %
-            % See also: 
-            maxvals = polyval(this.upperlimit_poly,this.Model.Config.FibreTypes);
+
+            B = sparse(i,ones(size(i)),s,this.num_all_dof,this.nfibres+1);
             for k=1:this.nfibres
-                B.addMatrix(sprintf('min(%g,mu(4))',maxvals(k)),...
-                    sparse(i(k),2,s(k),this.num_all_dof,2));
+                B(i(k),k+1) = s(k);%#ok
             end
+            B = dscomponents.LinearInputConv(B);
+%             B = dscomponents.AffLinInputConv;
+%             % Base noise input mapping
+%             B.addMatrix('1',sparse(i,ones(size(i)),s,this.num_all_dof,2));
+%             
+%             % Independent noise input mapping with µ_4 as mean current factor
+%             % We need to restrict the maximum mean input current to a
+%             % reasonable value for each fibre type. luckily, we know them
+%             % already and hence can provide extra matrices with suitable
+%             % coefficient functions.
+%             %
+%             % See also: 
+%             maxvals = polyval(this.upperlimit_poly,this.Model.Config.FibreTypes);
+%             for k=1:this.nfibres
+%                 B.addMatrix(sprintf('min(%g,mu(4))',maxvals(k)),...
+%                     sparse(i(k),2,s(k),this.num_all_dof,2));
+%             end
         end
         
         function Daff = assembleDampingMatrix(this)
             Daff_mech = assembleDampingMatrix@muscle.System(this);
             
             Daff = dscomponents.AffLinCoreFun(this);
-            extra = (6+56)*this.nfibres;
+            extra = (6+56+11)*this.nfibres;
             D = blkdiag(Daff_mech.getMatrix(1),sparse(extra,extra));
             Daff.addMatrix('mu(1)',D);
         end
         
         function M = assembleMassMatrix(this)
             M = assembleMassMatrix@muscle.System(this);
-            extra = (6+56)*this.nfibres;
+            extra = (6+56+11)*this.nfibres;
             M = blkdiag(M,speye(extra));
         end
     end

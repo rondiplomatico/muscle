@@ -89,8 +89,8 @@ classdef Dynamics < muscle.Dynamics;
             configUpdated@muscle.Dynamics(this);
             
             % fDim and xDim are from muscle.Dynamics, so add moto+sarco
-            this.fDim = this.fDim + (6+56)*this.nfibres;
-            this.xDim = this.xDim + (6+56)*this.nfibres;
+            this.fDim = this.fDim + (6+56+11)*this.nfibres;
+            this.xDim = this.xDim + (6+56+11)*this.nfibres;
             this.motoconst = this.getMotoConst(ft);
             this.sarcoconst = this.getSarcoConst(ft);
             
@@ -157,9 +157,18 @@ classdef Dynamics < muscle.Dynamics;
             signal = fac.*moto_out./this.sarcoconst(1,:)';
             % Add signal to corresponding locations
             dy(this.moto_sarco_link_sarco_in) = dy(this.moto_sarco_link_sarco_in) + signal;
+            
+            %% Spindles
+            sp = sys.Spindle;
+            spindle_pos = sys.off_spindle + (1:sys.num_spindle_dof);
+            ys = reshape(y(spindle_pos),11,[]);
+            dys = sp.dydt(ys,t,0,0,0); %ym(2,:)
+            dy(spindle_pos) = dys(:);
         end
         
         function J = getStateJacobian(this, y, t)
+%             J = this.getStateJacobianFD(y,t);
+%             return;
             sys = this.System;
             
             %% Mechanics
@@ -198,6 +207,15 @@ classdef Dynamics < muscle.Dynamics;
                 J = blkdiag(J,this.Jac_Sarco(y(sarco_pos),t,this.sarcoconst(:,k)));
             end
             
+            %% Spindles
+            sp = sys.Spindle;
+            for k=1:this.nfibres
+                spindle_pos = sys.off_spindle + 11*(k-1) + (1:11);
+                moto_pos = sys.off_moto + 6*(k-1) + 2;
+                J = blkdiag(J,sp.Jdydt(y(spindle_pos), t, 0, 0, 0)); %y(moto_pos)
+            end
+%             J = blkdiag(J,sparse(11*this.nfibres,11*this.nfibres));
+            
             %% Motoneuron to Sarcomere coupling
             moto_out = y(this.moto_sarco_link_moto_out);
             fac = min(this.MSLink_MaxFactor,this.MSLinkFun(moto_out));
@@ -229,11 +247,17 @@ classdef Dynamics < muscle.Dynamics;
             s = load(fullfile(fileparts(which(mc.Name)),'JSP_Sarco'));
             J_sarco = s.JP;
             
+            % Spindle
+            JSp = this.System.Spindle.JSparsityPattern;
+            
             for k=1:this.nfibres
                 J = blkdiag(J, J_moto);
             end
             for k=1:this.nfibres
                 J = blkdiag(J, J_sarco);
+            end
+            for k=1:this.nfibres
+                J = blkdiag(J, JSp);
             end
             
             sys = this.System;

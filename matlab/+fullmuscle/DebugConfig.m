@@ -79,17 +79,19 @@ classdef DebugConfig < fullmuscle.AModelConfig
     methods(Access=protected)
         
         function ft = getFibreTypes(~)
-            %ft = [0 .2 .4 .6 .8 1];
-            ft = [0 .4 1];
+%             ft = [0 .2 .4 .6 .8 1];
+%             ft = [0 .4 1];
+            ft = 0;
         end
         
         function ftw = getFibreTypeWeights(this)
             % Get pre-initialized all zero weights
             ftw = getFibreTypeWeights@fullmuscle.AModelConfig(this);
-            
-            ftw(:,1,:) = .3;
-            ftw(:,2,:) = .4;
-            ftw(:,3,:) = .3;
+
+            ftw(:,1,:) = 1;
+%             ftw(:,1,:) = .3;
+%             ftw(:,2,:) = .4;
+%             ftw(:,3,:) = .3;
 %                 ftw(:,4,:) = .1;
 %                 ftw(:,5,:) = .2;
 %                 ftw(:,6,:) = .2;
