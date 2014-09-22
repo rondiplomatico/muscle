@@ -25,11 +25,8 @@ classdef Spindle < KerMorObject
             this.initSpindleConst;
            
             % Sparsity pattern
-            i = [1 3 4 5 2 4 3 6 4 7 5 8 3 10 4 10 11 5 10 11 3 4 5 11];
-            j = [1 1 1 1 2 2 3 3 4 4 5 5 6 6 7 7 7 8 8 8 9 9 9 9];
-            rem = find(i>9);
-            i(rem) = [];
-            j(rem) = [];
+            i = [1 3 4 5 2 4 3 6 4 7 5 8 3 4 5 3 4 5];
+            j = [1 1 1 1 2 2 3 3 4 4 5 5 6 7 8 9 9 9 ];
             this.JSparsityPattern = sparse(i,j,true,9,9);
             
             c = this.spindleConst;
@@ -290,11 +287,11 @@ classdef Spindle < KerMorObject
         function res = test_Spindle_Jac
             s = fullmuscle.Spindle;
             d = 9;
-            n = 2;
-            moto_sig = 0;
+            n = 10;
+            moto_sig = rand(n,2);
             Ldot = 0;
             Lddot = 0;
-            testx = [s.y0 bsxfun(@times,s.y0,rand(d,n-1)*100)];
+            testx = [s.y0 bsxfun(@times,s.y0,rand(d,n-1)*10)];
             res = true;
             for k = 1:n
                 x = testx(:,k);
@@ -303,15 +300,15 @@ classdef Spindle < KerMorObject
                 DX = sparse(1:d,1:d,dx,d,d);
 
                 % Evaluate makes use of built-in multi-argument evaluation
-                Jc = (s.dydt(X+DX,0,moto_sig,Ldot,Lddot)...
-                    - repmat(s.dydt(x,0,moto_sig,Ldot,Lddot),1,d))*diag(1./dx);
-                J = s.Jdydt(x,0,moto_sig,Ldot,Lddot);
-                full(abs(Jc-J))
-                diff = abs((Jc-J)./J);
-                diff
-%                 full(J(5,:))
-                diff(isnan(diff)) = 0;
-                res = res & max(diff(s.JSparsityPattern)) < .005;
+                Jc = (s.dydt(X+DX,0,moto_sig(k,:),Ldot,Lddot)...
+                    - repmat(s.dydt(x,0,moto_sig(k,:),Ldot,Lddot),1,d))*diag(1./dx);
+                J = s.Jdydt(x,0,moto_sig(k,:),Ldot,Lddot);
+                absdiff = abs(Jc-J);
+                reldiff = abs(absdiff./J);
+                maxabsdiff = max(absdiff(s.JSparsityPattern));
+                maxreldiff = max(reldiff(s.JSparsityPattern));
+                fprintf('Max abs diff: %g, max rel diff: %g\n',maxabsdiff,maxreldiff);
+                res = res & maxreldiff < .005;
             end
         end
         
@@ -325,18 +322,6 @@ classdef Spindle < KerMorObject
             C = sym('C','positive');
             Ldot = sym('Ldot');
             Lddot = sym('Lddot');
-            % beta = sym('beta');
-            % gamma = sym('gamma');
-            % f_stat_chain = sym('f_stat_chain');
-            % Aff_pot_prim_bag1 = sym('Aff_pot_prim_bag1');
-            % Aff_pot_prim_bag2 = sym('Aff_pot_prim_bag2');
-            % Aff_pot_prim_chain = sym('Aff_pot_prim_chain');
-            % sum_bag2_chain = sym('sum_bag2_chain');
-            % Aff_pot_sec_bag2 = sym('Aff_pot_sec_bag2');
-            % Aff_pot_sec_chain = sym('Aff_pot_sec_chain');
-
-            % Helper variables to avoid piecewise-stuff in derivatives
-            maxhelp = sym('maxhelp','positive');
             
             tmp1neg = sym('tmp1neg','positive');
             tmp1pos = sym('tmp1pos','positive');
@@ -348,13 +333,13 @@ classdef Spindle < KerMorObject
             %% Definitions (copy code here as of ""Eval"" section in dydt)
             tmp1 = Ldot-y(3,:)./c(1);
 %             tmp1neg = tmp1 < 0;
-%             tmp1pos = ~tmp1;
+%             tmp1pos = ~tmp1neg;
             tmp2 = Ldot-y(4,:)./c(31);
 %             tmp2neg = tmp2 < 0;
-%             tmp2pos = ~tmp2;
+%             tmp2pos = ~tmp2neg;
             tmpc = Ldot-y(5,:)./c(61);
 %             tmpcneg = tmpc < 0;
-%             tmpcpos = ~tmpc;
+%             tmpcpos = ~tmpcneg;
             
             % f_dyn_bag1
             dy(1,:) = (moto_freq_dyn^c(22)./(moto_freq_dyn^c(22)+c(21)^c(22)) - y(1,:))/c(20);
@@ -402,31 +387,10 @@ classdef Spindle < KerMorObject
             % dy9 = L' (y9 = L) in [L_0]
             dy(9,:) = Ldot;
 
-            % algebraic frequency from bag1,bag2 and chain
-            Aff_pot_prim_bag1  = c(14)*(y(6,:)/c(1) - (c(12)-c(17)));
-            Aff_pot_prim_bag2  = c(44)*(y(7,:)/c(31) - (c(42)-c(47)));
-            Aff_pot_prim_chain = c(74)*(y(8,:)/c(61) - (c(72)-c(77)));
-            bag2_and_chain = Aff_pot_prim_bag2 + Aff_pot_prim_chain;
-
-            % Primary_afferent
-%             maxhelp = Aff_pot_prim_bag1 < bag2_and_chain;
-            dy(10,:) = (1-maxhelp) .* Aff_pot_prim_bag1 + maxhelp.*bag2_and_chain ...
-                + 0.156*(maxhelp .* Aff_pot_prim_bag1 + (1-maxhelp).*bag2_and_chain);
-%             dy(10,:) = max(Aff_pot_prim_bag1,bag2_and_chain) ...
-%                 + 0.156*min(Aff_pot_prim_bag1,bag2_and_chain);
-
-            Aff_pot_sec_bag2  = c(53)*(c(41)*c(49)/c(47)*(y(7,:)/c(31)-(c(42)-c(47)))...
-                + (1-c(41))*c(49)/c(48)*(y(9,:)-y(7,:)/c(31)-c(47)-c(43)));
-            Aff_pot_sec_chain = c(83)*(c(71)*c(79)/c(77)*(y(8,:)/c(61)-(c(72)-c(77)))...
-                + (1-c(71))*c(79)/c(78)*(y(9,:)-y(8,:)/c(61)-c(77)-c(73)));
-
-            % Secondary_afferent
-            dy(11,:) = Aff_pot_sec_bag2 + Aff_pot_sec_chain;
-
             %% Create partial derivatives
-            JP = sparse(false(11,11));
+            JP = sparse(false(9,9));
             f = 1;
-            fprintf(f,'J = sparse(11,11);\n');
+            fprintf(f,'J = sparse(9,9);\n');
             for i = 1:11
                 for j = 1:11
                     pd = diff(dy(i),y(j));
