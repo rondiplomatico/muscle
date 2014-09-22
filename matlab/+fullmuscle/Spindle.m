@@ -42,10 +42,10 @@ classdef Spindle < KerMorObject
 %             % DONT use exactly identical initial values. This makes sharp
 %             % comparisons between afferents insecure. Instead, slightly
 %             % changed initial conditions yield clear, intuitive decisions.
-%             y(6) = c(1)*(c(12)-c(17)); %0.020731324015575;
-%             y(7) = c(31)*(c(42)-c(47))+.0001;%0.020731334015575;
-%             y(8) = c(61)*(c(72)-c(77))+.0002;%0.020731344015575;
-            y(6:8) = 0.020731324015575;
+            y(6) = c(1)*(c(12)-c(17)); %0.020731324015575;
+            y(7) = c(31)*(c(42)-c(47));%0.020731334015575;
+            y(8) = c(61)*(c(72)-c(77));%0.020731344015575;
+%             y(6:8) = 0.020731324015575;
             y(9) = 0.95; % length
 %             y(10) = 0; % output phase value, 'primary_afferent'
 %             y(11) = 0; % output phase value, 'secondary_afferent'
@@ -248,25 +248,22 @@ classdef Spindle < KerMorObject
 %             ldot = [.11 .66 1.55]; [L_0/s]
             ldot = .11;
             lendiff = 1.08 - .95;
-            moto_sig = [0 70];
-            
+            moto_sig = [30 0];
+            opt = odeset;
             for k = 1:length(ldot)
                 endt = startt + lendiff/ldot(k);
-                opt = odeset;
-%                 opt = odeset('Jacobian',@odejac);
-%                 opt = odeset(opt,'RelTol', 1e-09, 'AbsTol', 1e-09, 'MaxStep', 0.0001);
-    %             [t,y] = ode45(@(t,y)s.dydt(y,t,moto_sig,Ldot(round(t)+1),Lddot),t,s.y0,opt);
-    %             [t,y] = ode23(@(t,y)s.dydt(y,t,moto_sig,Ldot(round(t)+1),Lddot),t,s.y0,opt);
-                [t,y] = ode15s(@(t,y)s.dydt(y,t,moto_sig,Ldot(t),Lddot),t,s.y0,opt);
 
-    %             dy0 = s.dydt(s.y0,0,moto_sig,Ldot(1),Lddot);
-    %             opt = odeset('Jacobian',@ode15ijac);
-    %             [t,y] = ode15i(@(t,y,dy)dy-s.dydt(y,t,moto_sig,Ldot(t),Lddot),t,s.y0,dy0,opt);
+                % opt = odeset('Jacobian',@odejac);
+                % [t,y] = ode15s(@(t,y)s.dydt(y,t,moto_sig,Ldot(t),Lddot),t,s.y0,opt);
+
+                dy0 = s.dydt(s.y0,0,moto_sig,Ldot(1),Lddot);
+                opt = odeset(opt,'Jacobian',@ode15ijac);
+                [t,y] = ode15i(@(t,y,dy)dy-s.dydt(y,t,moto_sig,Ldot(t),Lddot),t,s.y0,dy0,opt);
 
             end
             
             function [J,M] = ode15ijac(t,y,~)
-                J = s.Jdydt(y,t,moto_sig,Ldot(t),Lddot);
+                J = -s.Jdydt(y,t,moto_sig,Ldot(t),Lddot);
                 M = speye(9);
             end
             
