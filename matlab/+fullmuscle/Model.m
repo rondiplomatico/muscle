@@ -9,6 +9,9 @@ classdef Model < muscle.Model
 % - block mit links fest, rechts per neumann dran ziehen, dann
 % spindel-feedback bei zu starker dehnung sorgt für konktraktion
 %
+% Fragen:
+% Sollte der afferent-faktor zur signalübertragung für alle fasertypen gleich sein?
+%
 % @author Daniel Wirtz @date 2014-09-16
 %
 % @new{0,7,dw,2014-09-16} Added this class.
@@ -40,6 +43,9 @@ classdef Model < muscle.Model
             this.setConfig(conf);
             
             this.System.prepareSimulation(this.DefaultMu, this.DefaultInput);
+            
+            % Der tut auch wunderbar :-)
+            this.ODESolver = solvers.MLWrapper(@ode15s);
         end
     end
     

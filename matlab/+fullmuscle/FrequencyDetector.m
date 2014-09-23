@@ -10,14 +10,19 @@ classdef FrequencyDetector < KerMorObject
     properties
         PeakOnThreshold = 40;
         PeakOffThreshold = 15;
-    end
-    
-    properties(SetAccess=private)
-        % The current frequency
-        Frequency = 0;
         
         % The number of concurrently tracked peaks
         WindowSize = 4;
+        
+        % The unit the time is passed into the processSignal call.
+        % Dependent on that, the frequency is multiplied to be available in
+        % Hz.
+        TimeUnit = 'ms';
+    end
+    
+    properties(SetAccess=private)
+        % The current frequency in [Hz] or [pps]
+        Frequency = 0;
     end
     
     properties(Access=private)
@@ -29,6 +34,8 @@ classdef FrequencyDetector < KerMorObject
         
         % The number of concurrently processed signals
         ns;
+        
+        timescale;
     end
     
     methods
@@ -53,6 +60,13 @@ classdef FrequencyDetector < KerMorObject
             this.Frequency = zeros(1,this.ns);
             this.peaktimes = -Inf(this.WindowSize,this.ns);
             this.ispeak = false(1,this.ns);
+            if strcmpi(this.TimeUnit,'ms')
+                this.timescale = 1000;
+            elseif strcmpi(this.TimeUnit,'s')
+                this.timescale = 1;
+            else
+                error('Unimplemented time-scale: %s',this.TimeUnit);
+            end
         end
         
         function s = processSignal(this, t, sig)
@@ -63,7 +77,8 @@ classdef FrequencyDetector < KerMorObject
                 % We're on peak!
                 this.ispeak(peak_on) = true;
                 % Get current frequency for windowsize peaks over time
-                this.Frequency(peak_on) = this.WindowSize ./ (t-this.peaktimes(1,peak_on));
+                this.Frequency(peak_on) = this.timescale * this.WindowSize ...
+                    ./ (t-this.peaktimes(1,peak_on));
                 % "Remove" last peak and Shift peaktimes on
                 this.peaktimes(1:end-1,peak_on) = this.peaktimes(2:end,peak_on);
                 % Save current peak time
@@ -71,6 +86,16 @@ classdef FrequencyDetector < KerMorObject
             end
             this.ispeak(peak_off) = false;
             s = 0;
+        end
+        
+        function set.WindowSize(this, value)
+            this.WindowSize = value;
+            this.reset;
+        end
+        
+        function set.TimeUnit(this, value)
+            this.TimeUnit = value;
+            this.reset;
         end
     end
     

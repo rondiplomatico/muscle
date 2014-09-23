@@ -55,11 +55,12 @@ classdef System < muscle.System;
         sarco_mech_signal_offset
         
         Spindle;
+        
+        noise;
     end
     
     properties(Access=private)
         nfibres;
-        noise;
         basenoise;
     end
     
@@ -130,13 +131,6 @@ classdef System < muscle.System;
             end
         end
         
-%         function prepareSimulation(this, mu, inputidx) 
-%             % Limit mean current depending on fibre type
-%             mu(2) = min(polyval(this.upperlimit_poly,mu(1)),mu(2));
-%             
-%             prepareSimulation@muscle.System(this, mu, inputidx);
-%         end
-        
         function uvwall = includeDirichletValues(this, t, uvw)
             uvwall_mech = includeDirichletValues@muscle.System(this, t, uvw(1:this.num_uvp_dof,:));
             uvwall = [uvwall_mech; uvw(this.num_uvp_dof+1:end,:)];
@@ -153,7 +147,7 @@ classdef System < muscle.System;
             if ~isempty(r.PM)
                 pm = r.PM;
             else
-                pm = PlotManager(false,2,2);
+                pm = PlotManager(false,2,3);
                 pm.LeaveOpen = true;
             end
             varargin(end+1:end+4) = {'Pool', false, 'PM', pm};
@@ -163,10 +157,6 @@ classdef System < muscle.System;
         function v = coolExp(~, a, b, mu)
             v = exp(log(100)*mu)*(b-a)/100 + a;
         end
-        
-%         function n = getNoise(this, t)
-%             n = this.noise(round(t));
-%         end
     end
     
     methods(Access=protected)
@@ -175,54 +165,77 @@ classdef System < muscle.System;
             h = [];
             if length(t) > 1
                 h = pm.nextPlot('signal','Motoneuron signal','t [ms]','V_m');
-                pos = this.num_uvp_glob + (2:6:6*this.nfibres);
+                pos = this.off_moto_full + (2:6:6*this.nfibres);
                 vals = y(pos,:);
                 axis(h,[0 t(end) min(vals(:)) max(vals(:))]);
                 hold(h,'on');
                 
                 h2 = pm.nextPlot('force','Action potential','t [ms]','V_m');
-                pos = this.num_uvp_glob + this.num_motoneuron_dof + (1:56:56*this.nfibres);
+                pos = this.off_sarco_full + (1:56:56*this.nfibres);
                 vals = y(pos,:);
                 axis(h2,[0 t(end) min(vals(:)) max(vals(:))]);
                 hold(h2,'on');
                 
                 h3 = pm.nextPlot('force','Activation','t [ms]','A_s');
-                pos = this.num_uvp_glob + this.num_motoneuron_dof + (53:56:56*this.nfibres);
+                pos = this.off_sarco_full + (53:56:56*this.nfibres);
                 vals = y(pos,:);
                 vals = bsxfun(@times, min(1,t), vals);
                 axis(h3,[0 t(end) min(vals(:)) max(vals(:))]);
                 hold(h3,'on');
                 
-                h = [h h2 h3];
+                h4 = pm.nextPlot('spindle','Afferents','t [ms]','aff');
+                pos = this.off_spindle_full + (1:9*this.nfibres);
+                vals = this.Spindle.getAfferents(y(pos,:));
+                axis(h4,[0 t(end) min(vals(:)) max(vals(:))]);
+                hold(h4,'on');
+                
+                h5 = pm.nextPlot('spindle','Signal','t [ms]','aff');
+                maxcurrents = polyval(this.upperlimit_poly,this.Model.Config.FibreTypes);
+                sp_sig = this.f.SpindleAffarentWeights * vals;
+                sp_sig = min(maxcurrents - this.mu(4),sp_sig);
+                axis(h5,[0 t(end) min(sp_sig(:)) max(sp_sig(:))]);
+                hold(h5,'on');
+                
+                h = [h h2 h3 h4 h5];
             end
         end
         
         function refinedPlot(this, h, t, y, r, ts)
             if ts > 1
+%                 cla(h(2:end));
                 time_part = t(1:ts);
-                pos = this.num_uvp_glob + (2:6:6*this.nfibres);
+                pos = this.off_moto_full + (2:6:6*this.nfibres);
                 signal = y(pos,1:ts);
                 %walpha = mc.FibreTypeWeights(1,:,1) * signal;
-                cla(h(1));
+%                 cla(h(1));
                 plot(h(1),time_part,signal);
                 %plot(h,times,walpha,'LineWidth',2);
                 
-                pos = this.num_uvp_glob + this.num_motoneuron_dof + (1:56:56*this.nfibres);
+                pos = this.off_sarco_full + (1:56:56*this.nfibres);
                 force = y(pos,1:ts);
                 %walpha = mc.FibreTypeWeights(1,:,1) * signal;
-                cla(h(2));
+%                 cla(h(2));
                 plot(h(2),time_part,force);
                 
-                pos = this.num_uvp_glob + this.num_motoneuron_dof + (53:56:56*this.nfibres);
+                pos = this.off_sarco_full + (53:56:56*this.nfibres);
                 force = y(pos,1:ts);
                 force = bsxfun(@plus, -this.sarco_mech_signal_offset, force);
                 %force = bsxfun(@times, min(1,time_part), force);
                 mc = this.Model.Config;
                 walpha = mc.FibreTypeWeights(1,:,1) * force;
 %                force = [force; walpha]
-                cla(h(3));
+%                 cla(h(3));
                 plot(h(3),time_part,force,'r',time_part,walpha,'b');
 %                 plotyy(h(3),time_part,force,time_part,walpha);
+
+                pos = this.off_spindle_full + (1:9*this.nfibres);
+                affarents = this.Spindle.getAfferents(y(pos,1:ts));
+                plot(h(4),time_part,affarents');
+                
+                maxcurrents = polyval(this.upperlimit_poly,this.Model.Config.FibreTypes);
+                sp_sig = this.f.SpindleAffarentWeights * affarents;
+                sp_sig = min(maxcurrents - this.mu(4),sp_sig);
+                plot(h(5),time_part,sp_sig);
             end
         end
         
@@ -232,14 +245,18 @@ classdef System < muscle.System;
             this.num_motoneuron_dof = 6*this.nfibres;
             % Motoneurons are beginning after mechanics
             this.off_moto = this.num_uvp_dof; 
+            this.off_moto_full = this.num_uvp_glob; 
 
             % Sarcomeres are beginning after motoneurons
             this.num_sarco_dof = 56*this.nfibres;
             this.off_sarco = this.off_moto + this.num_motoneuron_dof;
+            this.off_sarco_full = this.off_moto_full + this.num_motoneuron_dof;
             
             % Spindles are beginning after sarcomeres
-            this.num_spindle_dof = 11*this.nfibres;
+            this.num_spindle_dof = 9*this.nfibres;
             this.off_spindle = this.off_sarco + this.num_sarco_dof;
+            this.off_spindle_full = this.off_sarco_full + this.num_sarco_dof;
+            
             this.num_all_dof = this.off_spindle + this.num_spindle_dof;
             
             % Get the positions where the input signal is mapped to the
@@ -275,7 +292,7 @@ classdef System < muscle.System;
                 x0(this.off_sarco + 56*(k-1) + (1:56)) = x0ms(7:end);
                 smoff(k) = x0ms(6+53);
                 % add spindle
-                x0(this.off_spindle + 11*(k-1) + (1:11)) = this.Spindle.y0;
+                x0(this.off_spindle + 9*(k-1) + (1:9)) = this.Spindle.y0;
             end
             this.sarco_mech_signal_offset = smoff;
         end
@@ -313,14 +330,14 @@ classdef System < muscle.System;
             Daff_mech = assembleDampingMatrix@muscle.System(this);
             
             Daff = dscomponents.AffLinCoreFun(this);
-            extra = (6+56+11)*this.nfibres;
+            extra = (6+56+9)*this.nfibres;
             D = blkdiag(Daff_mech.getMatrix(1),sparse(extra,extra));
             Daff.addMatrix('mu(1)',D);
         end
         
         function M = assembleMassMatrix(this)
             M = assembleMassMatrix@muscle.System(this);
-            extra = (6+56+11)*this.nfibres;
+            extra = (6+56+9)*this.nfibres;
             M = blkdiag(M,speye(extra));
         end
     end

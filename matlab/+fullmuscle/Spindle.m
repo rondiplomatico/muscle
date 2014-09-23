@@ -39,8 +39,8 @@ classdef Spindle < KerMorObject
             % dydt_spindle: Function for change rate of spindle y.
 
             %% Init
-            moto_freq_dyn = moto_sig(1);
-            moto_freq_static = moto_sig(2);
+            moto_freq_dyn = moto_sig;
+            moto_freq_static = moto_sig;
             
             C = 0.42;
             C = C + (Ldot > 0)*.58; % C = 1 if Ldot > 0
@@ -71,11 +71,11 @@ classdef Spindle < KerMorObject
             tmpcpos = ~tmpcneg;
             
             % f_dyn_bag1
-            dy(1,:) = (moto_freq_dyn^c(22)./(moto_freq_dyn^c(22)+c(21)^c(22)) - y(1,:))/c(20);
+            dy(1,:) = (moto_freq_dyn.^c(22)./(moto_freq_dyn.^c(22)+c(21)^c(22)) - y(1,:))/c(20);
             % f_stat_bag2
-            dy(2,:) = (moto_freq_static.^c(52)/(moto_freq_static^c(52)+c(51)^c(52)) - y(2,:))/c(50);
+            dy(2,:) = (moto_freq_static.^c(52)./(moto_freq_static.^c(52)+c(51)^c(52)) - y(2,:))/c(50);
             % f_stat_chain
-            f_stat_chain = moto_freq_static^c(82)/(moto_freq_static^c(82)+c(81)^c(82));
+            f_stat_chain = moto_freq_static.^c(82)./(moto_freq_static.^c(82)+c(81)^c(82));
 
             %% Bag1
             b1  = c(4)+c(5)*y(1,:);
@@ -168,11 +168,11 @@ classdef Spindle < KerMorObject
             pm.done;
         end
         
-        function J = Jdydt(this, y, t, moto_sig, Ldot, Lddot)
+        function [J, Jmoto] = Jdydt(this, y, t, moto_sig, Ldot, Lddot)
             % computes the Jacobian for dydt
             %
-            moto_freq_dyn = moto_sig(1);
-            moto_freq_static = moto_sig(2);
+            moto_freq_dyn = moto_sig;
+            moto_freq_static = moto_sig;
 
             C = 0.42;
             C = C + (Ldot > 0)*.58; % C = 1 if Ldot > 0
@@ -215,6 +215,11 @@ classdef Spindle < KerMorObject
             J(6,3) = 1;
             J(7,4) = 1;
             J(8,5) = 1;
+            
+            Jmoto = sparse(9,1);
+            Jmoto(1) = ((c(22)*moto_freq_dyn^(c(22) - 1))/(c(21)^c(22) + moto_freq_dyn^c(22)) - (c(22)*moto_freq_dyn^c(22)*moto_freq_dyn^(c(22) - 1))/(c(21)^c(22) + moto_freq_dyn^c(22))^2)/c(20);
+            Jmoto(2) = ((c(52)*moto_freq_static^(c(52) - 1))/(c(51)^c(52) + moto_freq_static^c(52)) - (c(52)*moto_freq_static^c(52)*moto_freq_static^(c(52) - 1))/(c(51)^c(52) + moto_freq_static^c(52))^2)/c(50);
+            Jmoto(5) = (c(61)*((c(68)*c(82)*moto_freq_static^(c(82) - 1))/(c(81)^c(82) + moto_freq_static^c(82)) + C*co*((c(66)*c(82)*moto_freq_static^(c(82) - 1))/(c(81)^c(82) + moto_freq_static^c(82)) - (c(66)*c(82)*moto_freq_static^c(82)*moto_freq_static^(c(82) - 1))/(c(81)^c(82) + moto_freq_static^c(82))^2)*(tmpcneg*(-(Ldot - y(5)/c(61))/scalefac)^c(75) - tmpcpos*((Ldot - y(5)/c(61))/scalefac)^c(75))*(c(76) + c(77) - y(9) + y(8)/c(61)) - (c(68)*c(82)*moto_freq_static^c(82)*moto_freq_static^(c(82) - 1))/(c(81)^c(82) + moto_freq_static^c(82))^2))/c(63);
         end
     end
     
@@ -283,7 +288,7 @@ classdef Spindle < KerMorObject
             Lddot = 0;
             
             lendiff = 1.08 - .95;
-            moto_sig = [30 60];
+            moto_sig = 30;
             optbase = odeset('RelTol',1e-9,'AbsTol',1e-9);
             lens = zeros(2,length(ldot));
             pm = PlotManager(false,2,1);
@@ -460,8 +465,8 @@ classdef Spindle < KerMorObject
             JP = sparse(false(9,9));
             f = 1;
             fprintf(f,'J = sparse(9,9);\n');
-            for i = 1:11
-                for j = 1:11
+            for i = 1:9
+                for j = 1:9
                     pd = diff(dy(i),y(j));
                     if pd ~= 0
                         JP(i,j) = true;
@@ -474,6 +479,22 @@ classdef Spindle < KerMorObject
             [i,j] = find(JP);
             sprintf('%d ',i)
             sprintf('%d ',j)
+            
+            % Also generate derivatives w.r.t moto frequency changes
+            % as moto_dyn and moto_static are the same source (yet), the
+            % output is in the same vector and not two columns.
+            for i = 1:9
+                pd_moto_dyn = diff(dy(i),moto_freq_dyn);
+                if pd_moto_dyn ~= 0
+                    body = regexprep(char(pd_moto_dyn), '(c|y)(\d+)', '$1($2)');
+                    fprintf(f,'Jmoto(%d) = %s;\n',i,body);
+                end
+                pd_moto_static = diff(dy(i),moto_freq_static);
+                if pd_moto_static ~= 0
+                    body = regexprep(char(pd_moto_static), '(c|y)(\d+)', '$1($2)');
+                    fprintf(f,'Jmoto(%d) = %s;\n',i,body);
+                end
+            end
         end
     end
     

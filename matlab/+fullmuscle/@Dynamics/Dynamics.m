@@ -69,13 +69,29 @@ classdef Dynamics < muscle.Dynamics;
         
         moto_sarco_link_moto_out;
         moto_sarco_link_sarco_in;
+        spindle_moto_link_moto_in;
         
         FrequencyDetector;
+        
+        % The factors with which the primary and secondary affarent of the
+        % spindle is multiplied before considered a "mean input current"
+        % (then added to the external signal)
+        %
+        % @type rowvec<double> @default [1 1]*1e-2
+        SpindleAffarentWeights = [1 1]*1e-2;
     end
 
-%     properties(Access=private)
-
-%     end
+    properties(Access=private)
+        % The upper limit for the mean input current fed to the motoneuron
+        % soma. as in this current version this is the sum of spindle
+        % feedback and external signal, the max value needs to be available
+        % here to limit the sum.
+        % The external signal is added at an higher level in the ode (B*u
+        % component), but yet the sum of (spindle+ext_sig) <
+        % max_moto_signal, which is why the external signal is accessed
+        % here, too.
+        max_moto_signals;
+    end
     
     methods
         function this = Dynamics(sys)
@@ -91,13 +107,14 @@ classdef Dynamics < muscle.Dynamics;
             configUpdated@muscle.Dynamics(this);
             
             % fDim and xDim are from muscle.Dynamics, so add moto+sarco
-            this.fDim = this.fDim + (6+56+11)*this.nfibres;
-            this.xDim = this.xDim + (6+56+11)*this.nfibres;
+            this.fDim = this.fDim + (6+56+9)*this.nfibres;
+            this.xDim = this.xDim + (6+56+9)*this.nfibres;
             this.motoconst = this.getMotoConst(ft);
             this.sarcoconst = this.getSarcoConst(ft);
             
             this.moto_sarco_link_moto_out = sys.off_moto + (2:6:6*this.nfibres);
             this.moto_sarco_link_sarco_in = sys.off_sarco + (1:56:56*this.nfibres);
+            this.spindle_moto_link_moto_in = this.moto_sarco_link_moto_out;
             
             this.FrequencyDetector = fullmuscle.FrequencyDetector(this.nfibres);
         end
@@ -116,8 +133,9 @@ classdef Dynamics < muscle.Dynamics;
                 this.MSLink_MaxFactorSignal);
             this.MSLinkFunDeriv = eval(['@(x)' funstr ';']);
             
+            sys = this.System;
             % Register the ODE callback for the frequency integration
-            slv = this.System.Model.ODESolver;
+            slv = sys.Model.ODESolver;
             if ~isa(slv,'solvers.MLWrapper')
                 error('Only programmed to work with ML-builtin solvers so far!');
             end
@@ -125,6 +143,8 @@ classdef Dynamics < muscle.Dynamics;
             slv.odeopts = odeset(slv.odeopts,...
                 'OutputFcn',@(t,y,flag)fd.processSignal(t,y),...
                 'OutputSel',this.moto_sarco_link_moto_out);
+            
+            this.max_moto_signals = polyval(sys.upperlimit_poly,sys.Model.Config.FibreTypes);
         end
         
         function dy = evaluate(this, y, t)
@@ -175,9 +195,19 @@ classdef Dynamics < muscle.Dynamics;
             %% Spindles
             sp = sys.Spindle;
             spindle_pos = sys.off_spindle + (1:sys.num_spindle_dof);
-            ys = reshape(y(spindle_pos),11,[]);
-            dys = sp.dydt(ys,t,0,0,0); %ym(2,:)
+            yspindle = reshape(y(spindle_pos),9,[]);
+            % Get motoneuron frequency
+            fd = this.FrequencyDetector;
+            dys = sp.dydt(yspindle,t,fd.Frequency,0,0);
             dy(spindle_pos) = dys(:);
+
+            %% Link of spindle to motoneuron
+            spindle_sig = this.SpindleAffarentWeights*sp.getAfferents(yspindle);
+            ext_sig = this.mu(4); % sys.Inputs{1}(t);
+            eff_spindle_sig = min(spindle_sig,this.max_moto_signals - ext_sig);
+            dy(this.spindle_moto_link_moto_in) = ...
+                dy(this.spindle_moto_link_moto_in) ...
+                + sys.noise(:,round(t)+1)'.*eff_spindle_sig;
         end
         
         function J = getStateJacobian(this, y, t)
@@ -223,12 +253,17 @@ classdef Dynamics < muscle.Dynamics;
             
             %% Spindles
             sp = sys.Spindle;
+            freq = this.FrequencyDetector.Frequency;
             for k=1:this.nfibres
-                spindle_pos = sys.off_spindle + 11*(k-1) + (1:11);
-                moto_pos = sys.off_moto + 6*(k-1) + 2;
-                J = blkdiag(J,sp.Jdydt(y(spindle_pos), t, 0, 0, 0)); %y(moto_pos)
+                spindle_pos = sys.off_spindle + 9*(k-1) + (1:9);
+                [Jspin, Jspin_moto] = sp.Jdydt(y(spindle_pos),t, freq(k), 0, 0);
+                J = blkdiag(J,Jspin);
+                
+%                 %% Motoneuron to Spindle coupling
+%                 % The 1,2 and 5th positions of the spindle are sensitive to
+%                 % the current frequencies
+%                 J(spindle_pos([1 2 5]),)
             end
-%             J = blkdiag(J,sparse(11*this.nfibres,11*this.nfibres));
             
             %% Motoneuron to Sarcomere coupling
             moto_out = y(this.moto_sarco_link_moto_out);
@@ -244,6 +279,8 @@ classdef Dynamics < muscle.Dynamics;
             % mechanics jacobian, as the element/gauss loop is computed
             % there anyways. its not 100% clean OOP, but works for now.
             J(sys.num_u_dof + (1:sys.num_v_dof), sys.off_sarco+(1:sys.num_sarco_dof)) = this.JS;
+            
+            %% Motoneuron to Spindle coupling
         end
     end
     
