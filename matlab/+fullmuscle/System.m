@@ -85,7 +85,7 @@ classdef System < muscle.System;
             
             configUpdated@muscle.System(this);
             
-            %% Add input matrix B
+            %% Add input matrix B (to possibly existing B for neumann forces!)
             this.B = this.assembleB;
             
             %% Assemble noise signal for each fibre
@@ -113,8 +113,8 @@ classdef System < muscle.System;
                 
                 % For nonconstant (=mu(4)) input use this
                 %uin = this.Inputs{inputidx};
-                
-                ustr = '@(t)[bno(round(t)+1); ';
+                ramptime = 30;
+                ustr = '@(t)[mu(3)*((t<ramptime).*t/ramptime+(t>=ramptime)); bno(round(t)+1); ';
                 for k=1:this.nfibres
                     % Precompute the factor as the input mean current will
                     % stay constant (at least from the external source)
@@ -303,27 +303,18 @@ classdef System < muscle.System;
             i = this.input_motoneuron_link_idx;
             s = 1./(pi*this.coolExp(77.5e-4, 0.0113, this.Model.Config.FibreTypes).^2);
 
-            B = sparse(i,ones(size(i)),s,this.num_all_dof,this.nfibres+1);
+            % Initialize with base noise entries in second column
+            B = sparse(i,ones(size(i))+1,s,this.num_all_dof,this.nfibres+2);
+            % Add single contribution for each fibre type thereafter
             for k=1:this.nfibres
-                B(i(k),k+1) = s(k);%#ok
+                B(i(k),k+2) = s(k);%#ok
+            end
+            % Add neumann forces B into current matrix in first
+            % column
+            if ~isempty(this.B)
+                B(1:this.num_uvp_dof,1) = this.B.B;
             end
             B = dscomponents.LinearInputConv(B);
-%             B = dscomponents.AffLinInputConv;
-%             % Base noise input mapping
-%             B.addMatrix('1',sparse(i,ones(size(i)),s,this.num_all_dof,2));
-%             
-%             % Independent noise input mapping with µ_4 as mean current factor
-%             % We need to restrict the maximum mean input current to a
-%             % reasonable value for each fibre type. luckily, we know them
-%             % already and hence can provide extra matrices with suitable
-%             % coefficient functions.
-%             %
-%             % See also: 
-%             maxvals = polyval(this.upperlimit_poly,this.Model.Config.FibreTypes);
-%             for k=1:this.nfibres
-%                 B.addMatrix(sprintf('min(%g,mu(4))',maxvals(k)),...
-%                     sparse(i(k),2,s(k),this.num_all_dof,2));
-%             end
         end
         
         function Daff = assembleDampingMatrix(this)

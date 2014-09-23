@@ -31,13 +31,13 @@ classdef Model < muscle.Model
             
             this.System = fullmuscle.System(this);
             
+            this.DefaultMu = [1 0 0 3]';
+            this.DefaultInput = 1;
+            
             % Call the config-specific model configuration
             conf.Model = this;
             conf.configureModel(this);
         
-            this.DefaultMu = [1 0 0 3]';
-            this.DefaultInput = 1;
-            
             % Set the config to the model, triggering geometry related
             % pre-computations
             this.setConfig(conf);

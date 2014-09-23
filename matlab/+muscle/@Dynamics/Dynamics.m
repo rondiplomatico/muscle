@@ -65,7 +65,15 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     
     properties(SetAccess=private)
         APExp;
+        
+        % Helper variable for fullmuscle.model
         JS;
+    end
+    
+    properties(SetAccess=protected)
+        % Helper variable for fullmuscle.model
+        lambda_dot_pos;
+        lambda_dot;
     end
     
     properties(Transient, SetAccess=private)
@@ -251,8 +259,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % Return values:
             % fx: A matrix with pts-many component function evaluations `f_i(\vx)` as rows and as
             % many columns as `\vX` had.
-            
-           
         end
         
         function dfx = evaluateComponentPartialDerivatives(this, pts, ends, idx, deriv, self, x, t, dfxsel)%#ok

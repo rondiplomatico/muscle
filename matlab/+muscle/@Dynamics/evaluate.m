@@ -25,6 +25,7 @@ function duvw  = evaluate(this, uvwdof, t)
         b1cf = this.b1cf;
         d1cf = this.d1cf;
     end
+%     ldotpos = this.lambda_dot_pos;
     
     if havefibretypes
         alphaconst = [];
@@ -146,6 +147,12 @@ function duvw  = evaluate(this, uvwdof, t)
                         P = P + g2*F*sys.a0oa0n2(:,:,fibrenr);
                     end
                 end
+                
+                %% Check if change rate of lambda at a certain point should be tracked
+%                 if any(ldotpos(m,gp,:))
+%                     Fdot = uvwcomplete(elemidx_v) * dtn;
+%                     this.lambda_dot(ldotpos(m,gp,:)) = (F*fibres(:,1))'*(Fdot*fibres(:,1))/lambdaf;
+%                 end
             end
             
 %             Viscosity

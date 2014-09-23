@@ -84,6 +84,12 @@ classdef DebugConfig < fullmuscle.AModelConfig
             ft = 0;
         end
         
+        function sp = getSpindlePos(~)
+            % Spindle position: first row element, second row gauss point
+            % within element
+            sp = [1; 1];
+        end
+        
         function ftw = getFibreTypeWeights(this)
             % Get pre-initialized all zero weights
             ftw = getFibreTypeWeights@fullmuscle.AModelConfig(this);

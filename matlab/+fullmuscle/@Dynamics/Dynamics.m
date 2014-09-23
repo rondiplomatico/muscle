@@ -101,7 +101,8 @@ classdef Dynamics < muscle.Dynamics;
         
         function configUpdated(this)
             sys = this.System;
-            ft = sys.Model.Config.FibreTypes;
+            mc = sys.Model.Config;
+            ft = mc.FibreTypes;
             this.nfibres = length(ft);
             
             configUpdated@muscle.Dynamics(this);
@@ -117,6 +118,8 @@ classdef Dynamics < muscle.Dynamics;
             this.spindle_moto_link_moto_in = this.moto_sarco_link_moto_out;
             
             this.FrequencyDetector = fullmuscle.FrequencyDetector(this.nfibres);
+            this.lambda_dot_pos = mc.SpindlePositions;
+            this.lambda_dot = zeros(sum(this.lambda_dot_pos(:)),1);
         end
         
         function prepareSimulation(this, mu)
@@ -198,7 +201,8 @@ classdef Dynamics < muscle.Dynamics;
             yspindle = reshape(y(spindle_pos),9,[]);
             % Get motoneuron frequency
             fd = this.FrequencyDetector;
-            dys = sp.dydt(yspindle,t,fd.Frequency,0,0);
+%             this.lambda_dot
+            dys = sp.dydt(yspindle,t,fd.Frequency,this.lambda_dot,0);
             dy(spindle_pos) = dys(:);
 
             %% Link of spindle to motoneuron

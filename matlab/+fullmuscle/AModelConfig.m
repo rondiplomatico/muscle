@@ -19,6 +19,8 @@ classdef AModelConfig < muscle.AModelConfig
         
         forces_scaling;
         forces_scaling_poly = [-28.9060   53.8167  -24.1155   -7.2909    7.3932];
+        
+        SpindlePositions;
     end
     
     methods
@@ -31,6 +33,16 @@ classdef AModelConfig < muscle.AModelConfig
             configureModel@muscle.AModelConfig(this, model);
             ft = this.getFibreTypes;
             this.FibreTypes = ft;
+            nft = length(ft);
+            
+            fe = this.PosFE;
+            geo = fe.Geometry;
+            SP = false(geo.NumElements,fe.GaussPointsPerElem, nft);
+            sp = this.getSpindlePos;
+            for k = 1:nft
+                SP(sp(1,k),sp(2,k),k) = true;
+            end
+            this.SpindlePositions = SP;
             
             ftw = this.getFibreTypeWeights;
             this.forces_scaling = 1./polyval(this.forces_scaling_poly,ft)';
@@ -71,6 +83,7 @@ classdef AModelConfig < muscle.AModelConfig
     
     methods(Abstract, Access=protected)
         ft = getFibreTypes(this);
+        sp = getSpindlePos(this);
     end
     
 end
