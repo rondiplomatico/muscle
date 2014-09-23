@@ -115,8 +115,6 @@ classdef Spindle < KerMorObject
 
             % dy9 = L' (y9 = L) in [L_0]
             dy(9,:) = Ldot;
-            
-%             dy = dy/1000;
         end
         
         function af  = getAfferents(this, y)

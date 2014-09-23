@@ -69,6 +69,8 @@ classdef Dynamics < muscle.Dynamics;
         
         moto_sarco_link_moto_out;
         moto_sarco_link_sarco_in;
+        
+        FrequencyDetector;
     end
 
 %     properties(Access=private)
@@ -96,6 +98,8 @@ classdef Dynamics < muscle.Dynamics;
             
             this.moto_sarco_link_moto_out = sys.off_moto + (2:6:6*this.nfibres);
             this.moto_sarco_link_sarco_in = sys.off_sarco + (1:56:56*this.nfibres);
+            
+            this.FrequencyDetector = fullmuscle.FrequencyDetector(this.nfibres);
         end
         
         function prepareSimulation(this, mu)
@@ -111,6 +115,16 @@ classdef Dynamics < muscle.Dynamics;
                 diff,...
                 this.MSLink_MaxFactorSignal);
             this.MSLinkFunDeriv = eval(['@(x)' funstr ';']);
+            
+            % Register the ODE callback for the frequency integration
+            slv = this.System.Model.ODESolver;
+            if ~isa(slv,'solvers.MLWrapper')
+                error('Only programmed to work with ML-builtin solvers so far!');
+            end
+            fd = this.FrequencyDetector;
+            slv.odeopts = odeset(slv.odeopts,...
+                'OutputFcn',@(t,y,flag)fd.processSignal(t,y),...
+                'OutputSel',this.moto_sarco_link_moto_out);
         end
         
         function dy = evaluate(this, y, t)
