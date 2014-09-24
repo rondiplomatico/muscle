@@ -70,21 +70,23 @@ classdef FrequencyDetector < KerMorObject
         end
         
         function s = processSignal(this, t, sig)
-            % A new peak is detected
-            peak_on = ~this.ispeak & (sig > this.PeakOnThreshold);
-            peak_off = this.ispeak & sig < this.PeakOffThreshold;
-            if any(peak_on)
-                % We're on peak!
-                this.ispeak(peak_on) = true;
-                % Get current frequency for windowsize peaks over time
-                this.Frequency(peak_on) = this.timescale * this.WindowSize ...
-                    ./ (t-this.peaktimes(1,peak_on));
-                % "Remove" last peak and Shift peaktimes on
-                this.peaktimes(1:end-1,peak_on) = this.peaktimes(2:end,peak_on);
-                % Save current peak time
-                this.peaktimes(end,peak_on) = t;
+            if ~isempty(sig)
+                % A new peak is detected
+                peak_on = ~this.ispeak & (sig > this.PeakOnThreshold);
+                peak_off = this.ispeak & sig < this.PeakOffThreshold;
+                if any(peak_on)
+                    % We're on peak!
+                    this.ispeak(peak_on) = true;
+                    % Get current frequency for windowsize peaks over time
+                    this.Frequency(peak_on) = this.timescale * this.WindowSize ...
+                        ./ (t-this.peaktimes(1,peak_on));
+                    % "Remove" last peak and Shift peaktimes on
+                    this.peaktimes(1:end-1,peak_on) = this.peaktimes(2:end,peak_on);
+                    % Save current peak time
+                    this.peaktimes(end,peak_on) = t;
+                end
+                this.ispeak(peak_off) = false;
             end
-            this.ispeak(peak_off) = false;
             s = 0;
         end
         

@@ -33,16 +33,16 @@ classdef AModelConfig < muscle.AModelConfig
             configureModel@muscle.AModelConfig(this, model);
             ft = this.getFibreTypes;
             this.FibreTypes = ft;
-            nft = length(ft);
+%             nft = length(ft);
             
-            fe = this.PosFE;
-            geo = fe.Geometry;
-            SP = false(geo.NumElements,fe.GaussPointsPerElem, nft);
-            sp = this.getSpindlePos;
-            for k = 1:nft
-                SP(sp(1,k),sp(2,k),k) = true;
-            end
-            this.SpindlePositions = SP;
+%             fe = this.PosFE;
+%             geo = fe.Geometry;
+%             SP = false(geo.NumElements,fe.GaussPointsPerElem, nft);
+%             sp = this.getSpindlePos;
+%             for k = 1:nft
+%                 SP(sp(1,k),sp(2,k),k) = true;
+%             end
+            this.SpindlePositions = this.getSpindlePos;
             
             ftw = this.getFibreTypeWeights;
             this.forces_scaling = 1./polyval(this.forces_scaling_poly,ft)';
@@ -65,20 +65,6 @@ classdef AModelConfig < muscle.AModelConfig
 %             u = {@(t)1};
 %         end
         
-    end
-    
-    methods(Access=protected)
-        
-        function ftw = getFibreTypeWeights(this)
-            % This is a lazy pre-implementation as fullmuscle.Models
-            % always have fibre types and thus weights.
-            %
-            % This method simply returns an all-zero weighting.
-            m = this.Model;
-            fe = this.PosFE;
-            geo = fe.Geometry;
-            ftw = zeros(fe.GaussPointsPerElem,length(this.FibreTypes),geo.NumElements);
-        end
     end
     
     methods(Abstract, Access=protected)

@@ -132,6 +132,10 @@ classdef System < models.BaseDynSystem
         fD;
     end
     
+    properties(Access=protected)
+        plotdata;
+    end
+    
     methods
         function this = System(model)
             % Call superclass constructor
@@ -183,19 +187,10 @@ classdef System < models.BaseDynSystem
                 
                 this.updateDofNums(mc);
 
-                %% Construct B matrix
-                % Collect neumann forces
-                [B, this.bc_neum_forces_nodeidx] = this.getSpatialExternalForces;
-                % Only set up forces if present
-                if ~isempty(this.bc_neum_forces_nodeidx)
-                    this.bc_neum_forces_val = B(this.bc_neum_forces_nodeidx + geo_uv.NumNodes * 3);
-                    % Remove dirichlet DoFs
-                    B(this.idx_uv_bc_glob) = [];
-                    % Set as constant input conversion matrix
-                    this.B = dscomponents.LinearInputConv(B);
-                    % Set input function
-                    this.Inputs = mc.getInputs;
-                end
+                % Construct B matrix
+                this.B = this.assembleB;
+                % Set input function
+                this.Inputs = mc.getInputs;
 
                 % Init fibre directions and precomputable values
                 this.inita0;
@@ -237,6 +232,9 @@ classdef System < models.BaseDynSystem
                 this.x0 = dscomponents.ConstInitialValue(this.assembleX0);
 
                 this.f.configUpdated;
+                
+                % Compile information for plotting
+                this.plotdata = this.initPlotData;
             end
         end
         
@@ -248,7 +246,7 @@ classdef System < models.BaseDynSystem
             prepareSimulation@models.BaseDynSystem(this, mu, inputidx);
         end
         
-        function [pm, h] = plot(this, t, y_dofs, varargin)
+        function r = parsePlotArgs(~, args)
             i = inputParser;
             i.KeepUnmatched = true;
             i.addParamValue('Vid',false,@(v)islogical(v));
@@ -257,79 +255,80 @@ classdef System < models.BaseDynSystem
             i.addParamValue('Pressure',false,@(v)islogical(v));
             i.addParamValue('Fibres',true,@(v)islogical(v));
             i.addParamValue('Skel',false,@(v)islogical(v));
-            i.addParamValue('Pool',length(t)>1,@(v)islogical(v));
+            i.addParamValue('Pool',false,@(v)islogical(v));
             i.addParamValue('PM',[],@(v)isa(v,'PlotManager'));
             i.addParamValue('DF',[]);
             i.addParamValue('NF',[]);
             i.addParamValue('F',[]);
-            i.parse(varargin{:});
+            i.parse(args{:});
             r = i.Results;
             if ~isempty(r.NF)
                 r.Forces = true;
             end
+        end
+        
+        function pd = initPlotData(this)
+            pd = struct;
+            hlp = sum(this.bool_u_bc_nodes,1);
+            pd.bc_dir_3pos_applies = hlp == 3;
+            pd.bc_dir_2pos_applies = hlp == 2;
+            pd.bc_dir_1pos_applies = hlp == 1;
+            pd.bc_dir_pos_applies = hlp >= 1; 
+            pd.bool_v_bc_nodes_applies = sum(this.bool_v_bc_nodes,1) >= 1;
+            pd.no_bc = ~pd.bc_dir_pos_applies & ~pd.bool_v_bc_nodes_applies;
             
             mc = this.Model.Config;
-            
-            if isempty(r.PM)
-                if ~isempty(mc.Pool) && r.Pool
-                    pm = PlotManager(false,2,1);
-                else
-                    pm = PlotManager;
-                end
-                pm.LeaveOpen = true;
-            else
-                pm = r.PM;
-            end
-            
             dfem = mc.PosFE;
             geo = dfem.Geometry;
             posdofs = geo.NumNodes * 3;
-            vstart = posdofs+1;
-            pstart = 2*posdofs+1;
-            e = geo.Edges;
+            pd.vstart = posdofs+1;
+            pd.pstart = 2*posdofs+1;
+            pd.e = geo.Edges;
             
-            % "Speedup" factor for faster plots
-            if ~isempty(r.F)
-                t = t(1:r.F:end);
-                y_dofs = y_dofs(:,1:r.F:end);
-                if ~isempty(r.DF)
-                    r.DF = r.DF(:,1:r.F:end);
+            %% Dirichlet forces
+            pd.have_residuals = pd.bc_dir_pos_applies | pd.bool_v_bc_nodes_applies;
+            % By sorting and combining the pos/velo Dir BC, the
+            % plotting of mixed BCs on one node is plotted correctly.
+            pd.residuals_pos = this.bool_u_bc_nodes | this.bool_v_bc_nodes;
+            [~, pd.sortidx] = sort([this.idx_u_bc_glob; this.idx_v_bc_glob-posdofs]);
+            % Preallocate the residuals matrix
+            pd.residuals = zeros(size(pd.residuals_pos));
+            
+            %% Fibres
+            if this.HasFibres
+                pd.Ngp = dfem.N(dfem.GaussPoints);
+            end
+        end
+        
+        function [t, y] = updatePlotData(this, opts, t, y)
+            pd = this.initPlotData;
+%             pd = this.plotdata;
+            mc = this.Model.Config;
+            dfem = mc.PosFE;
+            geo = dfem.Geometry;
+            
+            %% "Speedup" factor for faster plots
+            if ~isempty(opts.F)
+                t = t(1:opts.F:end);
+                y = y(:,1:opts.F:end);
+                if ~isempty(opts.DF)
+                    opts.DF = opts.DF(:,1:opts.F:end);
                 end
-                if ~isempty(r.NF)
-                    r.NF = r.NF(:,1:r.F:end);
+                if ~isempty(opts.NF)
+                    opts.NF = opts.NF(:,1:opts.F:end);
                 end
             end
             
             %% Re-add the dirichlet nodes
-            y_dofs = this.includeDirichletValues(t, y_dofs);
+            y = this.includeDirichletValues(t, y);
             
-            hlp = sum(this.bool_u_bc_nodes,1);
-            bc_dir_3pos_applies = hlp == 3;
-            bc_dir_2pos_applies = hlp == 2;
-            bc_dir_1pos_applies = hlp == 1;
-            bc_dir_pos_applies = hlp >= 1; 
-            bool_v_bc_nodes_applies = sum(this.bool_v_bc_nodes,1) >= 1;
-            no_bc = ~bc_dir_pos_applies & ~bool_v_bc_nodes_applies;
-            
-            if ~isempty(r.DF)
-                have_residuals = bc_dir_pos_applies | bool_v_bc_nodes_applies;
-                % By sorting and combining the pos/velo Dir BC, the
-                % plotting of mixed BCs on one node is plotted correctly.
-                residuals_pos = this.bool_u_bc_nodes | this.bool_v_bc_nodes;
-                [~, sortidx] = sort([this.idx_u_bc_glob; this.idx_v_bc_glob-posdofs]);
-                % Preallocate the residuals matrix
-                residuals = zeros(size(residuals_pos));
-                maxdfval = max(abs(r.DF(:)))/10;
+            %% Dirichlet plotting
+            if ~isempty(opts.DF)
+                pd.maxdfval = max(abs(opts.DF(:)))/10;
             end
             
-            if r.Vid
-                avifile = fullfile(pwd,'output.avi');
-                vw = VideoWriter(avifile);
-                vw.FrameRate = 25;
-                vw.open;
-            end
-            
-            if r.Forces
+            %% Forces plotting
+            if opts.Forces
                 % Get forces on each node in x,y,z directions
                 % This is where the connection between plane index and
                 % x,y,z coordinate is "restored"
@@ -338,34 +337,68 @@ classdef System < models.BaseDynSystem
                 
                 % Forces at face centers
                 force_elem_face_idx = geo.Faces(:,this.FacesWithForce);
-                numfaceswithforce = size(force_elem_face_idx,2);
-                meanforces = zeros(3,numfaceswithforce);
-                for k=1:numfaceswithforce
+                pd.numfaceswithforce = size(force_elem_face_idx,2);
+                meanforces = zeros(3,pd.numfaceswithforce);
+                for k=1:pd.numfaceswithforce
                     masterfacenodeidx = geo.MasterFaces(force_elem_face_idx(2,k),:);
                     facenodeidx = geo.Elements(force_elem_face_idx(1,k),masterfacenodeidx);
                     meanforces(:,k) = mean(forces(:,facenodeidx),2);
                 end
+                pd.meanforces = meanforces;
+                pd.force_elem_face_idx = force_elem_face_idx;
                 
                 % Also save forces at x,y,z nodes for plotting
-                forces_apply = sum(abs(forces),1) ~= 0;
-                forces = forces(:,forces_apply);
+                pd.forces_apply = sum(abs(forces),1) ~= 0;
+                pd.forces = forces(:,pd.forces_apply);
                 
-                if ~isempty(r.NF)
-                    residual_neumann_forces = zeros(size(this.bool_u_bc_nodes));
+                if ~isempty(opts.NF)
+                    pd.residual_neumann_forces = zeros(size(this.bool_u_bc_nodes));
                 end
             end
             
+            %% Skeleton plotting
+            if ~opts.Skel
+%                 light('Position',[1 1 1],'Style','infinite','Parent',h);
+                pd.musclecol = [0.854688, 0.201563, 0.217188];
+            end
+            
+            this.plotdata = pd;
+        end
+        
+        function [pm, h] = plot(this, t, y_dofs, varargin)
+            opts = this.parsePlotArgs(varargin);
+            
+            mc = this.Model.Config;
+            
+            if isempty(opts.PM)
+                if ~isempty(mc.Pool) && opts.Pool
+                    pm = PlotManager(false,2,1);
+                else
+                    pm = PlotManager;
+                end
+                pm.LeaveOpen = true;
+            else
+                pm = opts.PM;
+            end
+            
+            [t, y_dofs] = this.updatePlotData(opts, t, y_dofs);
+            
+            if opts.Vid
+                avifile = fullfile(pwd,'output.avi');
+                vw = VideoWriter(avifile);
+                vw.FrameRate = 25;
+                vw.open;
+            end
+            
             %% Loop over time
-            ax_extra = this.initRefinedPlot(t,y_dofs,r,pm);
+            if ~isempty(mc.Pool) && r.Pool
+                hf = pm.nextPlot('force','Activation force','t [ms]','alpha');
+                axis(hf,[0 t(end) 0 1]);
+                hold(hf,'on');
+            end
             
             h = pm.nextPlot('geo',sprintf('Deformation at t=%g',t(end)),'x [mm]','y [mm]');
             zlabel(h,'z [mm]');
-            
-            if ~r.Skel
-%                 light('Position',[1 1 1],'Style','infinite','Parent',h);
-                musclecol = [0.854688, 0.201563, 0.217188];
-            end
-            
             axis(h, this.getPlotBox(y_dofs));
             daspect([1 1 1]);
             view(h, [46 30]);
@@ -376,119 +409,24 @@ classdef System < models.BaseDynSystem
                 if ~ishandle(h)
                     break;
                 end
-                u = reshape(y_dofs(1:vstart-1,ts),3,[]);
-                v = reshape(y_dofs(vstart:pstart-1,ts),3,[]);
-                cla(h);
+                this.plotGeometry(h, t(ts), y_dofs(:,ts), ts, opts);
                 
-                if r.Skel
-                    plot3(h,u(1,no_bc),u(2,no_bc),u(3,no_bc),'r.','MarkerSize',14);
-                    for k=1:size(e,1)
-                        plot3(h,u(1,[e(k,1) e(k,2)]),u(2,[e(k,1) e(k,2)]),u(3,[e(k,1) e(k,2)]),'r');
-                    end
-                else
-                    p = patch('Faces',geo.PatchFaces,'Vertices',u');
-                    set(p,'EdgeColor',.8*musclecol,'FaceColor',musclecol,'FaceAlpha',.3);
-                end
-                
-                % Velocities
-                if r.Velo
-                    quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'b', 'MarkerSize',14);
-                end
-                
-                %% Dirichlet conditions
-                % Displacement
-                plot3(h,u(1,bc_dir_3pos_applies),u(2,bc_dir_3pos_applies),u(3,bc_dir_3pos_applies),'.','MarkerSize',20,'Color',[0 0 0]);
-                plot3(h,u(1,bc_dir_2pos_applies),u(2,bc_dir_2pos_applies),u(3,bc_dir_2pos_applies),'.','MarkerSize',20,'Color',[.5 .5 .5]);
-                plot3(h,u(1,bc_dir_1pos_applies),u(2,bc_dir_1pos_applies),u(3,bc_dir_1pos_applies),'.','MarkerSize',20,'Color',[.7 .7 .7]);
-                
-                % Velocity
-                plot3(h,u(1,bool_v_bc_nodes_applies),u(2,bool_v_bc_nodes_applies),u(3,bool_v_bc_nodes_applies),'g.','MarkerSize',20);
-                
-                %% Dirichlet Forces
-                if ~isempty(r.DF)
-                    udir = u(:,have_residuals);
-                    residuals(residuals_pos) = r.DF(sortidx,ts)/maxdfval;
-                    quiver3(h,udir(1,:),udir(2,:),udir(3,:),...
-                        residuals(1,have_residuals),residuals(2,have_residuals),residuals(3,have_residuals),'k', 'MarkerSize',14);
-                end
-                
-                %% Neumann condition forces
-                if r.Forces
-                    % Plot force vectors at nodes
-                    uforce = u(:,forces_apply);
-                    quiver3(h,uforce(1,:),uforce(2,:),uforce(3,:),...
-                        forces(1,:),forces(2,:),forces(3,:),0.1,'Color',[.8 .8 1]);
-                    % Plot force vectors at face centers
-                    for k=1:numfaceswithforce
-                        masterfacenodeidx = geo.MasterFaces(force_elem_face_idx(2,k),:);
-                        facenodeidx = geo.Elements(force_elem_face_idx(1,k),masterfacenodeidx);
-                        
-                        facecenter = mean(u(:,facenodeidx),2);
-                        quiver3(h,facecenter(1),facecenter(2),facecenter(3),...
-                            meanforces(1,k),meanforces(2,k),meanforces(3,k),0.1,'LineWidth',2,'Color','b','MaxHeadSize',1);
-                        
-                        if ~isempty(r.NF)
-                            residual_neumann_forces(this.bc_neum_forces_nodeidx) = r.NF(:,ts);
-                            meanforce = mean(residual_neumann_forces(:,facenodeidx),2);
-                            quiver3(h,facecenter(1),facecenter(2),facecenter(3),...
-                            meanforce(1),meanforce(2),meanforce(3),0.1,'LineWidth',2,'Color','k','MaxHeadSize',1);
-                        end
-                    end
-                end
-                
-                %% Pressure
-                if r.Pressure
-                    p = y_dofs(pstart:this.num_uvp_dof,ts);
-                    pn = this.idx_p_to_u_nodes;
-                    pneg = p<0;
-                    % Negative pressures
-                    if any(pneg)
-                        scatter3(h,u(1,pn(pneg)),u(2,pn(pneg)),u(3,pn(pneg)),-p(pneg)*10,'b');
-                    end
-                    % Positive pressures
-                    if any(~pneg)
-                        scatter3(h,u(1,pn(~pneg)),u(2,pn(~pneg)),u(3,pn(~pneg)),p(~pneg)*10,'b');
-                    end
-                end
-                
-                %% a0 fibres
-                if this.HasFibres && r.Fibres
-                    Ngp = dfem.N(dfem.GaussPoints);
-                    for m = 1:geo.NumElements
-                        u = y_dofs(1:vstart-1,ts);
-                        u = u(this.idx_u_glob_elems(:,:,m));
-                        
-                        gps = u*Ngp;
-                        anull = u*this.dNa0(:,:,m);
-                        quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'.','Color','w');
-                    end
-                end
-                
-                %% Misc
-%                 axis(h,box);
-%                view(h, [73 40]);
-%                 view(h, [0 90]);
-%                 view(h, [-90 0]);
-                title(h,sprintf('Deformation at t=%g',t(ts)));
-%                 hold(h,'off');
-
-                % Call a subroutine for further plots at time step ts
-                this.refinedPlot(ax_extra, t, y_dofs, r, ts);
-                
-                if r.Vid
-                    vw.writeVideo(getframe(gcf));
-                else
-                    pause(.01);
-%                       drawnow;
-%                     pause;
+                if ~isempty(mc.Pool) && r.Pool
+                    dt = this.Model.dt;
+                    times = 0:dt:ts*dt;
+                    alpha = mc.Pool.getActivation(times);
+                    walpha = mc.FibreTypeWeights(1,:,1) * alpha;
+                    cla(hf);
+                    plot(hf,times,alpha);
+                    plot(hf,times,walpha,'LineWidth',2);
                 end
             end
             
-            if r.Vid
+            if opts.Vid
                 vw.close;
             end
 
-            if isempty(r.PM)
+            if isempty(opts.PM)
                 pm.done;
             end
         end
@@ -549,26 +487,110 @@ classdef System < models.BaseDynSystem
     
     methods(Access=protected)
         
-        function h = initRefinedPlot(this, t, y, r, pm)
-            mc = this.Model.Config;
-            h = [];
-            if ~isempty(mc.Pool) && r.Pool
-                h = pm.nextPlot('force','Activation force','t [ms]','alpha');
-                axis(h,[0 t(end) 0 1]);
-                hold(h,'on');
+        function plotGeometry(this, h, t, y_dofs, ts, opts)
+            title(h,sprintf('Deformation at t=%g',t));
+            
+            pd = this.plotdata;
+            
+            u = reshape(y_dofs(1:pd.vstart-1),3,[]);
+            v = reshape(y_dofs(pd.vstart+1:pd.pstart),3,[]);
+            cla(h);
+
+            if opts.Skel
+                e = pd.e;
+                plot3(h,u(1,pd.no_bc),u(2,pd.no_bc),u(3,pd.no_bc),'r.','MarkerSize',14);
+                for k=1:size(e,1)
+                    plot3(h,u(1,[e(k,1) e(k,2)]),u(2,[e(k,1) e(k,2)]),u(3,[e(k,1) e(k,2)]),'r');
+                end
+            else
+                geo = this.Model.Config.PosFE.Geometry;
+                p = patch('Faces',geo.PatchFaces,'Vertices',u','Parent',h);
+                set(p,'EdgeColor',.8*pd.musclecol,'FaceColor',pd.musclecol,'FaceAlpha',.3);
             end
-        end
-        
-        function refinedPlot(this, h, t, y, r, ts)
-            mc = this.Model.Config;
-            if ~isempty(mc.Pool) && r.Pool
-                dt = this.Model.dt;
-                times = 0:dt:ts*dt;
-                alpha = mc.Pool.getActivation(times);
-                walpha = mc.FibreTypeWeights(1,:,1) * alpha;
-                cla(h);
-                plot(h,times,alpha);
-                plot(h,times,walpha,'LineWidth',2);
+
+            % Velocities
+            if opts.Velo
+                quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'b', 'MarkerSize',14);
+            end
+
+            %% Dirichlet conditions
+            % Displacement
+            u3dir = u(:,pd.bc_dir_3pos_applies);
+            plot3(h,u3dir(1,:),u3dir(2,:),u3dir(3,:),'.','MarkerSize',20,'Color',[0 0 0]);
+            u2dir = u(:,pd.bc_dir_2pos_applies);
+            plot3(h,u2dir(1,:),u2dir(2,:),u2dir(3,:),'.','MarkerSize',20,'Color',[.5 .5 .5]);
+            u1dir = u(:,pd.bc_dir_1pos_applies);
+            plot3(h,u1dir(1,:),u1dir(2,:),u1dir(3,:),'.','MarkerSize',20,'Color',[.7 .7 .7]);
+
+            % Velocity
+            uvdir = u(:,pd.bool_v_bc_nodes_applies);
+            plot3(h,uvdir(1,:),uvdir(2,:),uvdir(3,:),'g.','MarkerSize',20);
+
+            %% Dirichlet Forces
+            if ~isempty(opts.DF)
+                residuals = pd.residuals;
+                have_residuals = pd.have_residuals;
+                udir = u(:,have_residuals);
+                residuals(pd.residuals_pos) = opts.DF(pd.sortidx)/pd.maxdfval;
+                quiver3(h,udir(1,:),udir(2,:),udir(3,:),...
+                    residuals(1,have_residuals),residuals(2,have_residuals),residuals(3,have_residuals),'k', 'MarkerSize',14);
+            end
+
+            %% Neumann condition forces
+            if opts.Forces
+                % Plot force vectors at nodes
+                uforce = u(:,pd.forces_apply);
+                quiver3(h,uforce(1,:),uforce(2,:),uforce(3,:),...
+                    pd.forces(1,:),pd.forces(2,:),pd.forces(3,:),0.1,'Color',[.8 .8 1]);
+                % Plot force vectors at face centers
+                for k=1:pd.numfaceswithforce
+                    masterfacenodeidx = geo.MasterFaces(pd.force_elem_face_idx(2,k),:);
+                    facenodeidx = geo.Elements(pd.force_elem_face_idx(1,k),masterfacenodeidx);
+
+                    facecenter = mean(u(:,facenodeidx),2);
+                    quiver3(h,facecenter(1),facecenter(2),facecenter(3),...
+                        pd.meanforces(1,k),pd.meanforces(2,k),pd.meanforces(3,k),0.1,'LineWidth',2,'Color','b','MaxHeadSize',1);
+
+                    if ~isempty(opts.NF)
+                        pd.residual_neumann_forces(this.bc_neum_forces_nodeidx) = opts.NF(:,ts);
+                        meanforce = mean(pd.residual_neumann_forces(:,facenodeidx),2);
+                        quiver3(h,facecenter(1),facecenter(2),facecenter(3),...
+                        meanforce(1),meanforce(2),meanforce(3),0.1,'LineWidth',2,'Color','k','MaxHeadSize',1);
+                    end
+                end
+            end
+
+            %% Pressure
+            if opts.Pressure
+                p = y_dofs(pd.pstart:this.num_uvp_glob);
+                pn = this.idx_p_to_u_nodes;
+                pneg = p<0;
+                % Negative pressures
+                if any(pneg)
+                    scatter3(h,u(1,pn(pneg)),u(2,pn(pneg)),u(3,pn(pneg)),-p(pneg)*10,'b');
+                end
+                % Positive pressures
+                if any(~pneg)
+                    scatter3(h,u(1,pn(~pneg)),u(2,pn(~pneg)),u(3,pn(~pneg)),p(~pneg)*10,'b');
+                end
+            end
+
+            %% a0 fibres
+            if this.HasFibres && opts.Fibres
+                for m = 1:geo.NumElements
+                    u = y_dofs(1:pd.vstart-1);
+                    u = u(this.idx_u_glob_elems(:,:,m));
+
+                    gps = u*pd.Ngp;
+                    anull = u*this.dNa0(:,:,m);
+                    quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'.','Color','w');
+                end
+            end
+
+            if opts.Vid
+                vw.writeVideo(getframe(gcf));
+            else
+                pause(.01);
             end
         end
         
@@ -606,6 +628,23 @@ classdef System < models.BaseDynSystem
 
             % Remove dirichlet values
             x0(this.idx_uv_bc_glob) = [];
+        end
+        
+        function Baff = assembleB(this)
+            % Collect neumann forces
+            [B, this.bc_neum_forces_nodeidx] = this.getSpatialExternalForces;
+            % Only set up forces if present
+            Baff = [];
+            if ~isempty(this.bc_neum_forces_nodeidx)
+                mc = this.Model.Config;
+                tq = mc.PosFE;
+                geo_uv = tq.Geometry;
+                this.bc_neum_forces_val = B(this.bc_neum_forces_nodeidx + geo_uv.NumNodes * 3);
+                % Remove dirichlet DoFs
+                B(this.idx_uv_bc_glob) = [];
+                Baff = dscomponents.AffLinInputConv;
+                Baff.addMatrix('mu(3)',B);
+            end
         end
         
         function MM = assembleMassMatrix(this)

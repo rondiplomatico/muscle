@@ -13,14 +13,13 @@ classdef LongForceBC < muscle.AModelConfig
         function configureModel(this, m)
             m.T = 40;
             m.dt = .2;
-            m.DefaultMu = [.1; 0];
+            m.DefaultMu = [.1; 0; 1; 0];
             m.DefaultInput = 1;
             f = m.System.f;
             f.alpha = this.getAlphaRamp(5,.4);
             os = m.ODESolver;
             os.RelTol = .001;
             os.AbsTol = .05;
-            m.System.Inputs{1} = this.getAlphaRamp(1,1);
         end
         
         function P = getBoundaryPressure(~, elemidx, faceidx)

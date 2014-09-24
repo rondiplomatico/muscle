@@ -87,17 +87,23 @@ classdef AModelConfig < handle
             P = [];
         end
         
-        function u = getInputs(~)
-            % Returns the inputs `u(t)` of the model, if neumann boundary
-            % conditions are used
+        function u = getInputs(this)
+            % Returns the inputs `u(t)` of the model.
+            %
+            % if neumann boundary conditions are used, this input is
+            % multiplied with the mu(3) parameter, which determines the
+            % maximum force that is applied. u(t) determines its temporal
+            % strength.
             %
             % this.Model can be used to get access to the model this
             % configuration is applied to.
             %
             % Return values:
             % u: The cell array of input functions to use within this
-            % model. @type cell @default {@(t)1}
-            u = {@(t)1};
+            % model.
+            %
+            % @type cell @default {this.getAlphaRamp(30,1)}
+            u = {this.getAlphaRamp(30,1)};
         end
         
         function x0 = getX0(this, x0)
@@ -129,8 +135,14 @@ classdef AModelConfig < handle
             % conditions.
         end        
         
-        function ftw = getFibreTypeWeights(this)%#ok
-            % do nothing!
+        function ftw = getFibreTypeWeights(this)
+            % This is a lazy pre-implementation as fullmuscle.Models
+            % always have fibre types and thus weights.
+            %
+            % This method simply returns an all-zero weighting.
+            fe = this.PosFE;
+            geo = fe.Geometry;
+            ftw = zeros(fe.GaussPointsPerElem,length(this.FibreTypes),geo.NumElements);
         end
     end
     

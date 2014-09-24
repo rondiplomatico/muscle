@@ -8,6 +8,7 @@ classdef CPull < fullmuscle.AModelConfig
             [pts, cubes] = geometry.Cube8Node.DemoGrid([0 1],[0 1],[0 1]);
             geo = geometry.Cube8Node(pts, cubes);
             this = this@fullmuscle.AModelConfig(geo.toCube27Node);
+            this.NeumannCoordinateSystem = 'global';
         end
         
         function configureModel(this, m)
@@ -19,6 +20,8 @@ classdef CPull < fullmuscle.AModelConfig
             m.ODESolver.AbsTol = .01;
             
             m.DefaultMu = [1; 0; 1; 0];
+            
+            m.System.f.Pmax = 250;
         end
         
         function P = getBoundaryPressure(this, elemidx, faceidx)
@@ -30,7 +33,7 @@ classdef CPull < fullmuscle.AModelConfig
             % conditions.
             P = [];
             if elemidx == 1 && faceidx == 2
-                P = -1;
+                P = 1;
             end
         end
         
@@ -40,22 +43,23 @@ classdef CPull < fullmuscle.AModelConfig
         
         function ft = getFibreTypes(~)
 %             ft = [0 .2 .4 .6 .8 1];
-%             ft = [0 .4 1];
-            ft = 0;
+            ft = [0 1];
+%             ft = 0;
         end
         
         function sp = getSpindlePos(~)
             % Spindle position: first row element, second row gauss point
             % within element
-            sp = [1; 1];
+            sp = [1 1; 1 2];
+%             sp = [1; 1];
         end
         
         function ftw = getFibreTypeWeights(this)
             % Get pre-initialized all zero weights
             ftw = getFibreTypeWeights@fullmuscle.AModelConfig(this);
 
-            ftw(:,1,:) = 1;
-%             ftw(:,1,:) = .3;
+            ftw(:,1,:) = .5;
+            ftw(:,2,:) = .5;
 %             ftw(:,2,:) = .4;
 %             ftw(:,3,:) = .3;
 %                 ftw(:,4,:) = .1;

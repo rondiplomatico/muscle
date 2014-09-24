@@ -16,6 +16,7 @@ classdef Spindle < KerMorObject
     properties(SetAccess=private)
         spindleConst;
         JSparsityPattern;
+        JLdotSparsityPattern
         y0;
         UseSecondAsTimeUnit;
     end
@@ -29,10 +30,14 @@ classdef Spindle < KerMorObject
             this.UseSecondAsTimeUnit = timeunitsecond;
             this.initSpindleConst;
            
-            % Sparsity pattern
+            % Sparsity patterns
             i = [1 3 4 5 2 4 3 6 4 7 5 8 3 4 5 3 4 5];
             j = [1 1 1 1 2 2 3 3 4 4 5 5 6 7 8 9 9 9 ];
             this.JSparsityPattern = sparse(i,j,true,9,9);
+            
+            J = logical(sparse(9,1));
+            J([3:5 9]) = true;
+            this.JLdotSparsityPattern = J;
         end
         
         function dy = dydt(this, y, t, moto_sig, Ldot, Lddot)
@@ -140,6 +145,19 @@ classdef Spindle < KerMorObject
             af(2,:) = Aff_pot_sec_bag2 + Aff_pot_sec_chain;
         end
         
+        function J = getAfferentsJacobian(this, y)
+            % See createSpindleJac script below for derivation
+            c = this.spindleConst;
+            J = sparse(2,9);
+            bag1bigger = c(14)*(y(6)/c(1) - (c(12)-c(17))) > c(74)*(y(8)/c(61) - (c(72)-c(77)));
+            J(1,6) = (bag1bigger*c(14))/c(1) - (39*c(14)*(bag1bigger - 1))/(250*c(1));
+            J(1,7) = (39*bag1bigger*c(44))/(250*c(31)) - (c(44)*(bag1bigger - 1))/c(31);
+            J(2,7) = c(53)*((c(49)*(c(41) - 1))/(c(31)*c(48)) + (c(41)*c(49))/(c(31)*c(47)));
+            J(1,8) = (39*bag1bigger*c(74))/(250*c(61)) - (c(74)*(bag1bigger - 1))/c(61);
+            J(2,8) = c(83)*((c(79)*(c(71) - 1))/(c(61)*c(78)) + (c(71)*c(79))/(c(61)*c(77)));
+            J(2,9) = - (c(49)*c(53)*(c(41) - 1))/c(48) - (c(79)*c(83)*(c(71) - 1))/c(78);
+        end
+        
         function plot(this, t, y)
             y = y';
             %pm = PlotManager(false,3,3);
@@ -168,7 +186,7 @@ classdef Spindle < KerMorObject
             pm.done;
         end
         
-        function [J, Jmoto] = Jdydt(this, y, t, moto_sig, Ldot, Lddot)
+        function [J, JLdot] = Jdydt(this, y, t, moto_sig, Ldot, Lddot)
             % computes the Jacobian for dydt
             %
             moto_freq_dyn = moto_sig;
@@ -216,10 +234,11 @@ classdef Spindle < KerMorObject
             J(7,4) = 1;
             J(8,5) = 1;
             
-            Jmoto = sparse(9,1);
-            Jmoto(1) = ((c(22)*moto_freq_dyn^(c(22) - 1))/(c(21)^c(22) + moto_freq_dyn^c(22)) - (c(22)*moto_freq_dyn^c(22)*moto_freq_dyn^(c(22) - 1))/(c(21)^c(22) + moto_freq_dyn^c(22))^2)/c(20);
-            Jmoto(2) = ((c(52)*moto_freq_static^(c(52) - 1))/(c(51)^c(52) + moto_freq_static^c(52)) - (c(52)*moto_freq_static^c(52)*moto_freq_static^(c(52) - 1))/(c(51)^c(52) + moto_freq_static^c(52))^2)/c(50);
-            Jmoto(5) = (c(61)*((c(68)*c(82)*moto_freq_static^(c(82) - 1))/(c(81)^c(82) + moto_freq_static^c(82)) + C*co*((c(66)*c(82)*moto_freq_static^(c(82) - 1))/(c(81)^c(82) + moto_freq_static^c(82)) - (c(66)*c(82)*moto_freq_static^c(82)*moto_freq_static^(c(82) - 1))/(c(81)^c(82) + moto_freq_static^c(82))^2)*(tmpcneg*(-(Ldot - y(5)/c(61))/scalefac)^c(75) - tmpcpos*((Ldot - y(5)/c(61))/scalefac)^c(75))*(c(76) + c(77) - y(9) + y(8)/c(61)) - (c(68)*c(82)*moto_freq_static^c(82)*moto_freq_static^(c(82) - 1))/(c(81)^c(82) + moto_freq_static^c(82))^2))/c(63);
+            JLdot = sparse(1,9);
+            JLdot(1,3) = -(C*c(1)*co*((c(15)*tmp1neg*(-(Ldot - y(3)/c(1))/scalefac)^(c(15) - 1))/scalefac + (c(15)*tmp1pos*((Ldot - y(3)/c(1))/scalefac)^(c(15) - 1))/scalefac)*(c(4) + c(5)*y(1))*(c(16) + c(17) - y(9) + y(6)/c(1)))/c(3);
+            JLdot(1,4) = -(C*c(31)*co*((c(45)*tmp2neg*(-(Ldot - y(4)/c(31))/scalefac)^(c(45) - 1))/scalefac + (c(45)*tmp2pos*((Ldot - y(4)/c(31))/scalefac)^(c(45) - 1))/scalefac)*(c(34) + c(35)*y(1) + c(36)*y(2))*(c(46) + c(47) - y(9) + y(7)/c(31)))/c(33);
+            JLdot(1,5) = -(C*c(61)*co*((c(75)*tmpcneg*(-(Ldot - y(5)/c(61))/scalefac)^(c(75) - 1))/scalefac + (c(75)*tmpcpos*((Ldot - y(5)/c(61))/scalefac)^(c(75) - 1))/scalefac)*(c(64) + c(65)*y(1) + (c(66)*moto_freq_static^c(82))/(c(81)^c(82) + moto_freq_static^c(82)))*(c(76) + c(77) - y(9) + y(8)/c(61)))/c(63);
+            JLdot(1,9) = 1;
         end
     end
     
@@ -462,9 +481,9 @@ classdef Spindle < KerMorObject
             dy(9,:) = Ldot;
 
             %% Create partial derivatives
+            fprintf('dy / y:\n');
             JP = sparse(false(9,9));
-            f = 1;
-            fprintf(f,'J = sparse(9,9);\n');
+            fprintf('J = sparse(9,9);\n');
             for i = 1:9
                 for j = 1:9
                     pd = diff(dy(i),y(j));
@@ -472,29 +491,86 @@ classdef Spindle < KerMorObject
                         JP(i,j) = true;
                         % Convert y14 to y(14) etc, also for c
                         body = regexprep(char(pd), '(c|y)(\d+)', '$1($2)');
-                        fprintf(f,'J(%d,%d) = %s;\n',i,j,body);
+                        fprintf('J(%d,%d) = %s;\n',i,j,body);
                     end
+                end
+            end
+            [i,j] = find(JP);
+            sprintf('%d',i)
+            sprintf('%d ',j)
+            
+            %% Derivatives w.r.t. Ldot
+            fprintf('\ndy / Ldot:\n');
+            JP = false(9,1);
+            for i = 1:9
+                pd = diff(dy(i),Ldot);
+                if pd ~= 0
+                    JP(i) = true;
+                    % Convert y14 to y(14) etc, also for c
+                    body = regexprep(char(pd), '(c|y)(\d+)', '$1($2)');
+                    fprintf('J(1,%d) = %s;\n',i,body);
+                end
+            end
+            sprintf('%d ',i)
+            
+            %% Afferent derivatives
+            fprintf('\naff / y:\n');
+            bag1bigger = sym('bag1bigger','positive');
+
+            % algebraic frequency from bag1,bag2 and chain
+            Aff_pot_prim_bag1  = c(14)*(y(6,:)/c(1) - (c(12)-c(17)));
+            Aff_pot_prim_bag2  = c(44)*(y(7,:)/c(31) - (c(42)-c(47)));
+            Aff_pot_prim_chain = c(74)*(y(8,:)/c(61) - (c(72)-c(77)));
+            bag2_and_chain = Aff_pot_prim_bag2 + Aff_pot_prim_chain;
+            
+            % Primary_afferent
+%             af(1,:) = max(Aff_pot_prim_bag1,bag2_and_chain) ...
+%                 + 0.156*min(Aff_pot_prim_bag1,bag2_and_chain);
+%             bag1bigger = Aff_pot_prim_bag1 > bag2_and_chain;
+            af(1,:) = bag1bigger.*Aff_pot_prim_bag1 + (1-bag1bigger).*bag2_and_chain...
+                + .156*((1-bag1bigger).*Aff_pot_prim_bag1 + bag1bigger.*bag2_and_chain);
+            
+            Aff_pot_sec_bag2  = c(53)*(c(41)*c(49)/c(47)*(y(7,:)/c(31)-(c(42)-c(47)))...
+                + (1-c(41))*c(49)/c(48)*(y(9,:)-y(7,:)/c(31)-c(47)-c(43)));
+            Aff_pot_sec_chain = c(83)*(c(71)*c(79)/c(77)*(y(8,:)/c(61)-(c(72)-c(77)))...
+                + (1-c(71))*c(79)/c(78)*(y(9,:)-y(8,:)/c(61)-c(77)-c(73)));
+            
+            % Secondary_afferent
+            af(2,:) = Aff_pot_sec_bag2 + Aff_pot_sec_chain;
+            JP = logical(sparse(2,9));
+            for i = 1:9
+                daff1 = diff(af(1),y(i));
+                if daff1 ~= 0
+                    body = regexprep(char(daff1), '(c|y)(\d+)', '$1($2)');
+                    fprintf('J(1,%d) = %s;\n',i,body);
+                    JP(1,i) = true;
+                end
+                daff2 = diff(af(2),y(i));
+                if daff2 ~= 0
+                    body = regexprep(char(daff2), '(c|y)(\d+)', '$1($2)');
+                    fprintf('J(2,%d) = %s;\n',i,body);
+                    JP(2,i) = true;
                 end
             end
             [i,j] = find(JP);
             sprintf('%d ',i)
             sprintf('%d ',j)
             
-            % Also generate derivatives w.r.t moto frequency changes
-            % as moto_dyn and moto_static are the same source (yet), the
-            % output is in the same vector and not two columns.
-            for i = 1:9
-                pd_moto_dyn = diff(dy(i),moto_freq_dyn);
-                if pd_moto_dyn ~= 0
-                    body = regexprep(char(pd_moto_dyn), '(c|y)(\d+)', '$1($2)');
-                    fprintf(f,'Jmoto(%d) = %s;\n',i,body);
-                end
-                pd_moto_static = diff(dy(i),moto_freq_static);
-                if pd_moto_static ~= 0
-                    body = regexprep(char(pd_moto_static), '(c|y)(\d+)', '$1($2)');
-                    fprintf(f,'Jmoto(%d) = %s;\n',i,body);
-                end
-            end
+%             % Also generate derivatives w.r.t moto frequency changes
+%             % as moto_dyn and moto_static are the same source (yet), the
+%             % output is in the same vector and not two columns.
+%             for i = 1:9
+%                 pd_moto_dyn = diff(dy(i),moto_freq_dyn);
+%                 if pd_moto_dyn ~= 0
+%                     body = regexprep(char(pd_moto_dyn), '(c|y)(\d+)', '$1($2)');
+%                     fprintf(f,'Jmoto(%d) = %s;\n',i,body);
+%                 end
+%                 pd_moto_static = diff(dy(i),moto_freq_static);
+%                 if pd_moto_static ~= 0
+%                     body = regexprep(char(pd_moto_static), '(c|y)(\d+)', '$1($2)');
+%                     fprintf(f,'Jmoto(%d) = %s;\n',i,body);
+%                 end
+%             end
         end
     end
     

@@ -25,7 +25,7 @@ function duvw  = evaluate(this, uvwdof, t)
         b1cf = this.b1cf;
         d1cf = this.d1cf;
     end
-%     ldotpos = this.lambda_dot_pos;
+    ldotpos = this.lambda_dot_pos;
     
     if havefibretypes
         alphaconst = [];
@@ -34,9 +34,8 @@ function duvw  = evaluate(this, uvwdof, t)
             FibreForces = mc.Pool.getActivation(t);
         elseif sys.HasForceArgument
             FibreForces = uvwdof(sys.num_uvp_dof+1:end);
-            %FibreForces = uvwdof(sys.num_uvp_dof+1:end) * min(1,t);
         else
-            error('No implemented');
+            FibreForces = ones(size(fibretypeweights,2),1)*this.alpha(t);
         end
 %         FibreForces = this.APExp.evaluate(forceargs)';
     else
@@ -148,11 +147,13 @@ function duvw  = evaluate(this, uvwdof, t)
                     end
                 end
                 
-                %% Check if change rate of lambda at a certain point should be tracked
-%                 if any(ldotpos(m,gp,:))
-%                     Fdot = uvwcomplete(elemidx_v) * dtn;
-%                     this.lambda_dot(ldotpos(m,gp,:)) = (F*fibres(:,1))'*(Fdot*fibres(:,1))/lambdaf;
-%                 end
+                %% Check if change rate of lambda at a certain gauss point should be tracked
+                % (corresponds to a spindle location in fullmuscle.Model)
+                k = find(ldotpos(1,:) == m & ldotpos(2,:) == gp);
+                if ~isempty(k)
+                    Fdot = uvwcomplete(elemidx_v) * dtn;
+                    this.lambda_dot(k) = (F*fibres(:,1))'*(Fdot*fibres(:,1))/lambdaf;
+                end
             end
             
 %             Viscosity

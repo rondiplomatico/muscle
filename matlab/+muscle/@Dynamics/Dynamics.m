@@ -53,7 +53,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
        % ForceLengthFunDeriv = @(ratio)(ratio<=1).*((1/.57)*(((1-ratio)/.57).^3).*exp(-((1-ratio)/.57).^4)) ...
        % - (ratio > 1) .* ((1/.14) .* (((ratio-1)/.14).^2) .* exp(-((ratio-1)/.14).^3));
        
-       % Unassembled stuff
+       %% Unassembled stuff
        ComputeUnassembled = false;
        % Sigma assembly matrix
        Sigma;
@@ -74,6 +74,9 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         % Helper variable for fullmuscle.model
         lambda_dot_pos;
         lambda_dot;
+        Jlambda_dot;
+        
+        nfibres;
     end
     
     properties(Transient, SetAccess=private)
@@ -113,6 +116,9 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         
         function configUpdated(this)
             mc = this.System.Model.Config;
+            if ~isempty(mc.FibreTypeWeights)
+                this.nfibres = size(mc.FibreTypeWeights,2);
+            end
             if ~isempty(mc)
                 this.xDim = this.System.num_uvp_dof;
                 this.fDim = this.System.num_uvp_dof;

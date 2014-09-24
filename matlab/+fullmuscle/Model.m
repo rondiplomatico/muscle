@@ -8,6 +8,9 @@ classdef Model < muscle.Model
 % muskelverhalten
 % - block mit links fest, rechts per neumann dran ziehen, dann
 % spindel-feedback bei zu starker dehnung sorgt für konktraktion
+% - dynamische aktivierung von aussen
+% - dynamische aktivierung von aussen mit dynamischem zug
+% - zyklischer zug
 %
 % Fragen:
 % Sollte der afferent-faktor zur signalübertragung für alle fasertypen gleich sein?

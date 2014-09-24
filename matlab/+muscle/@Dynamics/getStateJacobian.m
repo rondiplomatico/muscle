@@ -30,6 +30,14 @@ function J = getStateJacobian(this, uvwdof, t)
         b1cf = this.b1cf;
         d1cf = this.d1cf;
     end
+    ldotpos = this.lambda_dot_pos;
+    haveldotpos = ~isempty(ldotpos);
+    if haveldotpos
+       ildot = [];
+       jldot = [];
+       sldot = [];
+    end
+    
     
     %% Precompute the size of i,j,s for speed
     numXYZDofs_pos = 3*dofsperelem_pos;
@@ -83,16 +91,16 @@ function J = getStateJacobian(this, uvwdof, t)
     uvwcomplete(sys.idx_uv_bc_glob) = sys.val_uv_bc_glob;
     
     for m = 1:num_elements
-        elemidx_pos_XYZ = globidx_pos(:,:,m);
-        elemidx_velo_XYZ = elemidx_pos_XYZ + dofs_pos;
-        elemidx_velo_linear = elemidx_velo_XYZ(:);
+        elemidx_u = globidx_pos(:,:,m);
+        elemidx_v = elemidx_u + dofs_pos;
+        elemidx_velo_linear = elemidx_v(:);
         elemidx_velo_linear3 = [elemidx_velo_linear
                                 elemidx_velo_linear
                                 elemidx_velo_linear];
-        elemidx_pressure = globidx_press(:,m);
-        elemidx_pressure3 = [elemidx_pressure
-                             elemidx_pressure
-                             elemidx_pressure];
+        elemidx_p = globidx_press(:,m);
+        elemidx_pressure3 = [elemidx_p
+                             elemidx_p
+                             elemidx_p];
         
         if havefibretypes 
             ftwelem = fibretypeweights(:,:,m)*FibreForces;
@@ -101,7 +109,7 @@ function J = getStateJacobian(this, uvwdof, t)
         for gp = 1:num_gausspoints
             pos = 3*(gp-1)+1:3*gp;
             dtn = fe_pos.transgrad(:,pos,m);
-            u = uvwcomplete(elemidx_pos_XYZ);
+            u = uvwcomplete(elemidx_u);
             
             % Deformation gradient
             F = u * dtn;
@@ -110,7 +118,7 @@ function J = getStateJacobian(this, uvwdof, t)
             C = F'*F;
 
             % Evaluate the pressure at gauss points
-            w = uvwcomplete(elemidx_pressure);
+            w = uvwcomplete(elemidx_p);
             p = w' * fe_press.Ngp(:,gp,m);
 
             % Invariant I1
@@ -121,26 +129,26 @@ function J = getStateJacobian(this, uvwdof, t)
                 fibrenr = (m-1)*num_gausspoints + gp;
                 fibres = sys.a0Base(:,:,fibrenr);
                 Fa0 = F*fibres(:,1);
-                lambda_a0 = norm(Fa0);
+                lambdaf = norm(Fa0);
 
-                ratio = lambda_a0/lfopt;
+                ratio = lambdaf/lfopt;
                 fl = this.ForceLengthFun(ratio);
                 dfl = this.ForceLengthFunDeriv(ratio);
                 alpha = alphaconst;
                 if havefibretypes
                     alpha = ftwelem(gp);
                 end
-                alpha_prefactor = (Pmax/lambda_a0)*fl;
+                alpha_prefactor = (Pmax/lambdaf)*fl;
                 g_value = alpha_prefactor*alpha;
-                dg_dlam = (Pmax/lambda_a0^2)*alpha*(dfl - fl);
+                dg_dlam = (Pmax/lambdaf^2)*alpha*(dfl - fl);
                 % Using > 1 is deadly. All lambdas are equal to one at t=0
                 % (reference config, analytical), but numerically this is
                 % dependent on how precise F and hence lambda is computed.
                 % It is very very close to one, but sometimes 1e-7 smaller
                 % or bigger.. and that makes all the difference!
-                if lambda_a0 > .999
-                    g_value = g_value + (b1/lambda_a0^2)*(lambda_a0^d1-1);
-                    dg_dlam = dg_dlam + (b1/lambda_a0^3)*((d1-2)*lambda_a0^d1 + 2);
+                if lambdaf > .999
+                    g_value = g_value + (b1/lambdaf^2)*(lambdaf^d1-1);
+                    dg_dlam = dg_dlam + (b1/lambdaf^3)*((d1-2)*lambdaf^d1 + 2);
                 end
                 a0 = sys.a0oa0(:,:,fibrenr);
                 
@@ -160,6 +168,50 @@ function J = getStateJacobian(this, uvwdof, t)
                     end
                     a0oa0_2 = sys.a0oa0n1(:,:,fibrenr);
                     a0oa0_3 = sys.a0oa0n2(:,:,fibrenr);
+                end
+                
+                %% Check if change rate of lambda at a certain point should be tracked
+                if haveldotpos
+                    k = find(ldotpos(1,:) == m & ldotpos(2,:) == gp);
+                    if ~isempty(k)
+                        Fdot = uvwcomplete(elemidx_v) * dtn;
+                        Fdota0 = Fdot*fibres(:,1);
+                        this.lambda_dot(k) = Fa0'*Fdota0/lambdaf;
+
+                        %% Assemble dLdot / du[i] and dLdot / dv[i]
+                        JLdot = zeros(2*numXYZDofs_pos,1);
+                        for eldof = 1:dofsperelem_pos
+                            % U_i^k = e_i dyad dPhik from script
+                            U1k = [dtn(eldof,:); 0 0 0; 0 0 0];
+                            U2k = [0 0 0; dtn(eldof,:); 0 0 0];
+                            U3k = [0 0 0; 0 0 0; dtn(eldof,:)];
+                            idx = (eldof-1)*3 + (1:3);
+                            idxv = idx + 3*dofsperelem_pos;
+                            %% x
+                            Ua0 = U1k*fibres(:,1);
+                            % dLdot / du[i]_x
+                            JLdot(idx(1)) = JLdot(idx(1)) + Ua0'*Fdota0;
+                            % dLdot / dv[i]_x
+                            JLdot(idxv(1)) = JLdot(idxv(1)) + Fa0'*Ua0;
+
+                            %% y
+                            Ua0 = U2k*fibres(:,1);
+                            % dLdot / du[i]_x
+                            JLdot(idx(2)) = JLdot(idx(2)) + Ua0'*Fdota0;
+                            % dLdot / dv[i]_x
+                            JLdot(idxv(2)) = JLdot(idxv(2)) + Fa0'*Ua0;
+
+                            %% z
+                            Ua0 = U3k*fibres(:,1);
+                            % dLdot / du[i]_x
+                            JLdot(idx(3)) = JLdot(idx(3)) + Ua0'*Fdota0;
+                            % dLdot / dv[i]_x
+                            JLdot(idxv(3)) = JLdot(idxv(3)) + Fa0'*Ua0;
+                        end
+                        ildot = [ildot; k*ones(2*numXYZDofs_pos,1)]; %#ok
+                        jldot = [jldot; elemidx_u(:); elemidx_v(:)];%#ok
+                        sldot = [sldot; JLdot];%#ok
+                    end
                 end
             end
 
@@ -191,7 +243,7 @@ function J = getStateJacobian(this, uvwdof, t)
                     + fac1(1)*F + fac2*U1k...
                     -2*this.c01 * (U1k * C + F*dFtF1);%#ok<*MINV>
                 if havefibres
-                    dlambda_dux = Fa0'*U1k*fibres(:,1)/lambda_a0;
+                    dlambda_dux = Fa0'*U1k*fibres(:,1)/lambdaf;
                     dPx = dPx + (dg_dlam*dlambda_dux*F + g_value*U1k)*a0;
                     if usecrossfibres 
                         if lambdaa0_n1 > .999
@@ -204,7 +256,7 @@ function J = getStateJacobian(this, uvwdof, t)
                         end
                     end
                 end
-                j(cur_off + relidx_pos) = elemidx_pos_XYZ(1,k);
+                j(cur_off + relidx_pos) = elemidx_u(1,k);
                 snew = -weight * dPx * dtn';
                 s(cur_off + relidx_pos) = snew(:);
                 cur_off = cur_off + numXYZDofs_pos;
@@ -215,7 +267,7 @@ function J = getStateJacobian(this, uvwdof, t)
                     +fac1(2)*F + fac2*U2k...
                     -2*this.c01 * (U2k * C + F*dFtF2);
                 if havefibres
-                    dlambda_duy = Fa0'*U2k*fibres(:,1)/lambda_a0;
+                    dlambda_duy = Fa0'*U2k*fibres(:,1)/lambdaf;
                     dPy = dPy + (dg_dlam*dlambda_duy*F + g_value*U2k)*a0;
                     if usecrossfibres 
                         if lambdaa0_n1 > .999
@@ -228,7 +280,7 @@ function J = getStateJacobian(this, uvwdof, t)
                         end
                     end
                 end
-                j(cur_off + relidx_pos) = elemidx_pos_XYZ(2,k);
+                j(cur_off + relidx_pos) = elemidx_u(2,k);
                 snew = -weight * dPy * dtn';
                 s(cur_off + relidx_pos) = snew(:);
                 cur_off = cur_off + numXYZDofs_pos;
@@ -239,7 +291,7 @@ function J = getStateJacobian(this, uvwdof, t)
                     +fac1(3)*F + fac2*U3k ...
                     - 2*this.c01 * (U3k * C + F*dFtF3);
                 if havefibres
-                    dlambda_duz = Fa0'*U3k*fibres(:,1)/lambda_a0;
+                    dlambda_duz = Fa0'*U3k*fibres(:,1)/lambdaf;
                     dPz = dPz + (dg_dlam*dlambda_duz*F + g_value*U3k)*a0;
                     if usecrossfibres 
                         if lambdaa0_n1 > .999
@@ -252,7 +304,7 @@ function J = getStateJacobian(this, uvwdof, t)
                         end
                     end
                 end
-                j(cur_off + relidx_pos) = elemidx_pos_XYZ(3,k);
+                j(cur_off + relidx_pos) = elemidx_u(3,k);
                 snew = -weight * dPz * dtn';
                 s(cur_off + relidx_pos) = snew(:);
                 cur_off = cur_off + numXYZDofs_pos;
@@ -286,15 +338,15 @@ function J = getStateJacobian(this, uvwdof, t)
                 % Assign i index as whole for x,y,z (speed)
                 i(cur_off + (1:3*dofsperelem_press)) = elemidx_pressure3;
                 % dx
-                j(cur_off + relidx_press) = elemidx_pos_XYZ(1,k);
+                j(cur_off + relidx_press) = elemidx_u(1,k);
                 s(cur_off + relidx_press) = sum(diag(Finv*U1k)) * precomp;
                 cur_off = cur_off + dofsperelem_press;
                 % dy
-                j(cur_off + relidx_press) = elemidx_pos_XYZ(2,k);
+                j(cur_off + relidx_press) = elemidx_u(2,k);
                 s(cur_off + relidx_press) = sum(diag(Finv*U2k)) * precomp;
                 cur_off = cur_off + dofsperelem_press;
                 %dz
-                j(cur_off + relidx_press) = elemidx_pos_XYZ(3,k);
+                j(cur_off + relidx_press) = elemidx_u(3,k);
                 s(cur_off + relidx_press) = sum(diag(Finv*U3k)) * precomp;
                 cur_off = cur_off + dofsperelem_press;
             end
@@ -302,7 +354,7 @@ function J = getStateJacobian(this, uvwdof, t)
             %% Grad_w K(u,w)
             for k = 1:dofsperelem_press
                 i(cur_off + relidx_pos) = elemidx_velo_linear;
-                j(cur_off + relidx_pos) = elemidx_pressure(k);
+                j(cur_off + relidx_pos) = elemidx_p(k);
                 snew = -weight * fe_press.Ngp(k,gp,m) * Finv' * dtn';
                 s(cur_off + relidx_pos) = snew(:);
                 cur_off = cur_off + numXYZDofs_pos;
@@ -325,6 +377,12 @@ function J = getStateJacobian(this, uvwdof, t)
     % Remove values at dirichlet nodes
     J(:,sys.idx_uv_bc_glob) = [];
     J(sys.idx_uv_bc_glob,:) = [];
+    
+    if haveldotpos
+        JLdot = sparse(ildot,double(jldot),sldot,this.nfibres,6*N);
+        JLdot(:,sys.idx_uv_bc_glob) = [];
+        this.Jlambda_dot = JLdot;
+    end
 
     if this.usemassinv
         % Multiply with inverse of Mass matrix!
