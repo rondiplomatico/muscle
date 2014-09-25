@@ -12,8 +12,11 @@ classdef CPull < fullmuscle.AModelConfig
             if nargin < 1
                 version = 1;
             end
-            
-            [pts, cubes] = geometry.Cube8Node.DemoGrid([0 1],[0 1],[0 1]);
+            xpts = [0 10];
+            if version == 3
+                xpts = [0 10 20];
+            end
+            [pts, cubes] = geometry.Cube8Node.DemoGrid(xpts,[0 10],[0 10]);
             geo = geometry.Cube8Node(pts, cubes);
             this = this@fullmuscle.AModelConfig(geo.toCube27Node);
             this.NeumannCoordinateSystem = 'global';
@@ -31,7 +34,7 @@ classdef CPull < fullmuscle.AModelConfig
             m.EnableTrajectoryCaching = true;
         end
         
-        function P = getBoundaryPressure(~, elemidx, faceidx)
+        function P = getBoundaryPressure(this, elemidx, faceidx)
             % Determines the neumann forces on the boundary.
             %
             % The unit for the applied quantities is kiloPascal [kPa]
@@ -39,7 +42,11 @@ classdef CPull < fullmuscle.AModelConfig
             % In the default implementation there are no force boundary
             % conditions.
             P = [];
-            if elemidx == 1 && faceidx == 2
+            elem = 1;
+            if this.Version == 3
+                elem = 2;
+            end
+            if elemidx == elem && faceidx == 2
                 P = 1;
             end
         end
@@ -60,11 +67,12 @@ classdef CPull < fullmuscle.AModelConfig
         function ft = getFibreTypes(this)
             switch this.Version
                 case 1
-                    ft = 0;
+                   ft = 0;
                 case 2
-                   ft = [0 .1];
+                   ft = [0 1];
+                case 3
+                   ft = [0 .2 .4 .6 .8 1];
             end
-%             ft = [0 .2 .4 .6 .8 1];            
         end
         
         function sp = getSpindlePos(this)
@@ -75,6 +83,8 @@ classdef CPull < fullmuscle.AModelConfig
                    sp = [1; 1];
                 case 2
                    sp = [1 1; 1 2];
+                case 3
+                   sp = [1 1 1 2 2 2; 1 10 20 4 10 25]; 
             end
         end
         
@@ -88,6 +98,13 @@ classdef CPull < fullmuscle.AModelConfig
                 case 2
                    ftw(:,1,:) = .5;
                    ftw(:,2,:) = .5;
+                case 3
+                   ftw(:,1,:) = 2/12;
+                   ftw(:,2,:) = 2/12;
+                   ftw(:,3,:) = 1/12;
+                   ftw(:,4,:) = 1/12;
+                   ftw(:,5,:) = 3/12;
+                   ftw(:,6,:) = 3/12;
             end
         end
         

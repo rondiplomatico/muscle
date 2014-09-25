@@ -68,7 +68,9 @@ classdef MusclePlotter < muscle.MusclePlotter
                 hold(h2,'on');
 
                 h3 = pm.nextPlot('force','Activation','t [ms]','A_s');
-                axis(h3,[0 t(end) min(pd.sarco_force(:)) max(pd.sarco_force(:))]);
+%                 val = pd.sarco_force;
+                val = mc.FibreTypeWeights(1,:,1)*pd.sarco_force;
+                axis(h3,[0 t(end) min(val(:)) max(val(:))]);
                 hold(h3,'on');
             end
 
@@ -155,7 +157,8 @@ classdef MusclePlotter < muscle.MusclePlotter
                     cla(h3);
                     force = pd.sarco_force(:,1:ts);
                     walpha = mc.FibreTypeWeights(1,:,1) * force;
-                    plot(h3,time_part,force,'r',time_part,walpha,'b');
+%                     plot(h3,time_part,force,'r',time_part,walpha,'b');
+                    plot(h3,time_part,walpha,'b');
                 end
 
                 if opts.Spin
@@ -226,6 +229,7 @@ classdef MusclePlotter < muscle.MusclePlotter
             end
             
             [pd, t, y] = updatePlotData@muscle.MusclePlotter(this, pd, opts, t, y);
+            nt = length(t);
             
             if opts.Moto
                 pos = sys.off_moto + (2:6:6*nf);
@@ -247,19 +251,32 @@ classdef MusclePlotter < muscle.MusclePlotter
             end
             
             % Freq also uses afferents if kernel expansions are used
-            if opts.Aff || (opts.Freq && ~sys.f.UseFrequencyDetector) 
-                spindle_pos = sys.off_spindle + (1:sys.num_spindle_dof);
-                yspindle = reshape(y(spindle_pos,:),9,[]);
-                pd.afferents = sys.Spindle.getAfferents(yspindle);
-                pd.spindle_mean_current = sys.f.SpindleAffarentWeights*pd.afferents;
+            if opts.Aff || (opts.Freq && ~sys.f.UseFrequencyDetector)
+                afferents = zeros(2*nf,nt);
+                spindle_mean_current = zeros(nf,nt);
+                eff_mean_current = zeros(nf,nt);
                 max_moto_signals = polyval(sys.upperlimit_poly,mc.FibreTypes);
-                pd.eff_mean_current = min(max_moto_signals,pd.spindle_mean_current+pd.ext_mean_current);
+                for k=1:nf
+                    spindle_pos = sys.off_spindle + (k-1)*9 + (1:9);
+                    af_pos = (k-1)*2 + (1:2);
+                    yspindle = y(spindle_pos,:);
+                    afferents(af_pos,:) = sys.Spindle.getAfferents(yspindle);
+                    spindle_mean_current(k,:) = sys.f.SpindleAffarentWeights*afferents(af_pos,:);
+                    eff_mean_current(k,:) = min(max_moto_signals(k),spindle_mean_current(k,:)+pd.ext_mean_current);
+                end
+                pd.afferents = afferents;
+                pd.spindle_mean_current = spindle_mean_current;
+                pd.eff_mean_current = eff_mean_current;
             end
             
             if opts.Freq && ~sys.f.UseFrequencyDetector
-                x = [repmat(mc.FibreTypes,1,size(pd.eff_mean_current,2)/nf); pd.eff_mean_current];
-                freq = sys.f.freq_kexp.evaluate(x);
-                freq = reshape(freq,nf,[]);
+                freq = zeros(nf,nt);
+                for k=1:nf
+                    x = [ones(size(pd.eff_mean_current(k,:)))*mc.FibreTypes(k);...
+                        pd.eff_mean_current(k,:)];
+                    freq(k,:) = sys.f.freq_kexp.evaluate(x);
+%                     freq = reshape(freq,nf,[]);
+                end
                 pd.freq = freq;
             end
             

@@ -111,7 +111,7 @@ classdef System < muscle.System;
                 
                 ustr = '@(t)[mu(3)*uneum(t); bno(round(t)+1); ';
                 for k=1:this.nfibres
-                    rowfun = sprintf('no(%d,round(t)+1)*min(%g,uext(t))',k,maxcurrents(k));
+                    rowfun = sprintf('no(%d,round(t)+1)*min(%g,uext(t)); ',k,maxcurrents(k));
                     ustr = [ustr rowfun];%#ok
                 end
                 ustr = [ustr ']'];
