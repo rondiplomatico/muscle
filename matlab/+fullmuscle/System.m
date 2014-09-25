@@ -129,7 +129,7 @@ classdef System < muscle.System;
             mc = this.Model.Config;
             
             if isempty(opts.PM)
-                pm = PlotManager(false,3,3);
+                pm = PlotManager(false,2,3);
                 pm.LeaveOpen = true;
             else
                 pm = opts.PM;
@@ -236,6 +236,7 @@ classdef System < muscle.System;
                 sp_sig = min(maxcurrents(1) - this.mu(4),sp_sig);
                 plot(h5,time_part,sp_sig);
                 
+                drawnow;
             end
             
             if opts.Vid

@@ -286,7 +286,7 @@ classdef Spindle < KerMorObject
             y(6) = c(1)*(c(12)-c(17)); 
             y(7) = c(31)*(c(42)-c(47));
             y(8) = c(61)*(c(72)-c(77));
-            y(9) = 0.95; % length
+            y(9) = 1; % length
             this.y0 = y;
         end
     end

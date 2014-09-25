@@ -1,7 +1,7 @@
 classdef CPull < fullmuscle.AModelConfig
     
     methods
-        function this = CPull(version)
+        function this = CPull
             % Creates a Debug simple muscle model configuration.
             %
             % Single cube with same config as reference element
@@ -15,10 +15,7 @@ classdef CPull < fullmuscle.AModelConfig
             configureModel@fullmuscle.AModelConfig(this, m);
             m.T = 100;
             m.dt = .1;
-            
-            m.ODESolver.RelTol = .001;
-            m.ODESolver.AbsTol = .01;
-            
+                        
             m.DefaultMu = [1; 0; 1; 0];
             
             m.System.f.Pmax = 250;
@@ -43,23 +40,23 @@ classdef CPull < fullmuscle.AModelConfig
         
         function ft = getFibreTypes(~)
 %             ft = [0 .2 .4 .6 .8 1];
-            ft = [0 1];
-%             ft = 0;
+%             ft = [0 .1];
+            ft = 0;
         end
         
         function sp = getSpindlePos(~)
             % Spindle position: first row element, second row gauss point
             % within element
-            sp = [1 1; 1 2];
-%             sp = [1; 1];
+%             sp = [1 1; 1 2];
+            sp = [1; 1];
         end
         
         function ftw = getFibreTypeWeights(this)
             % Get pre-initialized all zero weights
             ftw = getFibreTypeWeights@fullmuscle.AModelConfig(this);
 
-            ftw(:,1,:) = .5;
-            ftw(:,2,:) = .5;
+            ftw(:,1,:) = 1;
+%             ftw(:,2,:) = .5;
 %             ftw(:,2,:) = .4;
 %             ftw(:,3,:) = .3;
 %                 ftw(:,4,:) = .1;

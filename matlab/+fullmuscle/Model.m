@@ -37,6 +37,15 @@ classdef Model < muscle.Model
             this.DefaultMu = [1 0 0 3]';
             this.DefaultInput = 1;
             
+            % Der tut auch wunderbar :-)
+            slv = solvers.MLWrapper(@ode15s);
+%             slv.odeopts = odeset('RelTol',1e-9,'AbsTol',1e-9);
+            
+%             slv = solvers.MLode15i(this);
+%             slv.RelTol = .001;
+%             slv.AbsTol = .01;
+            this.ODESolver = slv;
+            
             % Call the config-specific model configuration
             conf.Model = this;
             conf.configureModel(this);
@@ -46,9 +55,6 @@ classdef Model < muscle.Model
             this.setConfig(conf);
             
             this.System.prepareSimulation(this.DefaultMu, this.DefaultInput);
-            
-            % Der tut auch wunderbar :-)
-            this.ODESolver = solvers.MLWrapper(@ode15s);
         end
     end
     
