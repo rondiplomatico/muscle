@@ -34,6 +34,12 @@ classdef CPull < fullmuscle.AModelConfig
             end
         end
         
+        function u = getInputs(this)
+            u{1} = this.getAlphaRamp(10,1);
+            u{2} = this.getAlphaRamp(100,1);
+            u{3} = this.getAlphaRamp(300,1);
+        end
+        
     end
     
     methods(Access=protected)

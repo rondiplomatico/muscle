@@ -70,7 +70,10 @@ classdef System < muscle.System;
             s = load(models.motoneuron.Model.FILE_UPPERLIMITPOLY);
             this.upperlimit_poly = s.upperlimit_poly;
             
-            this.Inputs{1} = @(t)1;
+            % First row is neumann input
+            this.Inputs{1,1} = model.Config.getAlphaRamp(30,1);
+            % Second row is external mean current input
+%             this.Inputs{2,1} = @(t)1;
             
             this.Spindle = fullmuscle.Spindle;
             this.Motoneuron = fullmuscle.Motoneuron;
@@ -85,32 +88,33 @@ classdef System < muscle.System;
             this.Motoneuron.setType(ft);
             
             configUpdated@muscle.System(this);
+            
+            % Compile information for plotting
+            this.Plotter = fullmuscle.MusclePlotter(this);
         end
         
         function setConfig(this, mu, inputidx)
-            setConfig@models.BaseDynSystem(this, mu, inputidx);
+            setConfig@muscle.System(this, mu, inputidx);
             
             if ~isempty(inputidx)
                 % Create an input substitute that uses the true external
                 % function and creates the effective noisy signal from it
                 maxcurrents = polyval(this.upperlimit_poly,this.Model.Config.FibreTypes);
                 
+                % Get noise from motoneuron class
                 no = this.Motoneuron.TypeNoise;
                 bno = this.Motoneuron.BaseNoise;
                 
-                % For nonconstant (=mu(4)) input use this
-                %uin = this.Inputs{inputidx};
-                ramptime = 30;
-                ustr = '@(t)[mu(3)*((t<ramptime).*t/ramptime+(t>=ramptime)); bno(round(t)+1); ';
+                % First row is neumann input
+                uneum = this.Inputs{1,inputidx};
+                
+                % Second row is external mean current input
+                %uext = this.Inputs{2,inputidx};
+                uext = @(t)mu(4);
+                
+                ustr = '@(t)[mu(3)*uneum(t); bno(round(t)+1); ';
                 for k=1:this.nfibres
-                    % Precompute the factor as the input mean current will
-                    % stay constant (at least from the external source)
-                    uin = min(maxcurrents(k),mu(4));
-                    rowfun = sprintf('no(%d,round(t)+1)*%g; ',k,uin);
-                    
-                    % For nonconstant (=mu(4)) input use this
-                    %rowfun = sprintf('no(%d,round(t)+1)*min(maxcurrents(%d),uin(t))',k,k);
-                    
+                    rowfun = sprintf('no(%d,round(t)+1)*min(%g,uext(t))',k,maxcurrents(k));
                     ustr = [ustr rowfun];%#ok
                 end
                 ustr = [ustr ']'];
@@ -122,132 +126,6 @@ classdef System < muscle.System;
             uvwall_mech = includeDirichletValues@muscle.System(this, t, uvw(1:this.num_uvp_dof,:));
             uvwall = [uvwall_mech; uvw(this.num_uvp_dof+1:end,:)];
         end
-        
-        function [pm, h_geo] = plot(this, t, y, varargin)
-            opts = this.parsePlotArgs(varargin);
-            
-            mc = this.Model.Config;
-            
-            if isempty(opts.PM)
-                pm = PlotManager(false,2,3);
-                pm.LeaveOpen = true;
-            else
-                pm = opts.PM;
-            end
-            
-            [t, y] = this.updatePlotData(opts, t, y);
-            
-            if opts.Vid
-                avifile = fullfile(pwd,'output.avi');
-                vw = VideoWriter(avifile);
-                vw.FrameRate = 25;
-                vw.open;
-            end
-            
-            %% Loop over time
-            if ~isempty(mc.Pool) && r.Pool
-                hf = pm.nextPlot('force','Activation force','t [ms]','alpha');
-                axis(hf,[0 t(end) 0 1]);
-                hold(hf,'on');
-            end
-            
-%             pmgeo = PlotManager;
-%             pmgeo.LeaveOpen = true;
-            pmgeo = pm;
-            h_geo = pmgeo.nextPlot('geo',sprintf('Deformation at t=%g',t(end)),'x [mm]','y [mm]');
-            zlabel(h_geo,'z [mm]');
-            axis(h_geo, this.getPlotBox(y));
-            daspect([1 1 1]);
-            view(h_geo, [46 30]);
-            hold(h_geo,'on');
-            
-            h1 = pm.nextPlot('signal','Motoneuron signal','t [ms]','V_m');
-            pos = this.off_moto_full + (2:6:6*this.nfibres);
-            vals = y(pos,:);
-            axis(h1,[0 t(end) min(vals(:)) max(vals(:))]);
-            hold(h1,'on');
-
-            h2 = pm.nextPlot('force','Action potential','t [ms]','V_m');
-            pos = this.off_sarco_full + (1:56:56*this.nfibres);
-            vals = y(pos,:);
-            axis(h2,[0 t(end) min(vals(:)) max(vals(:))]);
-            hold(h2,'on');
-
-            h3 = pm.nextPlot('force','Activation','t [ms]','A_s');
-            pos = this.off_sarco_full + (53:56:56*this.nfibres);
-            vals = y(pos,:);
-            vals = bsxfun(@times, min(1,t), vals);
-            axis(h3,[0 t(end) min(vals(:)) max(vals(:))]);
-            hold(h3,'on');
-
-            h4 = pm.nextPlot('spindle','Afferents','t [ms]','aff');
-            pos = this.off_spindle_full + (1:9*this.nfibres);
-            vals = this.Spindle.getAfferents(y(pos,:));
-            axis(h4,[0 t(end) min(vals(:)) max(vals(:))]);
-            hold(h4,'on');
-
-            h5 = pm.nextPlot('spindle','Signal','t [ms]','aff');
-            maxcurrents = polyval(this.upperlimit_poly,this.Model.Config.FibreTypes);
-            sp_sig = this.f.SpindleAffarentWeights*vals;
-            sp_sig = min(maxcurrents(1) - this.mu(4),sp_sig);
-            axis(h5,[0 t(end) min(sp_sig(:)) max(sp_sig(:))]);
-            hold(h5,'on');
-            
-            for ts = 1:length(t)
-                % Quit if figure has been closed
-                if ~ishandle(h_geo)
-                    break;
-                end
-                
-                %% Plot geometry into h_geo
-                this.plotGeometry(h_geo, t(ts), y(:,ts), ts, opts);
-                
-                time_part = t(1:ts);
-                pos = this.off_moto_full + (2:6:6*this.nfibres);
-                signal = y(pos,1:ts);
-                %walpha = mc.FibreTypeWeights(1,:,1) * signal;
-%                 cla(h(1));
-                plot(h1,time_part,signal);
-                %plot(h,times,walpha,'LineWidth',2);
-                
-                pos = this.off_sarco_full + (1:56:56*this.nfibres);
-                force = y(pos,1:ts);
-                %walpha = mc.FibreTypeWeights(1,:,1) * signal;
-%                 cla(h(2));
-                plot(h2,time_part,force);
-                
-                pos = this.off_sarco_full + (53:56:56*this.nfibres);
-                force = y(pos,1:ts);
-                force = bsxfun(@plus, -this.sarco_mech_signal_offset, force);
-                %force = bsxfun(@times, min(1,time_part), force);
-                mc = this.Model.Config;
-                walpha = mc.FibreTypeWeights(1,:,1) * force;
-%                force = [force; walpha]
-%                 cla(h(3));
-                plot(h3,time_part,force,'r',time_part,walpha,'b');
-%                 plotyy(h(3),time_part,force,time_part,walpha);
-
-                pos = this.off_spindle_full + (1:9*this.nfibres);
-                affarents = this.Spindle.getAfferents(y(pos,1:ts));
-                plot(h4,time_part,affarents');
-                
-                maxcurrents = polyval(this.upperlimit_poly,this.Model.Config.FibreTypes);
-                sp_sig = this.f.SpindleAffarentWeights * affarents;
-                sp_sig = min(maxcurrents(1) - this.mu(4),sp_sig);
-                plot(h5,time_part,sp_sig);
-                
-                drawnow;
-            end
-            
-            if opts.Vid
-                vw.close;
-            end
-
-            if isempty(opts.PM)
-                pm.done;
-            end
-        end
-        
         
     end
     
