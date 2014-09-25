@@ -21,9 +21,6 @@ classdef System < muscle.System;
         off_moto;
         off_sarco;
         off_spindle;
-        off_moto_full;
-        off_sarco_full;
-        off_spindle_full;
         
         input_motoneuron_link_idx;
         moto_input_noise_factors;
@@ -109,8 +106,8 @@ classdef System < muscle.System;
                 uneum = this.Inputs{1,inputidx};
                 
                 % Second row is external mean current input
-                %uext = this.Inputs{2,inputidx};
                 uext = @(t)mu(4);
+                this.Inputs{2,inputidx} = uext;
                 
                 ustr = '@(t)[mu(3)*uneum(t); bno(round(t)+1); ';
                 for k=1:this.nfibres
@@ -137,17 +134,14 @@ classdef System < muscle.System;
             this.num_motoneuron_dof = 6*this.nfibres;
             % Motoneurons are beginning after mechanics
             this.off_moto = this.num_uvp_dof; 
-            this.off_moto_full = this.num_uvp_glob; 
 
             % Sarcomeres are beginning after motoneurons
             this.num_sarco_dof = 56*this.nfibres;
             this.off_sarco = this.off_moto + this.num_motoneuron_dof;
-            this.off_sarco_full = this.off_moto_full + this.num_motoneuron_dof;
             
             % Spindles are beginning after sarcomeres
             this.num_spindle_dof = 9*this.nfibres;
             this.off_spindle = this.off_sarco + this.num_sarco_dof;
-            this.off_spindle_full = this.off_sarco_full + this.num_sarco_dof;
             
             this.num_all_dof = this.off_spindle + this.num_spindle_dof;
             

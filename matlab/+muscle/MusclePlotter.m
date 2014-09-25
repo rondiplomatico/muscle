@@ -40,7 +40,8 @@ classdef MusclePlotter < handle
                 pm = opts.PM;
             end
 
-            [t, y_dofs] = this.updatePlotData(opts, t, y_dofs);
+            [pd, t] = this.updatePlotData(this.plotdata, opts, t, y_dofs);
+            this.plotdata = pd;
 
             if opts.Vid
                 avifile = fullfile(pwd,'output.avi');
@@ -58,7 +59,7 @@ classdef MusclePlotter < handle
 
             h = pm.nextPlot('geo',sprintf('Deformation at t=%g',t(end)),'x [mm]','y [mm]');
             zlabel(h,'z [mm]');
-            axis(h, this.getPlotBox(y_dofs));
+            axis(h, pd.geo_plotbox);
             daspect([1 1 1]);
             view(h, [46 30]);
             hold(h,'on');
@@ -68,7 +69,7 @@ classdef MusclePlotter < handle
                 if ~ishandle(h)
                     break;
                 end
-                this.plotGeometry(h, t(ts), y_dofs(:,ts), ts, opts);
+                this.plotGeometry(h, t(ts), pd.yfull(:,ts), ts, opts);
 
                 if ~isempty(mc.Pool) && r.Pool
                     dt = sys.Model.dt;
@@ -200,8 +201,7 @@ classdef MusclePlotter < handle
             end
         end
         
-        function [t, y] = updatePlotData(this, opts, t, y)
-            pd = this.plotdata;
+        function [pd, t, y] = updatePlotData(this, pd, opts, t, y)
             mc = this.Config;
             sys = this.System;
             dfem = mc.PosFE;
@@ -218,9 +218,10 @@ classdef MusclePlotter < handle
                     opts.NF = opts.NF(:,1:opts.F:end);
                 end
             end
-
-            %% Re-add the dirichlet nodes
-            y = sys.includeDirichletValues(t, y);
+            
+            %% Re-add the dirichlet nodes for geometry plotting
+            pd.yfull = sys.includeDirichletValues(t, y);
+            pd.geo_plotbox = this.getPlotBox(pd.yfull);
 
             %% Dirichlet plotting
             if ~isempty(opts.DF)
@@ -228,7 +229,7 @@ classdef MusclePlotter < handle
             end
 
             %% Forces plotting
-            if opts.Forces
+%             if opts.Forces
                 % Get forces on each node in x,y,z directions
                 % This is where the connection between plane index and
                 % x,y,z coordinate is "restored"
@@ -254,15 +255,13 @@ classdef MusclePlotter < handle
                 if ~isempty(opts.NF)
                     pd.residual_neumann_forces = zeros(size(sys.bool_u_bc_nodes));
                 end
-            end
+%             end
 
             %% Skeleton plotting
             if ~opts.Skel
         %                 light('Position',[1 1 1],'Style','infinite','Parent',h);
                 pd.musclecol = [0.854688, 0.201563, 0.217188];
             end
-
-            this.plotdata = pd;
         end
         
         function opts = parsePlotArgs(~, args)

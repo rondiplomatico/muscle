@@ -1,27 +1,37 @@
 classdef CPull < fullmuscle.AModelConfig
     
+    properties(SetAccess=private)
+        Version;
+    end
+    
     methods
-        function this = CPull
+        function this = CPull(version)
             % Creates a Debug simple muscle model configuration.
             %
             % Single cube with same config as reference element
+            if nargin < 1
+                version = 1;
+            end
+            
             [pts, cubes] = geometry.Cube8Node.DemoGrid([0 1],[0 1],[0 1]);
             geo = geometry.Cube8Node(pts, cubes);
             this = this@fullmuscle.AModelConfig(geo.toCube27Node);
             this.NeumannCoordinateSystem = 'global';
+            this.Version = version;
         end
         
         function configureModel(this, m)
             configureModel@fullmuscle.AModelConfig(this, m);
-            m.T = 100;
-            m.dt = .1;
+            m.T = 1000;
+            m.dt = 1;
                         
             m.DefaultMu = [1; 0; 1; 0];
             
             m.System.f.Pmax = 250;
+            m.EnableTrajectoryCaching = true;
         end
         
-        function P = getBoundaryPressure(this, elemidx, faceidx)
+        function P = getBoundaryPressure(~, elemidx, faceidx)
             % Determines the neumann forces on the boundary.
             %
             % The unit for the applied quantities is kiloPascal [kPa]
@@ -38,36 +48,47 @@ classdef CPull < fullmuscle.AModelConfig
             u{1} = this.getAlphaRamp(10,1);
             u{2} = this.getAlphaRamp(100,1);
             u{3} = this.getAlphaRamp(300,1);
+            u{4} = this.getAlphaRamp(10,1,200);
+            u{5} = this.getAlphaRamp(100,1,200);
+            u{6} = this.getAlphaRamp(300,1,200);
         end
         
     end
     
     methods(Access=protected)
         
-        function ft = getFibreTypes(~)
-%             ft = [0 .2 .4 .6 .8 1];
-%             ft = [0 .1];
-            ft = 0;
+        function ft = getFibreTypes(this)
+            switch this.Version
+                case 1
+                    ft = 0;
+                case 2
+                   ft = [0 .1];
+            end
+%             ft = [0 .2 .4 .6 .8 1];            
         end
         
-        function sp = getSpindlePos(~)
+        function sp = getSpindlePos(this)
             % Spindle position: first row element, second row gauss point
             % within element
-%             sp = [1 1; 1 2];
-            sp = [1; 1];
+            switch this.Version
+                case 1
+                   sp = [1; 1];
+                case 2
+                   sp = [1 1; 1 2];
+            end
         end
         
         function ftw = getFibreTypeWeights(this)
             % Get pre-initialized all zero weights
             ftw = getFibreTypeWeights@fullmuscle.AModelConfig(this);
 
-            ftw(:,1,:) = 1;
-%             ftw(:,2,:) = .5;
-%             ftw(:,2,:) = .4;
-%             ftw(:,3,:) = .3;
-%                 ftw(:,4,:) = .1;
-%                 ftw(:,5,:) = .2;
-%                 ftw(:,6,:) = .2;
+            switch this.Version
+                case 1
+                   ftw(:,1,:) = 1;
+                case 2
+                   ftw(:,1,:) = .5;
+                   ftw(:,2,:) = .5;
+            end
         end
         
         function displ_dir = setPositionDirichletBC(this, displ_dir)
@@ -90,8 +111,8 @@ classdef CPull < fullmuscle.AModelConfig
 %             end
 %         end
         
-        function anull = seta0(this, anull)
-                anull(1,:,:) = 1;
+        function anull = seta0(~, anull)
+            anull(1,:,:) = 1;
         end
     end
     

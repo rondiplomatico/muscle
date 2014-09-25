@@ -13,7 +13,8 @@ classdef Model < muscle.Model
 % - zyklischer zug
 %
 % Fragen:
-% Sollte der afferent-faktor zur signalübertragung für alle fasertypen gleich sein?
+% - Sollte der afferent-faktor zur signalübertragung für alle fasertypen gleich sein?
+% - Lddot versuch? was wäre "realistisch"?
 %
 % @author Daniel Wirtz @date 2014-09-16
 %
