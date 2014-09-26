@@ -100,7 +100,7 @@ classdef MusclePlotter < muscle.MusclePlotter
                     affsel = [2*(sel-1)+1; 2*(sel-1)+2];
 
                     h5 = pm.nextPlot('spindle','Spindle mean current','t [ms]','aff');
-                    axis(h5,[0 t(end) min(pd.spindle_mean_current(:)) max(pd.spindle_mean_current(:))]);
+                    axis(h5,[0 t(end) min(pd.spindle_mean_current(:)) max(pd.spindle_mean_current(:))+eps]);
                     hold(h5,'on');
                 end
                 
@@ -110,7 +110,7 @@ classdef MusclePlotter < muscle.MusclePlotter
             if opts.Ext
                 hext = pm.nextPlot('ext_neumann',...
                     'External pressure','t [ms]','Normal pressure [kPa]');
-                axis(hext,[0 t(end) min(pd.uneum(:)) max(pd.uneum(:))]);
+                axis(hext,[0 t(end) min(pd.uneum(:)) max(pd.uneum(:))+eps]);
                 hold(hext,'on');
                 
 %                 val = pd.uneum * pd.forcefactor;
@@ -171,7 +171,7 @@ classdef MusclePlotter < muscle.MusclePlotter
                         plot(h4,time_part,pd.afferents(affsel(:),1:ts)');
                         cla(h5);
                         plot(h5,time_part,pd.spindle_mean_current(1:ts));
-                        plot(h5,time_part,pd.eff_mean_current(sel,1:ts),'r--');
+                        plot(h5,time_part,pd.eff_mean_current(1:ts),'r--');
                         
 %                         cla(h6);
 %                         plot(h6,time_part,pd.spindle_single_mean_current(sel,1:ts));
@@ -269,7 +269,7 @@ classdef MusclePlotter < muscle.MusclePlotter
                     afferents(af_pos,:) = sys.Spindle.getAfferents(yspindle);
                     spindle_single_mean_current(k,:) = sys.f.SpindleAffarentWeights*afferents(af_pos,:);
                 end
-                spindle_mean_current = mean(spindle_single_mean_current);
+                spindle_mean_current = mean(spindle_single_mean_current,1);
                 for k=1:nf
                     eff_mean_current(k,:) = min(max_moto_signals(k),spindle_mean_current+pd.ext_mean_current);
                 end

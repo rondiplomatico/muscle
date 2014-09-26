@@ -173,7 +173,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             fx = fx(this.PointSets{nr},:);
         end
         
-        function res = test_Jacobian(this, full)
+        function res = test_Jacobian(this, y, t, mu)
             % Overrides the random argument jacobian test as restrictions
             % on the possible x values (detF = 1) hold.
             %
@@ -181,31 +181,18 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % assume linear damping, which is extracted as extra `A(t,\mu)`
             % part in the models' system
             
-            if nargin < 2
-                full = false;
-            end
-            
-            m = this.System.Model;
-            if full
-                [t,y] = m.simulate;
-            else
-                t = 100;
-                y = this.System.x0.evaluate(this.System.Model.DefaultMu);
+            if nargin < 4
+                mu = this.System.Model.DefaultMu;
+                if nargin < 3
+                    t = 1000;
+                    if nargin < 2
+                        y = this.System.x0.evaluate(mu);
+                    end
+                end
             end
             
             % Use nonzero t to have an effect
-            res = test_Jacobian@dscomponents.ACoreFun(this, y, t, this.System.Model.DefaultMu);
-            
-            % Check if sparsity pattern and jacobian matrices match
-%             Jp = this.JSparsityPattern;
-%             Jeff = Jp;
-%             for k=1:length(t)
-%                 J = this.getStateJacobian(y(:,k),t(k));
-%                 Jeff(:) = false;
-%                 Jeff(logical(J)) = true;
-%                 check = (Jp | Jeff) & ~Jp;
-%                 res = res && ~any(check(:));
-%             end
+            res = test_Jacobian@dscomponents.ACoreFun(this, y, t, mu);
         end
         
         function copy = clone(this)

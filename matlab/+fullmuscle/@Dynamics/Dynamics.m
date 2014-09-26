@@ -168,7 +168,10 @@ classdef Dynamics < muscle.Dynamics;
             %% Mechanics
             uvp_pos = 1:sys.num_uvp_dof;
             % Use uvp as argument and also pass in s (=sarco forces)
-            uvps = [y(uvp_pos); max(0,y(sys.sarco_output_idx)-sys.sarco_mech_signal_offset)];
+%             force = max(0,y(sys.sarco_output_idx)-sys.sarco_mech_signal_offset);
+%             force = y(sys.sarco_output_idx);
+            force = zeros(size(sys.sarco_output_idx));
+            uvps = [y(uvp_pos); force];
             dy(uvp_pos) = evaluate@muscle.Dynamics(this, uvps, t);
             
             %% Motoneurons
@@ -223,14 +226,17 @@ classdef Dynamics < muscle.Dynamics;
             end
         end
         
-        function J = getStateJacobian(this, y, t)
+        function [J, JLamDot] = getStateJacobian(this, y, t)
 %             J = this.getStateJacobianFD(y,t);
 %             return;
             sys = this.System;
             
             %% Mechanics
             uvp_pos = 1:sys.num_uvp_dof;
-            uvps = [y(uvp_pos); max(0,y(sys.sarco_output_idx)-sys.sarco_mech_signal_offset)];
+%             force = max(0,y(sys.sarco_output_idx)-sys.sarco_mech_signal_offset);
+%             force = y(sys.sarco_output_idx);
+            force = zeros(size(sys.sarco_output_idx));
+            uvps = [y(uvp_pos); force];
             [J, Jalpha, JLamDot] = getStateJacobian@muscle.Dynamics(this, uvps, t);
             
             %% Motoneuron
@@ -318,6 +324,63 @@ classdef Dynamics < muscle.Dynamics;
             end
         end
         
+        function res = test_Jacobian(this, y, t, mu)
+            % Overrides the random argument jacobian test as restrictions
+            % on the possible x values (detF = 1) hold.
+            %
+            % Currently the tests using viscosity are commented out as we
+            % assume linear damping, which is extracted as extra `A(t,\mu)`
+            % part in the models' system
+            sys = this.System;
+            if nargin < 4
+                mu = sys.Model.DefaultMu;
+                if nargin < 3
+                    t = 1000;
+                    if nargin < 2
+                        y = this.System.x0.evaluate(mu);
+                    end
+                end
+            end
+            
+            % Also test correct computation of JLamDot
+            d = size(y,1);
+            dx = ones(d,1)*sqrt(eps(class(y))).*max(abs(y),1);
+            sys.prepareSimulation(mu, sys.Model.DefaultInput);
+            this.evaluate(y,t);
+            ldotbase = this.lambda_dot;
+            uv = sys.num_u_dof+sys.num_v_dof;
+            LAM = repmat(ldotbase',1,uv);
+            dlam = zeros(this.nfibres,uv);
+            for k = 1:uv
+                h = zeros(d,1);
+                h(k) = dx(k);
+                this.evaluate(y+h,t);
+                dlam(:,k) = this.lambda_dot;
+            end
+            JLamFD = (dlam - LAM)./dx(1:uv)';
+            [J, JLamDot] = this.getStateJacobian(y,t);
+            difn = norm(JLamFD-JLamDot)
+            res = difn < 1e-13;
+            
+            freq = zeros(1,this.nfibres);
+            dx = ones(this.nfibres,1)*sqrt(eps(class(ldotbase))).*max(abs(ldotbase),1);
+            sp = sys.Spindle;
+            for k = 1:this.nfibres
+                spindle_pos = sys.off_spindle + 9*(k-1) + (1:9);
+                fx = sp.dydt(y(spindle_pos),t,freq(k),ldotbase(k),0);
+                fxh = sp.dydt(y(spindle_pos),t,freq(k),ldotbase(k)+dx(k),0);
+                Jspin_Ldot_FD = (fxh-fx) / dx(k);
+                [~, Jspin_Ldot] = sp.Jdydt(y(spindle_pos), t, freq(k), ldotbase(k), 0);
+                difn = norm(Jspin_Ldot_FD - Jspin_Ldot')
+                res = res && difn < 1e-3;
+            end
+            
+            res = res & test_Jacobian@muscle.Dynamics(this, y, t, mu);
+        end
+    end
+    
+    %% Getter / Setter
+    methods
         function value = get.UseFrequencyDetector(this)
             value = this.fUseFD;
         end

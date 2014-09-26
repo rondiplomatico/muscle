@@ -48,7 +48,10 @@ classdef Spindle < KerMorObject
             moto_freq_static = moto_sig;
             
             C = 0.42;
-            C = C + (Ldot > 0)*.58; % C = 1 if Ldot > 0
+            % C = 1 if Ldot > 0
+            % Numerically -.0001, as ldot=0 happens quite often and hence
+            % the jacobian is unreliable around that area
+            C = C + (Ldot > -.0001)*.58; 
             
             c = this.spindleConst;
             dy = zeros(size(y));
@@ -193,7 +196,7 @@ classdef Spindle < KerMorObject
             moto_freq_static = moto_sig;
 
             C = 0.42;
-            C = C + (Ldot > 0)*.58; % C = 1 if Ldot > 0
+            C = C + (Ldot > -.0001)*.58; % C = 1 if Ldot > 0
             
             c = this.spindleConst;
             

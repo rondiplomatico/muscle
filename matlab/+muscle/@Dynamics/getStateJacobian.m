@@ -175,6 +175,9 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
                     if ~isempty(k)
                         Fdot = uvwcomplete(elemidx_v) * dtn;
                         Fdota0 = Fdot*fibres(:,1);
+                        % Also update the current lambda_dot so that
+                        % further calls within the getStateJacobian of the
+                        % fullmuscle.Dynamics have the correct values!
                         this.lambda_dot(k) = Fa0'*Fdota0/lambdaf;
 
                         %% Assemble dLdot / du[i] and dLdot / dv[i]
@@ -362,7 +365,7 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
             %% Grad_s K(u,w,s)
             if hasforceargument
                 for k = 1:nfibres
-                    dPsk = alpha_prefactor * fibretypeweights(gp,k,m) * F *a0;
+                    dPsk = alpha_prefactor * fibretypeweights(gp,k,m) * F * a0;
                     iS(cur_offS + relidx_pos) = elemidx_velo_linear-dofs_pos;
                     jS(cur_offS + relidx_pos) = columns_sarco_link(k);
                     snew = -weight * dPsk * dtn';
