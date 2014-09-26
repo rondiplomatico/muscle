@@ -25,9 +25,16 @@ classdef CPull < fullmuscle.AModelConfig
         
         function configureModel(this, m)
             configureModel@fullmuscle.AModelConfig(this, m);
-            m.T = 1000;
-            m.dt = 1;
-                        
+            
+            switch this.Version
+                case [1 2]
+                    m.T = 100;
+                    m.dt = .5;
+                case 3
+                    m.T = 1000;
+                    m.dt = 1;
+            end
+            
             m.DefaultMu = [1; 0; 1; 0];
             
             m.System.f.Pmax = 250;
@@ -58,6 +65,7 @@ classdef CPull < fullmuscle.AModelConfig
             u{4} = this.getAlphaRamp(10,1,200);
             u{5} = this.getAlphaRamp(100,1,200);
             u{6} = this.getAlphaRamp(300,1,200);
+            u{7} = this.getAlphaRamp(1000,1);
         end
         
     end
@@ -99,12 +107,14 @@ classdef CPull < fullmuscle.AModelConfig
                    ftw(:,1,:) = .5;
                    ftw(:,2,:) = .5;
                 case 3
-                   ftw(:,1,:) = 2/12;
-                   ftw(:,2,:) = 2/12;
-                   ftw(:,3,:) = 1/12;
-                   ftw(:,4,:) = 1/12;
-                   ftw(:,5,:) = 3/12;
-                   ftw(:,6,:) = 3/12;
+                   fac = exp((1:6)/2);
+                   fac = fac / sum(fac);
+                   ftw(:,1,:) = fac(1);
+                   ftw(:,2,:) = fac(2);
+                   ftw(:,3,:) = fac(3);
+                   ftw(:,4,:) = fac(4);
+                   ftw(:,5,:) = fac(5);
+                   ftw(:,6,:) = fac(6);
             end
         end
         

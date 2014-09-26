@@ -52,6 +52,7 @@ classdef System < muscle.System;
         
         Motoneuron;
         Spindle;
+        HasSpindle;
     end
     
     properties(Access=private)
@@ -72,17 +73,24 @@ classdef System < muscle.System;
             % Second row is external mean current input
 %             this.Inputs{2,1} = @(t)1;
             
-            this.Spindle = fullmuscle.Spindle;
             this.Motoneuron = fullmuscle.Motoneuron;
         end
         
         function configUpdated(this)
-            ft = this.Model.Config.FibreTypes;
+            mc = this.Model.Config;
+            ft = mc.FibreTypes;
             nf = length(ft);
             this.nfibres = nf;
             
             %% Configure motoneurons
             this.Motoneuron.setType(ft);
+            
+            hassp = ~isempty(mc.SpindlePositions);
+            this.HasSpindle = hassp;
+            this.Spindle = [];
+            if hassp
+                this.Spindle = fullmuscle.Spindle;
+            end
             
             configUpdated@muscle.System(this);
             
@@ -140,9 +148,11 @@ classdef System < muscle.System;
             this.off_sarco = this.off_moto + this.num_motoneuron_dof;
             
             % Spindles are beginning after sarcomeres
-            this.num_spindle_dof = 9*this.nfibres;
             this.off_spindle = this.off_sarco + this.num_sarco_dof;
-            
+            this.num_spindle_dof = 0;
+            if this.HasSpindle
+                this.num_spindle_dof = 9*this.nfibres;
+            end
             this.num_all_dof = this.off_spindle + this.num_spindle_dof;
             
             % Get the positions where the input signal is mapped to the
@@ -177,8 +187,10 @@ classdef System < muscle.System;
                 % add sarco
                 x0(this.off_sarco + 56*(k-1) + (1:56)) = x0ms(7:end);
                 smoff(k) = x0ms(6+53);
-                % add spindle
-                x0(this.off_spindle + 9*(k-1) + (1:9)) = this.Spindle.y0;
+                if this.HasSpindle
+                    % add spindle
+                    x0(this.off_spindle + 9*(k-1) + (1:9)) = this.Spindle.y0;
+                end
             end
             this.sarco_mech_signal_offset = smoff;
         end
@@ -212,14 +224,22 @@ classdef System < muscle.System;
             Daff_mech = assembleDampingMatrix@muscle.System(this);
             
             Daff = dscomponents.AffLinCoreFun(this);
-            extra = (6+56+9)*this.nfibres;
+            extradofs = 6+56;
+            if this.HasSpindle
+                extradofs = extradofs + 9;
+            end
+            extra = extradofs*this.nfibres;
             D = blkdiag(Daff_mech.getMatrix(1),sparse(extra,extra));
             Daff.addMatrix('mu(1)',D);
         end
         
         function M = assembleMassMatrix(this)
             M = assembleMassMatrix@muscle.System(this);
-            extra = (6+56+9)*this.nfibres;
+            extradofs = 6+56;
+            if this.HasSpindle
+                extradofs = extradofs + 9;
+            end
+            extra = extradofs*this.nfibres;
             M = blkdiag(M,speye(extra));
         end
     end

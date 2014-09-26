@@ -25,6 +25,7 @@ classdef MusclePlotter < muscle.MusclePlotter
             mc = this.Config;
             sys = this.System;
             nf = length(mc.FibreTypes);
+            sel = opts.MU;
             
             if isempty(opts.PM)
                 pm = PlotManager(false,3,3);
@@ -96,6 +97,7 @@ classdef MusclePlotter < muscle.MusclePlotter
                     h4 = pm.nextPlot('spindle','Afferents','t [ms]','aff');
                     axis(h4,[0 t(end) min(pd.afferents(:)) max(pd.afferents(:))]);
                     hold(h4,'on');
+                    affsel = [2*(sel-1)+1; 2*(sel-1)+2];
 
                     h5 = pm.nextPlot('spindle','Spindle mean current','t [ms]','aff');
                     axis(h5,[0 t(end) min(pd.spindle_mean_current(:)) max(pd.spindle_mean_current(:))]);
@@ -121,7 +123,6 @@ classdef MusclePlotter < muscle.MusclePlotter
             pm.done;
             
             fh = gcf;
-            
             for ts = 1:length(t)
                 % Quit if figure has been closed
                 if ~ishandle(fh)
@@ -134,7 +135,7 @@ classdef MusclePlotter < muscle.MusclePlotter
                     
                     if opts.Spin
                         % Plot spindle locations
-                        for k = 1:nf
+                        for k = sel
                             u = yf(sys.idx_u_glob_elems(:,:,spos(1,k)));
                             spindle_pt = u*pd.Ngp(:,spos(2,k));
                             plot3(h_geo,spindle_pt(1),spindle_pt(2),...
@@ -147,38 +148,38 @@ classdef MusclePlotter < muscle.MusclePlotter
                 time_part = t(1:ts);
                 if opts.Moto
                     cla(h1);
-                    plot(h1,time_part,pd.moto_vm(:,1:ts));
+                    plot(h1,time_part,pd.moto_vm(sel,1:ts));
                 end
                 
                 if opts.Sarco
                     cla(h2);
-                    plot(h2,time_part,pd.sarco_pot(:,1:ts));
+                    plot(h2,time_part,pd.sarco_pot(sel,1:ts));
                 
                     cla(h3);
-                    force = pd.sarco_force(:,1:ts);
-                    walpha = mc.FibreTypeWeights(1,:,1) * force;
+                    force = pd.sarco_force(sel,1:ts);
+                    walpha = mc.FibreTypeWeights(1,sel,1) * force;
 %                     plot(h3,time_part,force,'r',time_part,walpha,'b');
                     plot(h3,time_part,walpha,'b');
                 end
 
                 if opts.Spin
                     cla(h_spin_l);
-                    plot(h_spin_l, time_part, pd.spindle_lambda(:,1:ts));
+                    plot(h_spin_l, time_part, pd.spindle_lambda(sel,1:ts));
                     
                     if opts.Aff
                         cla(h4);
-                        plot(h4,time_part,pd.afferents(:,1:ts)');
+                        plot(h4,time_part,pd.afferents(affsel(:),1:ts)');
                         cla(h5);
-                        plot(h5,time_part,pd.spindle_mean_current(1:ts));
-                        plot(h5,time_part,pd.eff_mean_current(1:ts),'r--');
+                        plot(h5,time_part,pd.spindle_mean_current(sel,1:ts));
+                        plot(h5,time_part,pd.eff_mean_current(sel,1:ts),'r--');
                     end
                 end
                 
                 if opts.Freq
                     cla(hfreq);
-                    plot(hfreq,time_part,pd.freq(:,1:ts))
+                    plot(hfreq,time_part,pd.freq(sel,1:ts))
                     if opts.FreqDet && ~sys.f.UseFrequencyDetector
-                        plot(hfreq,time_part,pd.freq_det(:,1:ts),'r--');
+                        plot(hfreq,time_part,pd.freq_det(sel,1:ts),'r--');
                     end
                 end
                 
@@ -215,6 +216,7 @@ classdef MusclePlotter < muscle.MusclePlotter
                 nt = length(t);
                 freq = zeros(nf,nt);
                 fd.reset;
+                fd.WindowSize = 4;
                 for i=1:nt
                     fd.processSignal(t(i),y(sys.f.moto_sarco_link_moto_out,i)');
                     freq(:,i) = fd.Frequency;
@@ -302,6 +304,7 @@ classdef MusclePlotter < muscle.MusclePlotter
             i.addParamValue('Sarco',defs(6),@(v)islogical(v));
             i.addParamValue('Spin',defs(7),@(v)islogical(v));
             i.addParamValue('Ext',defs(8),@(v)islogical(v));
+            i.addParamValue('MU',1:length(this.Config.FibreTypes));
             i.parse(args{:});
             opts = Utils.copyStructFields(i.Results, opts);
         end

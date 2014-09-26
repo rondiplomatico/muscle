@@ -284,8 +284,8 @@ classdef Spindle < KerMorObject
             y(2) = 0;
             y(3:5) = 0.000634066218078; % seems random, but only must be != 0
             y(6) = c(1)*(c(12)-c(17)); 
-            y(7) = c(31)*(c(42)-c(47));
-            y(8) = c(61)*(c(72)-c(77));
+            y(7) = c(31)*(c(42)-c(47))+0.001;
+            y(8) = c(61)*(c(72)-c(77))+0.002;
             y(9) = 1; % length
             this.y0 = y;
         end

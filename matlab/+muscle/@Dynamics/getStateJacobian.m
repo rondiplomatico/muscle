@@ -1,4 +1,4 @@
-function J = getStateJacobian(this, uvwdof, t)
+function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
 %     J = this.getStateJacobianFD(uvwdof,t);
 %     return;
     sys = this.System;
@@ -37,7 +37,6 @@ function J = getStateJacobian(this, uvwdof, t)
        jldot = [];
        sldot = [];
     end
-    
     
     %% Precompute the size of i,j,s for speed
     numXYZDofs_pos = 3*dofsperelem_pos;
@@ -179,7 +178,7 @@ function J = getStateJacobian(this, uvwdof, t)
                         this.lambda_dot(k) = Fa0'*Fdota0/lambdaf;
 
                         %% Assemble dLdot / du[i] and dLdot / dv[i]
-                        JLdot = zeros(2*numXYZDofs_pos,1);
+                        JLamDot = zeros(2*numXYZDofs_pos,1);
                         for eldof = 1:dofsperelem_pos
                             % U_i^k = e_i dyad dPhik from script
                             U1k = [dtn(eldof,:); 0 0 0; 0 0 0];
@@ -190,27 +189,27 @@ function J = getStateJacobian(this, uvwdof, t)
                             %% x
                             Ua0 = U1k*fibres(:,1);
                             % dLdot / du[i]_x
-                            JLdot(idx(1)) = JLdot(idx(1)) + Ua0'*Fdota0;
+                            JLamDot(idx(1)) = JLamDot(idx(1)) + Ua0'*Fdota0;
                             % dLdot / dv[i]_x
-                            JLdot(idxv(1)) = JLdot(idxv(1)) + Fa0'*Ua0;
+                            JLamDot(idxv(1)) = JLamDot(idxv(1)) + Fa0'*Ua0;
 
                             %% y
                             Ua0 = U2k*fibres(:,1);
                             % dLdot / du[i]_x
-                            JLdot(idx(2)) = JLdot(idx(2)) + Ua0'*Fdota0;
+                            JLamDot(idx(2)) = JLamDot(idx(2)) + Ua0'*Fdota0;
                             % dLdot / dv[i]_x
-                            JLdot(idxv(2)) = JLdot(idxv(2)) + Fa0'*Ua0;
+                            JLamDot(idxv(2)) = JLamDot(idxv(2)) + Fa0'*Ua0;
 
                             %% z
                             Ua0 = U3k*fibres(:,1);
                             % dLdot / du[i]_x
-                            JLdot(idx(3)) = JLdot(idx(3)) + Ua0'*Fdota0;
+                            JLamDot(idx(3)) = JLamDot(idx(3)) + Ua0'*Fdota0;
                             % dLdot / dv[i]_x
-                            JLdot(idxv(3)) = JLdot(idxv(3)) + Fa0'*Ua0;
+                            JLamDot(idxv(3)) = JLamDot(idxv(3)) + Fa0'*Ua0;
                         end
                         ildot = [ildot; k*ones(2*numXYZDofs_pos,1)]; %#ok
                         jldot = [jldot; elemidx_u(:); elemidx_v(:)];%#ok
-                        sldot = [sldot; JLdot];%#ok
+                        sldot = [sldot; JLamDot];%#ok
                     end
                 end
             end
@@ -378,21 +377,21 @@ function J = getStateJacobian(this, uvwdof, t)
     J(:,sys.idx_uv_bc_glob) = [];
     J(sys.idx_uv_bc_glob,:) = [];
     
-    if haveldotpos
-        JLdot = sparse(ildot,double(jldot),sldot,this.nfibres,6*N);
-        JLdot(:,sys.idx_uv_bc_glob) = [];
-        this.Jlambda_dot = JLdot;
-    end
-
     if this.usemassinv
         % Multiply with inverse of Mass matrix!
         J(sys.idx_v_dof_glob,:) = sys.Minv*J(sys.idx_v_dof_glob,:);
     end
     
+    Jalpha = [];
     if hasforceargument
-        JS = sparse(iS,jS,sS,3*N,nfibres*56);
+        Jalpha = sparse(iS,jS,sS,3*N,nfibres*56);
         % Remove those that are connected to dirichlet values
-        JS([sys.idx_u_bc_glob; sys.idx_v_bc_glob],:) = [];
-        this.JS = JS;
+        Jalpha([sys.idx_u_bc_glob; sys.idx_v_bc_glob],:) = [];
+    end
+    
+    JLamDot = [];
+    if haveldotpos
+        JLamDot = sparse(ildot,double(jldot),sldot,this.nfibres,6*N);
+        JLamDot(:,sys.idx_uv_bc_glob) = [];
     end
 end

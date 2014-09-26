@@ -75,8 +75,8 @@ classdef Dynamics < muscle.Dynamics;
         % spindle is multiplied before considered a "mean input current"
         % (then added to the external signal)
         %
-        % @type rowvec<double> @default [1 1]*1e-2
-        SpindleAffarentWeights = [1 1]*1e-2;
+        % @type rowvec<double> @default [1 1]*0.002
+        SpindleAffarentWeights = [1 1]*0.002;
     end
     
     properties(Dependent)
@@ -122,10 +122,13 @@ classdef Dynamics < muscle.Dynamics;
             this.moto_sarco_link_sarco_in = sys.off_sarco + (1:56:56*this.nfibres);
             this.spindle_moto_link_moto_in = this.moto_sarco_link_moto_out;
             
-            this.FrequencyDetector = fullmuscle.FrequencyDetector(this.nfibres);
-            this.lambda_dot_pos = mc.SpindlePositions;
-            this.lambda_dot = zeros(1,this.nfibres);
-            this.Jlambda_dot = zeros(this.nfibres,6*mc.PosFE.Geometry.DofsPerElement);
+            this.lambda_dot_pos = [];
+            if sys.HasSpindle
+                this.FrequencyDetector = fullmuscle.FrequencyDetector(this.nfibres);
+                this.lambda_dot_pos = mc.SpindlePositions;
+                this.lambda_dot = zeros(1,this.nfibres);
+                this.Jlambda_dot = zeros(this.nfibres,6*mc.PosFE.Geometry.DofsPerElement);
+            end
         end
         
         function prepareSimulation(this, mu)
@@ -161,7 +164,6 @@ classdef Dynamics < muscle.Dynamics;
         
         function dy = evaluate(this, y, t)
             sys = this.System;
-            
             dy = zeros(this.fDim,1);
             
             %% Mechanics
@@ -189,29 +191,37 @@ classdef Dynamics < muscle.Dynamics;
             % Add signal to corresponding locations
             dy(this.moto_sarco_link_sarco_in) = dy(this.moto_sarco_link_sarco_in) + signal;
             
-            %% Spindles
-            sp = sys.Spindle;
-            spindle_pos = sys.off_spindle + (1:sys.num_spindle_dof);
-            yspindle = reshape(y(spindle_pos),9,[]);
-            
-            % Link of spindle to motoneuron
-            spindle_sig = this.SpindleAffarentWeights*sp.getAfferents(yspindle);
-            ext_sig = sys.Inputs{2,1}(t);
-            eff_spindle_sig = min(spindle_sig,this.max_moto_signals - ext_sig);
-            noise_sig = mo.TypeNoise(:,round(t)+1)'.*eff_spindle_sig.*mo.FibreTypeNoiseFactors;
-%             fprintf('Spindle->Neuron: adding %g at dy(%d)\n',noise_sig,this.spindle_moto_link_moto_in);
-            dy(this.spindle_moto_link_moto_in) = ...
-                dy(this.spindle_moto_link_moto_in) + noise_sig';
-            
-            % Spindle actual
-            % Get motoneuron frequency
-            if this.fUseFD
-                freq = this.FrequencyDetector.Frequency;
-            else
-                freq = this.freq_kexp.evaluate([sys.Model.Config.FibreTypes; eff_spindle_sig+ext_sig]);
+            if sys.HasSpindle
+                %% Spindles
+                sp = sys.Spindle;
+                spindle_pos = sys.off_spindle + (1:sys.num_spindle_dof);
+                yspindle = reshape(y(spindle_pos),9,[]);
+
+                % Link of spindle to motoneuron
+                % Get single spindle signals
+                spindle_sig = this.SpindleAffarentWeights*sp.getAfferents(yspindle);
+                % Compute the mean value over all signals
+                spindle_sig = ones(1,this.nfibres)*mean(spindle_sig);
+                % Get current external signal
+                ext_sig = sys.Inputs{2,1}(t);
+                % Use the upper bounded sum
+                eff_spindle_sig = min(spindle_sig,this.max_moto_signals - ext_sig);
+                % Compute noisy signal
+                noise_sig = mo.TypeNoise(:,round(t)+1)'.*eff_spindle_sig.*mo.FibreTypeNoiseFactors;
+    %             fprintf('Spindle->Neuron: adding %g at dy(%d)\n',noise_sig,this.spindle_moto_link_moto_in);
+                dy(this.spindle_moto_link_moto_in) = ...
+                    dy(this.spindle_moto_link_moto_in) + noise_sig';
+
+                % Spindle actual
+                % Get motoneuron frequency
+                if this.fUseFD
+                    freq = this.FrequencyDetector.Frequency;
+                else
+                    freq = this.freq_kexp.evaluate([sys.Model.Config.FibreTypes; eff_spindle_sig+ext_sig]);
+                end
+                dys = sp.dydt(yspindle,t,freq,this.lambda_dot,0);
+                dy(spindle_pos) = dys(:);
             end
-            dys = sp.dydt(yspindle,t,freq,this.lambda_dot,0);
-            dy(spindle_pos) = dys(:);
         end
         
         function J = getStateJacobian(this, y, t)
@@ -222,7 +232,7 @@ classdef Dynamics < muscle.Dynamics;
             %% Mechanics
             uvp_pos = 1:sys.num_uvp_dof;
             uvps = [y(uvp_pos); max(0,y(sys.sarco_output_idx)-sys.sarco_mech_signal_offset)];
-            J = getStateJacobian@muscle.Dynamics(this, uvps, t);
+            [J, Jalpha, JLamDot] = getStateJacobian@muscle.Dynamics(this, uvps, t);
             
             %% Motoneuron
             mo = sys.Motoneuron;
@@ -238,13 +248,15 @@ classdef Dynamics < muscle.Dynamics;
             end
             
             %% Spindles
-            sp = sys.Spindle;
-            freq = this.FrequencyDetector.Frequency;
-            for k=1:this.nfibres
-                spindle_pos = sys.off_spindle + 9*(k-1) + (1:9);
-                [Jspin, Jspin_Ldot] = sp.Jdydt(y(spindle_pos), t, freq(k), this.lambda_dot(k), 0);
-                J = blkdiag(J,Jspin);
-                J(spindle_pos,1:sys.num_u_dof+sys.num_v_dof) = Jspin_Ldot'*this.Jlambda_dot(k,:);
+            if sys.HasSpindle
+                sp = sys.Spindle;
+                freq = this.FrequencyDetector.Frequency;
+                for k=1:this.nfibres
+                    spindle_pos = sys.off_spindle + 9*(k-1) + (1:9);
+                    [Jspin, Jspin_Ldot] = sp.Jdydt(y(spindle_pos), t, freq(k), this.lambda_dot(k), 0);
+                    J = blkdiag(J,Jspin);
+                    J(spindle_pos,1:sys.num_u_dof+sys.num_v_dof) = Jspin_Ldot'*JLamDot(k,:);
+                end
             end
             
             %% Motoneuron to Sarcomere coupling
@@ -260,25 +272,27 @@ classdef Dynamics < muscle.Dynamics;
             % The JS matrix is generated during the computation of the
             % mechanics jacobian, as the element/gauss loop is computed
             % there anyways. its not 100% clean OOP, but works for now.
-            J(sys.num_u_dof + (1:sys.num_v_dof), sys.off_sarco+(1:sys.num_sarco_dof)) = this.JS;
+            J(sys.num_u_dof + (1:sys.num_v_dof), sys.off_sarco+(1:sys.num_sarco_dof)) = Jalpha;
             
             %% Motoneuron to Spindle coupling
             % The frequency-detector is giving piecewise constant signals,
             % hence there is no detectable change in that direction.
             
             %% Spindle to Motoneuron coupling
-            for k=1:this.nfibres
-                spindle_pos = sys.off_spindle + 9*(k-1) + (1:9);
-                moto_pos = sys.off_moto + 6*(k-1) + 2;
-                
-%                 spindle_sig = this.SpindleAffarentWeights*sp.getAfferents(y(spindle_pos));
-%                 ext_sig = sys.Inputs{2,1}(t);
-%                 eff_spindle_sig = min(spindle_sig,this.max_moto_signals - ext_sig);
-                
-                daf = this.SpindleAffarentWeights*sp.getAfferentsJacobian(y(spindle_pos));
-                noise = mo.TypeNoise(k,round(t)+1)*mo.FibreTypeNoiseFactors(k);
-                
-                J(moto_pos,spindle_pos) = noise*daf;
+            if sys.HasSpindle
+                for k=1:this.nfibres
+                    spindle_pos = sys.off_spindle + 9*(k-1) + (1:9);
+                    moto_pos = sys.off_moto + 6*(k-1) + 2;
+
+    %                 spindle_sig = this.SpindleAffarentWeights*sp.getAfferents(y(spindle_pos));
+    %                 ext_sig = sys.Inputs{2,1}(t);
+    %                 eff_spindle_sig = min(spindle_sig,this.max_moto_signals - ext_sig);
+
+                    daf = this.SpindleAffarentWeights*sp.getAfferentsJacobian(y(spindle_pos));
+                    noise = mo.TypeNoise(k,round(t)+1)*mo.FibreTypeNoiseFactors(k);
+
+                    J(moto_pos,spindle_pos) = noise*daf;
+                end
             end
         end
         
