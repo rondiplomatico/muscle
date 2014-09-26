@@ -280,19 +280,23 @@ classdef Dynamics < muscle.Dynamics;
             
             %% Spindle to Motoneuron coupling
             if sys.HasSpindle
+                i = []; j = []; s = [];
+                moto_pos = 2:6:6*this.nfibres;
                 for k=1:this.nfibres
                     spindle_pos = sys.off_spindle + 9*(k-1) + (1:9);
-                    moto_pos = sys.off_moto + 6*(k-1) + 2;
+                    daffk_dy = this.SpindleAffarentWeights*sp.getAfferentsJacobian(y(spindle_pos));
+                    dnoise_daff = mo.TypeNoise(:,round(t)+1).*mo.FibreTypeNoiseFactors(:);
+                    i = [i repmat(moto_pos',1,9)];%#ok
+                    j = [j repmat(9*(k-1) + (1:9),this.nfibres,1)];%#ok
+                    s = [s dnoise_daff*daffk_dy/this.nfibres];%#ok
 
-    %                 spindle_sig = this.SpindleAffarentWeights*sp.getAfferents(y(spindle_pos));
-    %                 ext_sig = sys.Inputs{2,1}(t);
-    %                 eff_spindle_sig = min(spindle_sig,this.max_moto_signals - ext_sig);
-
-                    daf = this.SpindleAffarentWeights*sp.getAfferentsJacobian(y(spindle_pos));
-                    noise = mo.TypeNoise(k,round(t)+1)*mo.FibreTypeNoiseFactors(k);
-
-                    J(moto_pos,spindle_pos) = noise*daf;
+%                         spindle_sig = this.SpindleAffarentWeights*sp.getAfferents(y(spindle_pos));
+%                         ext_sig = sys.Inputs{2,1}(t);
+%                         eff_spindle_sig = min(spindle_sig,this.max_moto_signals - ext_sig);
                 end
+                J(sys.off_moto + (1:sys.num_motoneuron_dof),...
+                  sys.off_spindle + (1:sys.num_spindle_dof))...
+                    = sparse(i(:),j(:),s(:),sys.num_motoneuron_dof,sys.num_spindle_dof);
             end
         end
         

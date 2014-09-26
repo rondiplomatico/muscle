@@ -1,7 +1,6 @@
 function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
 %     J = this.getStateJacobianFD(uvwdof,t);
-%     return;
-    sys = this.System;
+%     return;    sys = this.System;
     mc = sys.Model.Config; 
     fe_pos = mc.PosFE;
     geo = fe_pos.Geometry;
