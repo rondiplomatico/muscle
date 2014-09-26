@@ -111,6 +111,13 @@ classdef Dynamics < muscle.Dynamics;
             ft = mc.FibreTypes;
             this.nfibres = length(ft);
             
+            this.lambda_dot_pos = [];
+            if sys.HasSpindle
+                this.FrequencyDetector = fullmuscle.FrequencyDetector(this.nfibres);
+                this.lambda_dot_pos = mc.SpindlePositions;
+                this.lambda_dot = zeros(1,this.nfibres);
+            end
+            
             configUpdated@muscle.Dynamics(this);
             
             % fDim and xDim are from muscle.Dynamics, so add moto+sarco
@@ -121,14 +128,6 @@ classdef Dynamics < muscle.Dynamics;
             this.moto_sarco_link_moto_out = sys.off_moto + (2:6:6*this.nfibres);
             this.moto_sarco_link_sarco_in = sys.off_sarco + (1:56:56*this.nfibres);
             this.spindle_moto_link_moto_in = this.moto_sarco_link_moto_out;
-            
-            this.lambda_dot_pos = [];
-            if sys.HasSpindle
-                this.FrequencyDetector = fullmuscle.FrequencyDetector(this.nfibres);
-                this.lambda_dot_pos = mc.SpindlePositions;
-                this.lambda_dot = zeros(1,this.nfibres);
-                this.Jlambda_dot = zeros(this.nfibres,6*mc.PosFE.Geometry.DofsPerElement);
-            end
         end
         
         function prepareSimulation(this, mu)
@@ -250,7 +249,21 @@ classdef Dynamics < muscle.Dynamics;
             %% Spindles
             if sys.HasSpindle
                 sp = sys.Spindle;
-                freq = this.FrequencyDetector.Frequency;
+                if this.fUseFD
+                    freq = this.FrequencyDetector.Frequency;
+                else
+                    % For no detection, the current spindle signal is
+                    % required
+                    spindle_pos = sys.off_spindle + (1:sys.num_spindle_dof);
+                    yspindle = reshape(y(spindle_pos),9,[]);
+                    % Get single spindle signals
+                    spindle_sig = this.SpindleAffarentWeights*sp.getAfferents(yspindle);
+                    % Compute the mean value over all signals
+                    spindle_sig = ones(1,this.nfibres)*mean(spindle_sig);
+                    % Use the upper bounded sum
+                    eff_spindle_sig = min(this.max_moto_signals, spindle_sig + sys.Inputs{2,1}(t));
+                    freq = this.freq_kexp.evaluate([sys.Model.Config.FibreTypes; eff_spindle_sig]);
+                end
                 for k=1:this.nfibres
                     spindle_pos = sys.off_spindle + 9*(k-1) + (1:9);
                     [Jspin, Jspin_Ldot] = sp.Jdydt(y(spindle_pos), t, freq(k), this.lambda_dot(k), 0);
@@ -274,12 +287,17 @@ classdef Dynamics < muscle.Dynamics;
             % there anyways. its not 100% clean OOP, but works for now.
             J(sys.num_u_dof + (1:sys.num_v_dof), sys.off_sarco+(1:sys.num_sarco_dof)) = Jalpha;
             
-            %% Motoneuron to Spindle coupling
-            % The frequency-detector is giving piecewise constant signals,
-            % hence there is no detectable change in that direction.
-            
-            %% Spindle to Motoneuron coupling
             if sys.HasSpindle
+                %% Motoneuron to Spindle coupling
+                % The frequency-detector is giving piecewise constant signals,
+                % hence there is no detectable change in that direction.
+                
+                if ~this.fUseFD
+                    % TODO implement wendland derivatives and use kexp deriv
+                    % here for frequency forwarding
+                end
+                
+                %% Spindle to Motoneuron coupling
                 i = []; j = []; s = [];
                 moto_pos = 2:6:6*this.nfibres;
                 for k=1:this.nfibres
@@ -314,45 +332,65 @@ classdef Dynamics < muscle.Dynamics;
     end
     
     methods(Access=protected)
-        function J = computeSparsityPattern(this)
-            J = computeSparsityPattern@muscle.Dynamics(this);
+        function SP = computeSparsityPattern(this)
+            [SP, SPalpha, SPLamDot] = computeSparsityPattern@muscle.Dynamics(this);
+            sys = this.System;
             
             % Neuro
             i = [1,1,2,2,2,2,2,2,3,3,4,4,5,5,6,6];
             j = [1,2,1,2,3,4,5,6,2,3,2,4,2,5,2,6];
             J_moto = sparse(i,j,true,6,6);
+            for k=1:this.nfibres
+                SP = blkdiag(SP, J_moto);
+            end
             
             % Sarco
             mc = metaclass(this);
             s = load(fullfile(fileparts(which(mc.Name)),'JSP_Sarco'));
             J_sarco = s.JP;
-            
-            % Spindle
-            JSp = this.System.Spindle.JSparsityPattern;
-            
             for k=1:this.nfibres
-                J = blkdiag(J, J_moto);
-            end
-            for k=1:this.nfibres
-                J = blkdiag(J, J_sarco);
-            end
-            for k=1:this.nfibres
-                J = blkdiag(J, JSp);
+                SP = blkdiag(SP, J_sarco);
             end
             
-            sys = this.System;
+            if sys.HasSpindle
+                % Spindle
+                JSp = sys.Spindle.JSparsityPattern;
+                for k=1:this.nfibres
+                    SP = blkdiag(SP, JSp);
+                end
+            end
             
             % Moto -> Sarco link
             for k=1:this.nfibres
                 % first entry of sarco gets 2nd output of motoneuron
                 off_sarco = sys.off_sarco + (k-1)*56 + 1;
                 off_moto = sys.off_moto + (k-1)*6 + 2;
-                J(off_sarco,off_moto) = true;
+                SP(off_sarco,off_moto) = true;
             end
+                    
+            % Sarco -> Mechanics
+            SP(sys.num_u_dof + (1:sys.num_v_dof), sys.off_sarco+(1:sys.num_sarco_dof)) = SPalpha;
             
-            % Sarco -> Mechanics link
-            for k=1:this.nfibres
-                J(sys.num_u_dof + (1:sys.num_v_dof),sys.sarco_output_idx(k)) = true;
+            if sys.HasSpindle
+                % Spindle -> Motoneuron link
+                i = []; j = [];
+                moto_pos = 2:6:6*this.nfibres;
+                for k=1:this.nfibres
+                    i = [i repmat(moto_pos',1,9)];%#ok
+                    j = [j repmat(9*(k-1) + (1:9),this.nfibres,1)];%#ok
+                end
+                SP(sys.off_moto + (1:sys.num_motoneuron_dof),...
+                  sys.off_spindle + (1:sys.num_spindle_dof))...
+                    = sparse(i(:),j(:),ones(numel(i),1),...
+                    sys.num_motoneuron_dof,sys.num_spindle_dof);
+                
+                % Mechanics -> spindle
+                Jspin_Ldot = double(sys.Spindle.JLdotSparsityPattern);
+                for k=1:this.nfibres
+                    spindle_pos = sys.off_spindle + 9*(k-1) + (1:9);
+                    SP(spindle_pos,1:sys.num_u_dof+sys.num_v_dof) = ...
+                        logical(Jspin_Ldot*double(SPLamDot(k,:)));
+                end
             end
         end
     end

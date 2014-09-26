@@ -65,16 +65,12 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     
     properties(SetAccess=private)
         APExp;
-        
-        % Helper variable for fullmuscle.model
-        JS;
     end
     
     properties(SetAccess=protected)
         % Helper variable for fullmuscle.model
         lambda_dot_pos;
         lambda_dot;
-        Jlambda_dot;
         
         nfibres;
     end
@@ -299,7 +295,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             
         end
         
-        J = computeSparsityPattern(this);
+        [SP, SPalpha, SPLamDot] = computeSparsityPattern(this);
     end
     
     methods(Access=private)

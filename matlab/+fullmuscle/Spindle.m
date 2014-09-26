@@ -16,7 +16,7 @@ classdef Spindle < KerMorObject
     properties(SetAccess=private)
         spindleConst;
         JSparsityPattern;
-        JLdotSparsityPattern
+        JLdotSparsityPattern;
         y0;
         UseSecondAsTimeUnit;
     end

@@ -52,8 +52,8 @@ classdef MusclePlotter < muscle.MusclePlotter
                 zlabel(h_geo,'z [mm]');
                 axis(h_geo, this.getPlotBox(y));
                 daspect([1 1 1]);
-%                 view(h_geo, [46 30]);
-                view(h_geo, [0 90]);
+                view(h_geo, [46 30]);
+%                 view(h_geo, [0 90]);
                 hold(h_geo,'on');
             end
             
@@ -170,8 +170,12 @@ classdef MusclePlotter < muscle.MusclePlotter
                         cla(h4);
                         plot(h4,time_part,pd.afferents(affsel(:),1:ts)');
                         cla(h5);
-                        plot(h5,time_part,pd.spindle_mean_current(sel,1:ts));
+                        plot(h5,time_part,pd.spindle_mean_current(1:ts));
                         plot(h5,time_part,pd.eff_mean_current(sel,1:ts),'r--');
+                        
+%                         cla(h6);
+%                         plot(h6,time_part,pd.spindle_single_mean_current(sel,1:ts));
+%                         plot(h6,time_part,pd.eff_mean_current(sel,1:ts),'r--');
                     end
                 end
                 
@@ -255,7 +259,7 @@ classdef MusclePlotter < muscle.MusclePlotter
             % Freq also uses afferents if kernel expansions are used
             if opts.Aff || (opts.Freq && ~sys.f.UseFrequencyDetector)
                 afferents = zeros(2*nf,nt);
-                spindle_mean_current = zeros(nf,nt);
+                spindle_single_mean_current = zeros(nf,nt);
                 eff_mean_current = zeros(nf,nt);
                 max_moto_signals = polyval(sys.upperlimit_poly,mc.FibreTypes);
                 for k=1:nf
@@ -263,10 +267,14 @@ classdef MusclePlotter < muscle.MusclePlotter
                     af_pos = (k-1)*2 + (1:2);
                     yspindle = y(spindle_pos,:);
                     afferents(af_pos,:) = sys.Spindle.getAfferents(yspindle);
-                    spindle_mean_current(k,:) = sys.f.SpindleAffarentWeights*afferents(af_pos,:);
-                    eff_mean_current(k,:) = min(max_moto_signals(k),spindle_mean_current(k,:)+pd.ext_mean_current);
+                    spindle_single_mean_current(k,:) = sys.f.SpindleAffarentWeights*afferents(af_pos,:);
+                end
+                spindle_mean_current = mean(spindle_single_mean_current);
+                for k=1:nf
+                    eff_mean_current(k,:) = min(max_moto_signals(k),spindle_mean_current+pd.ext_mean_current);
                 end
                 pd.afferents = afferents;
+                pd.spindle_single_mean_current = spindle_single_mean_current;
                 pd.spindle_mean_current = spindle_mean_current;
                 pd.eff_mean_current = eff_mean_current;
             end
