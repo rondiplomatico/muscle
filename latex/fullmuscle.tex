@@ -21,6 +21,7 @@ It has $56$ degrees of freedom and is given by
 	\vr'(t) &= \fsa(\vr(t),\tau) & \vr(0) &= \vr_0(\tau),
 \end{align}
 for any fibre type $\tau$.
+There is a set of $105$ (fibre-type dependent) constants for the model, which we denote by $\csa(\tau)\in\R^{105}$.
 We denote by $\vr^k(t)\in\R^{56}$ the state of the $k$-th sarcomere model (of the $k$-th motorunit).
 
 \subsection{Spindle}
@@ -73,6 +74,30 @@ The overall muscle model is
 
 
 \subsubsection{Motoneuron to Sarcomere}
+The motoneuron soma signals $q^k_2(t)$ are used to provide activation spikes for the $k$-th sarcomere.
+As the sarcomere model merely reacts to high spikes, the motoneuron output is scaled by a nonlinear function $\gamma$ to emphasize high peaks.
+Essentially, the small signals are multiplied by a small factor $\beta_m = 0.3$, and the high signals are intensified by $\beta_M = 7$.
+The transition from low to high factor is realized by a smooth Gaussian,
+where we choose a threshold signal of $q_M = 40$ to pinpoint the signal from which on the $\beta_M$ factor is applied:
+\begin{align}
+	\gamma(q) &:= \begin{cases}
+		\beta_m + e^{-(q-q_M)^2/150}(\beta_M-\beta_m), & 0 < q < q_M\\
+		\beta_M & q \geq q_M,
+	\end{cases}
+\end{align}
+Figure \ref{MSLink} illustrates the 
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=\single]{moto_sarco_link_factor.pdf}
+	\caption{Amplification factor for motoneuron signals}
+	\label{fig:MSLink}
+\end{figure}
+Taking into account division by sarcomere model constants, the sarcomere models now read as
+\begin{align}
+	\vr^k'(t) &= \fsa(\vr^k(t),\tau_k) + \ve_1 \frac{\gamma(q_2^k(t))}{\csa_1(\tau_k)}q_2^k(t),
+\end{align}
+where $\ve_1 \in \R^{56}$ denotes the first unit vector, i.e. the signal is added to the first component of the sarcomere models.
+
 \subsubsection{Sarcomere to Mechanics}
 \subsubsection{Mechanics to Spindle}
 \subsubsection{Spindle to Motoneuron}

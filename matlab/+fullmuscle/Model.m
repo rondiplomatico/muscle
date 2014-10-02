@@ -62,6 +62,20 @@ classdef Model < muscle.Model
             varargin = [varargin {'GeoOnly',true}];
             [varargout{1:nargout}] = plotGeometrySetup@muscle.Model(this,varargin{:});
         end
+        
+        function pm = plotMotoSacroLinkFactorCurve(this)
+            x = 0:.1:80;
+            pm = PlotManager;
+            pm.LeaveOpen = true;
+            h = pm.nextPlot('moto_sarco_link_factor',...
+                'Factor \gamma(q) for motoneuron to sarcomere link','q','\gamma(q)');
+            f = this.System.f;
+            fx = f.MSLink_MaxFactor*ones(1,length(x));
+            dynfac = x < f.MSLink_MaxFactorSignal;
+            fx(dynfac) = f.MSLinkFun(x(dynfac));
+            plot(h,x,fx,'r','LineWidth',2);
+            pm.done;
+        end
     end
     
 end
