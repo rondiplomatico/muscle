@@ -57,6 +57,11 @@ classdef Model < muscle.Model
             
             this.System.prepareSimulation(this.DefaultMu, this.DefaultInput);
         end
+        
+        function varargout = plotGeometrySetup(this, varargin)
+            varargin = [varargin {'GeoOnly',true}];
+            [varargout{1:nargout}] = plotGeometrySetup@muscle.Model(this,varargin{:});
+        end
     end
     
 end

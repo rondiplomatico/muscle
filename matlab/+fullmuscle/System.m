@@ -74,6 +74,9 @@ classdef System < muscle.System;
 %             this.Inputs{2,1} = @(t)1;
             
             this.Motoneuron = fullmuscle.Motoneuron;
+            
+            % Compile information for plotting
+            this.Plotter = fullmuscle.MusclePlotter(this);
         end
         
         function configUpdated(this)
@@ -93,9 +96,6 @@ classdef System < muscle.System;
             end
             
             configUpdated@muscle.System(this);
-            
-            % Compile information for plotting
-            this.Plotter = fullmuscle.MusclePlotter(this);
         end
         
         function setConfig(this, mu, inputidx)
@@ -114,12 +114,11 @@ classdef System < muscle.System;
                 uneum = this.Inputs{1,inputidx};
                 
                 % Second row is external mean current input
-                uext = @(t)mu(4);
-                this.Inputs{2,inputidx} = uext;
+                uext = this.Inputs{2,inputidx};
                 
                 ustr = '@(t)[mu(3)*uneum(t); bno(round(t)+1); ';
                 for k=1:this.nfibres
-                    rowfun = sprintf('no(%d,round(t)+1)*min(%g,uext(t)); ', k, maxcurrents(k));
+                    rowfun = sprintf('no(%d,round(t)+1)*min(%g,mu(4)*uext(t)); ', k, maxcurrents(k));
                     ustr = [ustr rowfun];%#ok
                 end
                 ustr = [ustr ']'];

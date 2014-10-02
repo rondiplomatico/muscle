@@ -132,7 +132,7 @@ classdef System < models.BaseDynSystem
         fD;
     end
     
-    properties(Access=protected)
+    properties(SetAccess=protected)
         Plotter;
     end
     

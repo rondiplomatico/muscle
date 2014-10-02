@@ -139,7 +139,7 @@ In detail, we have
 Recall from \eqref{def:splitPnllin} that
 \begin{align*}
 \vPnl(X,\vu,\vw) &= p(X,\vw)\vF^{-T}(X,\vu) + 2(c_{10} + I_1(\vC(X,\vu))c_{01})\vF(X,\vu) - 2c_{01}\vF(X,\vu)\vC(X,\vu)\\
-	     &\quad+g(\lambda_f(X,\vu))\vF(X,\vu)\va_0(X)\otimes\va_0(X)
+	     &\quad+g(\la(X,\vu))\vF(X,\vu)\va_0(X)\otimes\va_0(X)
 \end{align*}
 we consider the single summands of $\vPnl$ to derive $\d{\vPnl}{\vu[j]_i}(X,\vu,\vw)$:
 \begin{align*}
@@ -166,34 +166,34 @@ we consider the single summands of $\vPnl$ to derive $\d{\vPnl}{\vu[j]_i}(X,\vu,
 	+ 2\vF(X,\vu)\suml{l}{N} \vu[l]_i(\dpj \otimes \divergence\varphi_l(X))\right)\in\R^{3\times 3}
 \end{align*}
 \begin{align*}
-	\nabla_{\vu[j]_i}\lambda_f(X,\vu) &= \nabla_{\vu[j]_i}\no{\vF(X,\vu)\va_0(X)} = \frac{(\vF(X,\vu)\va_0(X))^T}{\no{\vF(X,\vu)\va_0(X)}}\nabla_{\vu[j]_i}\vF(X,\vu)\va_0(X)\\
-	&= \frac{1}{\lambda_f(X,\vu)}(\vF(X,\vu)\va_0(X))^T\vU_i^j\va_0(X)
-% 	\nabla_{\vu[j]}\lambda_f(X,\vu) &= \nabla_{\vu[j]}\sqrt{\suml{m,l}{N} (\vu[m] \cdot \vu[l])\left(\divergence\varphi_m(X)\cdot a_0(X)\right)(\divergence\varphi_l(X)\cdot a_0(X))}\\
-% 	&= \frac{1}{2\lambda_f(X,\vu)} \nabla_{\vu[j]}\suml{m,l}{N} (\vu[m] \cdot \vu[l])\left(\divergence\varphi_m(X)\cdot a_0(X)\right)(\divergence\varphi_l(X)\cdot a_0(X))\\
-% 	&= \frac{1}{2\lambda_f(X,\vu)} 2\suml{l}{N} \vu[l]\left(\dpj\cdot a_0(X)\right)(\divergence\varphi_l(X)\cdot a_0(X))\\
-% 	&= \frac{1}{\lambda_f(X,\vu)} \suml{l}{N} \vu[l]\left(\dpj\cdot a_0(X)\right)(\divergence\varphi_l(X)\cdot a_0(X))
+	\nabla_{\vu[j]_i}\la(X,\vu) &= \nabla_{\vu[j]_i}\no{\vF(X,\vu)\va_0(X)} = \frac{(\vF(X,\vu)\va_0(X))^T}{\no{\vF(X,\vu)\va_0(X)}}\nabla_{\vu[j]_i}\vF(X,\vu)\va_0(X)\\
+	&= \frac{1}{\la(X,\vu)}(\vF(X,\vu)\va_0(X))^T\vU_i^j\va_0(X)
+% 	\nabla_{\vu[j]}\la(X,\vu) &= \nabla_{\vu[j]}\sqrt{\suml{m,l}{N} (\vu[m] \cdot \vu[l])\left(\divergence\varphi_m(X)\cdot a_0(X)\right)(\divergence\varphi_l(X)\cdot a_0(X))}\\
+% 	&= \frac{1}{2\la(X,\vu)} \nabla_{\vu[j]}\suml{m,l}{N} (\vu[m] \cdot \vu[l])\left(\divergence\varphi_m(X)\cdot a_0(X)\right)(\divergence\varphi_l(X)\cdot a_0(X))\\
+% 	&= \frac{1}{2\la(X,\vu)} 2\suml{l}{N} \vu[l]\left(\dpj\cdot a_0(X)\right)(\divergence\varphi_l(X)\cdot a_0(X))\\
+% 	&= \frac{1}{\la(X,\vu)} \suml{l}{N} \vu[l]\left(\dpj\cdot a_0(X)\right)(\divergence\varphi_l(X)\cdot a_0(X))
 \end{align*}
 \begin{align*}
-	  & \d{}{\vu[j]_i} g(\lambda_f(X,\vu))\vF(X,\vu)\va_0(X)\otimes\va_0(X)\\
-	 =& \left( \d{g}{\lambda_f}(\lambda_f(X,\vu))\d{}{\vu[j]_i}\lambda_f(X,\vu)\vF(X,\vu) + g(\lambda_f(X,\vu))\ve_i\otimes\dpj\right)\va_0(X)\otimes\va_0(X) 
+	  & \d{}{\vu[j]_i} g(\la(X,\vu))\vF(X,\vu)\va_0(X)\otimes\va_0(X)\\
+	 =& \left( \d{g}{\la}(\la(X,\vu))\d{}{\vu[j]_i}\la(X,\vu)\vF(X,\vu) + g(\la(X,\vu))\ve_i\otimes\dpj\right)\va_0(X)\otimes\va_0(X) 
 \end{align*}
 \begin{align*}
 	  f_l'(\lambda) &\re{def:fl} \begin{cases}
-		\frac{12.5}{\lfo}\left(1-\frac{\lambda_f}{\lfo}\right) & 0.6 \leq \frac{\lambda_f}{\lfo} \leq 1.4\\ 
+		\frac{12.5}{\lfo}\left(1-\frac{\la}{\lfo}\right) & 0.6 \leq \frac{\la}{\lfo} \leq 1.4\\ 
 		0 & \text{else}
 	\end{cases}\\	
-	   \d{g}{\lambda_f} &\re{def:g} \d{}{\lambda_f}\left(\frac{b_1}{\lambda_f^2}\left(\lambda_f^{d_1} - 1\right)
-		+\frac{p^{max}}{\lambda_f}f_l(\lambda_f)\gamma\left(\alpha,\d{\lambda_f}{t}\right)\right)\\
-		&= -\frac{b_1}{\lambda_f^3}\left(\lambda_f^{d_1} - 1\right) + \frac{b_1}{\lambda_f^2}(d_1-1)\lambda_f^{d_1-1}
-		+p^{max}\gamma\left(\alpha,\d{\lambda_f}{t}\right) \left(-\frac{1}{\lambda_f^2}f_l(\lambda_f) + \frac{1}{\lambda_f}f_l'(\lambda_f)\right)\\
-		&= \frac{b_1}{\lambda_f^3}\left((d_1-1)\lambda_f^{d_1} - (\lambda_f^{d_1} - 1)\right)
-		+p^{max}\gamma\left(\alpha,\d{\lambda_f}{t}\right) \left(-\frac{1}{\lambda_f^2}f_l(\lambda_f) + \frac{1}{\lambda_f}f_l'(\lambda_f)\right)\\
-		&= \frac{b_1}{\lambda_f^3}\left((d_1-2)\lambda_f^{d_1} + 2\right)
-		+p^{max}\gamma\left(\alpha,\d{\lambda_f}{t}\right) \left(-\frac{1}{\lambda_f^2}f_l(\lambda_f) 
-		+ \underbrace{\frac{12.5}{\lambda_f\lfo}\left(1-\frac{\lambda_f}{\lfo}\right)}_{\neq 0\text{ if }0.6 \leq \frac{\lambda_f}{\lfo} \leq 1.4}\right)\\
-		&= \frac{b_1}{\lambda_f^3}\left((d_1-2)\lambda_f^{d_1} + 2\right)
-		+ \frac{p^{max}}{\lambda_f^2}\gamma\left(\alpha,\d{\lambda_f}{t}\right) \left( 
-		\underbrace{12.5\frac{\lambda_f}{\lfo}\left(1-\frac{\lambda_f}{\lfo}\right)}_{\neq 0\text{ if }0.6 \leq \frac{\lambda_f}{\lfo} \leq 1.4}-f_l(\lambda_f)\right)
+	   \d{g}{\la} &\re{def:g} \d{}{\la}\left(\frac{b_1}{\la^2}\left(\la^{d_1} - 1\right)
+		+\frac{p^{max}}{\la}f_l(\la)\gamma\left(\alpha,\d{\la}{t}\right)\right)\\
+		&= -\frac{b_1}{\la^3}\left(\la^{d_1} - 1\right) + \frac{b_1}{\la^2}(d_1-1)\la^{d_1-1}
+		+p^{max}\gamma\left(\alpha,\d{\la}{t}\right) \left(-\frac{1}{\la^2}f_l(\la) + \frac{1}{\la}f_l'(\la)\right)\\
+		&= \frac{b_1}{\la^3}\left((d_1-1)\la^{d_1} - (\la^{d_1} - 1)\right)
+		+p^{max}\gamma\left(\alpha,\d{\la}{t}\right) \left(-\frac{1}{\la^2}f_l(\la) + \frac{1}{\la}f_l'(\la)\right)\\
+		&= \frac{b_1}{\la^3}\left((d_1-2)\la^{d_1} + 2\right)
+		+p^{max}\gamma\left(\alpha,\d{\la}{t}\right) \left(-\frac{1}{\la^2}f_l(\la) 
+		+ \underbrace{\frac{12.5}{\la\lfo}\left(1-\frac{\la}{\lfo}\right)}_{\neq 0\text{ if }0.6 \leq \frac{\la}{\lfo} \leq 1.4}\right)\\
+		&= \frac{b_1}{\la^3}\left((d_1-2)\la^{d_1} + 2\right)
+		+ \frac{p^{max}}{\la^2}\gamma\left(\alpha,\d{\la}{t}\right) \left( 
+		\underbrace{12.5\frac{\la}{\lfo}\left(1-\frac{\la}{\lfo}\right)}_{\neq 0\text{ if }0.6 \leq \frac{\la}{\lfo} \leq 1.4}-f_l(\la)\right)
 \end{align*}
 
 \subsubsection{Derivation of $\nabla_{\vw}\vK(\vu,\vw)$}

@@ -7,6 +7,10 @@ classdef MusclePlotter < handle
 %
 % @new{0,7,dw,2014-09-25} Added this class.
     
+    properties
+        GeoView = [46 30];
+    end
+
     properties(SetAccess=private)
         System;
         Config;
@@ -61,7 +65,7 @@ classdef MusclePlotter < handle
             zlabel(h,'z [mm]');
             axis(h, pd.geo_plotbox);
             daspect([1 1 1]);
-            view(h, [46 30]);
+            view(h, this.GeoView);
             hold(h,'on');
 
             for ts = 1:length(t)
@@ -267,7 +271,7 @@ classdef MusclePlotter < handle
         function opts = parsePlotArgs(~, args)
             i = inputParser;
             i.KeepUnmatched = true;
-            i.addParamValue('Vid',false,@(v)islogical(v));
+            i.addParamValue('Vid',false,@(v)~isempty(v) || exist(v,'file') == 7);
             i.addParamValue('Forces',false,@(v)islogical(v));
             i.addParamValue('Velo',false,@(v)islogical(v));
             i.addParamValue('Pressure',false,@(v)islogical(v));

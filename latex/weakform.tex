@@ -70,7 +70,7 @@ The most elaborative part is to evaluate the stress tensor $\vP$ at all volumes 
 We have from \eqref{def:completeP} that
 \begin{align*}
 		\vP(\pmp,t) &= p(\pmp,t)\vF^{-T}(\pmp,t) + 2(c_{10} + I_1(\vC(\pmp,t))c_{01})\vF(\pmp,t)\\
-			 &- 2c_{01}\vF(\pmp,t)\vC(\pmp,t)+g(\lambda_f(\pmp,t))\vF(\pmp,t)\va_0(\pmp)\otimes\va_0(\pmp)\\
+			 &- 2c_{01}\vF(\pmp,t)\vC(\pmp,t)+g(\la(\pmp,t))\vF(\pmp,t)\va_0(\pmp)\otimes\va_0(\pmp)\\
 			 & + \eta \dot{\vF}(\pmp,t).
 \end{align*}
 In the following we derive representations of the various components of $\vP$, where we assume $X\in\Or$.
@@ -85,7 +85,7 @@ In the following we derive representations of the various components of $\vP$, w
 	&= \sumi\sumj (\vc_i(t) \cdot \vc_j(t))(\dpi \cdot \dpj),\label{eq:I1_basis}\\
 	\Rightarrow I_1(\vC(\pmp,t)) &= \sumi\sumj (\vc_i(t) \cdot \vc_j(t))(\dNimp \cdot \dNjmp),\nonumber
 \end{align}
-Expression for fibre stretch $\lambda_f$:
+Expression for fibre stretch $\la$:
 \begin{align*}
 % 	\vF(X,t)^T\vF(X,t) &= \sumi\sumj \bigl(\vc_i(t)\otimes\dpi\bigr)^T\vc_j(t)\otimes\dpj\\
 % 	 &= \sumi\sumj \bigl(\dpi\otimes\vc_i(t)\bigr)\vc_j(t)\otimes\dpj\\
@@ -94,12 +94,12 @@ Expression for fibre stretch $\lambda_f$:
 		= \left(\sum_{i,j} F_{ik}F_{ij}a_ja_l\right)_{kl}\\
 	\Rightarrow \tr{(\vF^T\vF\va\va^T)} &= \sum_{i,j,k} F_{ik}F_{ij}a_ja_k = \sum_i \sum_jF_{ij}a_j \sum_k F_{ik}a_k = \sum_i (\vF\va)_i^2\\
 	\Rightarrow \sqrt{\tr{(\vF^T\vF\va\va^T)}} &= \no{\vF\va}\\
-	\lambda_f(X,t)^2 &=I_4(\vC(X,t),\va_0(X)) = \vC(X,t):(\va_0(X)\otimes \va_0(X))\\
+	\la(X,t)^2 &=I_4(\vC(X,t),\va_0(X)) = \vC(X,t):(\va_0(X)\otimes \va_0(X))\\
 			&=  \vF(X,t)^T\vF(X,t) : (\va_0(X)\otimes \va_0(X))\\
 			&= \tr{\left(\vF(X,t)^T\vF(X,t)\va_0(X)\va_0(X)^T\right)}\\
 % 			&=  \sumi\sumj (\vc_i(t)\cdot \vc_j(t))\bigl(\dpi\otimes\dpj\bigr) : (\va_0(X)\otimes \va_0(X))\\
 % 			&=  \sumi\sumj (\vc_i(t)\cdot \vc_j(t))\left(\dpi\cdot \va_0(X)\right)(\dpj\cdot \va_0(X)),\\
-	\Rightarrow \lambda_f(X,t) &=
+	\Rightarrow \la(X,t) &=
 			\sqrt{\tr{\left(\vF(X,t)^T\vF(X,t)\va_0(X)\va_0(X)^T\right)}} = \no{\vF(X,t)\va_0(X)} 
 \end{align*}
 %\left(\sumi\sumj (\vc_i(t)\cdot \vc_j(t))\left(\dNimp\cdot \va_0(\pmp)\right)(\dNjmp\cdot \va_0(\pmp))\right)^\frac{1}{2},\\
@@ -111,12 +111,12 @@ Expression for fibre stretch $\lambda_f$:
 % \end{align*}
 For later maybe:
 \begin{align*}
-	\d{\lambda_f}{t}(X,t) &= \d{}{t}\no{\vF(X,t)\va_0(X)} = \frac{(\vF(X,t)\va_0(X))^T}{\no{\vF(X,t)\va_0(X)}}\d{}{t}\vF(X,t)\va_0(X)\\
-	  &= \frac{1}{\lambda_f(X,t)}\va_0(X)^T\vF(X,t)^T\vF'(X,t)\va_0(X)
+	\d{\la}{t}(X,t) &= \d{}{t}\no{\vF(X,t)\va_0(X)} = \frac{(\vF(X,t)\va_0(X))^T}{\no{\vF(X,t)\va_0(X)}}\d{}{t}\vF(X,t)\va_0(X)\\
+	  &= \frac{1}{\la(X,t)}\va_0(X)^T\vF(X,t)^T\vF'(X,t)\va_0(X)
 \end{align*}
 % \begin{align*}
-% 	\d{\lambda_f}{t}(X,t) &= \frac{1}{2\lambda_f(X,t)} \suml{i,j}{N} (\vc'_i(t)\cdot \vc_j(t) + \vc_i(t)\cdot \vc'_j(t))\left(\dpi\cdot a_0(X)\right)(\dpj\cdot a_0(X))\\
-% 		&= \frac{1}{\lambda_f(X,t)}\suml{i,j}{N} (\vc_i(t)\cdot \vc'_j(t))\left(\dpi\cdot a_0(X)\right)(\dpj\cdot a_0(X))
+% 	\d{\la}{t}(X,t) &= \frac{1}{2\la(X,t)} \suml{i,j}{N} (\vc'_i(t)\cdot \vc_j(t) + \vc_i(t)\cdot \vc'_j(t))\left(\dpi\cdot a_0(X)\right)(\dpj\cdot a_0(X))\\
+% 		&= \frac{1}{\la(X,t)}\suml{i,j}{N} (\vc_i(t)\cdot \vc'_j(t))\left(\dpi\cdot a_0(X)\right)(\dpj\cdot a_0(X))
 % \end{align*}
 
 %     \vF(X,t)\vF(X,t)^T\vF(X,t) &= \sumk\vc_k(t)\otimes\dpk\sumi\sumj (\vc_i(t)\cdot \vc_j(t))\dpi\otimes\dpj\nonumber\\

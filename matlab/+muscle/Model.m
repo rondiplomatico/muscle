@@ -168,17 +168,16 @@ classdef Model < models.BaseFullModel
             pm.done;
         end
         
-        function varargout = plotGeometrySetup(this, pm)
-            args = {};
-            if nargin == 2
-                args = {'PM',pm};
+        function varargout = plotGeometrySetup(this, varargin)
+            if ~isempty(varargin) && isa(varargin{1},'PlotManager')
+                varargin = [{'PM'} varargin];
             end
             x0 = this.System.x0.evaluate(1);
             [~, nf] = this.getResidualForces(0, x0);
             if ~isempty(nf)
-                args(end+1:end+2) = {'NF',nf};
+                varargin(end+1:end+2) = {'NF',nf};
             end
-            [varargout{1:nargout}] = this.System.plot(0,x0,args{:});
+            [varargout{1:nargout}] = this.System.plot(0,x0,varargin{:});
         end
         
         function [residuals_dirichlet, residuals_neumann] = getResidualForces(this, t, uvw)

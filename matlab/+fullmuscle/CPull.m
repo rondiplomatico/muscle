@@ -5,18 +5,23 @@ classdef CPull < fullmuscle.AModelConfig
     end
     
     methods
-        function this = CPull(version)
+        function this = CPull(version, xpts, ypts)
             % Creates a Debug simple muscle model configuration.
             %
             % Single cube with same config as reference element
-            if nargin < 1
-                version = 1;
+            if nargin < 3
+                ypts = [0 10];
+                if nargin < 2
+                    if nargin < 1
+                        version = 1;
+                    end
+                    xpts = [0 10];
+                    if version == 3
+                        xpts = [0 10 20];
+                    end
+                end            
             end
-            xpts = [0 10];
-            if version == 3
-                xpts = [0 10 20];
-            end
-            [pts, cubes] = geometry.Cube8Node.DemoGrid(xpts,[0 10],[0 10]);
+            [pts, cubes] = geometry.Cube8Node.DemoGrid(xpts,ypts,[0 10]);
             geo = geometry.Cube8Node(pts, cubes);
             this = this@fullmuscle.AModelConfig(geo.toCube27Node);
             this.NeumannCoordinateSystem = 'global';
@@ -59,13 +64,15 @@ classdef CPull < fullmuscle.AModelConfig
         end
         
         function u = getInputs(this)
-            u{1} = this.getAlphaRamp(10,1);
-            u{2} = this.getAlphaRamp(100,1);
-            u{3} = this.getAlphaRamp(300,1);
-            u{4} = this.getAlphaRamp(10,1,200);
-            u{5} = this.getAlphaRamp(100,1,200);
-            u{6} = this.getAlphaRamp(300,1,200);
-            u{7} = this.getAlphaRamp(1000,1);
+            u{1,1} = this.getAlphaRamp(10,1);
+            u{1,2} = this.getAlphaRamp(100,1);
+            u{1,3} = this.getAlphaRamp(300,1);
+            u{1,4} = this.getAlphaRamp(10,1,200);
+            u{1,5} = this.getAlphaRamp(100,1,200);
+            u{1,6} = this.getAlphaRamp(300,1,200);
+            u{1,7} = this.getAlphaRamp(1000,1);
+            null = @(t)ones(size(t));
+            u(2,1:7) = repmat({null},1,7);
         end
         
     end

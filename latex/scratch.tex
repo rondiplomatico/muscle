@@ -28,8 +28,8 @@
 \usepackage{listings}
 
 % Illustrations
-%\usepackage{tikz}
-%usetikzlibrary{arrows,automata}
+\usepackage{tikz}
+\usetikzlibrary{arrows,automata,calc}
 
 % Algorithms
 %\usepackage{algorithm}
@@ -96,7 +96,13 @@
 \newcommand{\dNimp}{N^\nabla_{i,m}(X_p)}
 \newcommand{\dNjmp}{N^\nabla_{j,m}(X_p)}
 \newcommand{\Nkmp}{N_{l(k,m)}(X_p)}
-\newcommand{\lfo}{\lambda_f^{opt}}
+\newcommand{\la}{\lambda}
+\newcommand{\dla}{\lambda'}
+\newcommand{\lfo}{\la^{opt}}
+\newcommand{\mups}{{s_{pool}}} % Motor unit pool size
+\newcommand{\fmo}{\vf_{moto}}
+\newcommand{\fsa}{\vf_{sarc}}
+\newcommand{\fsp}{\vf_{spin}}
 
 \allowdisplaybreaks
 \begin{document}
@@ -142,6 +148,9 @@ We define the quantities
 
 \section{Formulation as System of ODEs}
 \input{odeform}
+
+\section{Full muscle model}
+\input{fullmuscle}
 
 \newpage
 \section{Appendix, additional derivations}

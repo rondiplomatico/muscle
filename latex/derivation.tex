@@ -262,13 +262,14 @@ which gives
 \end{align}
 
 \subsubsection{Anisotropic stress tensor $\vSa$}
-Further, we introduce the stretch $\lambda_f$ in fibre direction $\va_0(X)$ as
+Further, we introduce the stretch $\la > 0$ in fibre direction $\va_0(X), \no{\va_0(X)} \equiv 1$, as
 \begin{align*}
-	\lambda_f(X,t) &:= \sqrt{I_4(\vC(X,t),\va_0(X))}
+	\la(X,t) &:= \sqrt{I_4(\vC(X,t),\va_0(X))} = \sqrt{\va_0(X)^T\vC(X,t)\va_0(X))}\\
+	&= \sqrt{\va_0(X)^T\vF(X,t)^T\vF(X,t)\va_0(X))} = \no{\vF(X,t)\va_0(X)}
 \end{align*}
 Now, according to \cite{Markert2005}, we employ
 \begin{align*}
-	\Psi(\lambda_f) := \sumi \frac{b_i}{d_i}(\lambda_f^{d_i} - 1) - b_i\ln\lambda_f
+	\Psi(\la) := \sumi \frac{b_i}{d_i}(\la^{d_i} - 1) - b_i\ln\la
 \end{align*}
 with $n=1$ summands 
 \begin{align*}
@@ -276,43 +277,45 @@ with $n=1$ summands
 \end{align*}
 We thus have
 \begin{align}
-	\d{\Psi}{\vC}(\lambda_f) &= \d{\Psi}{\lambda_f}(\lambda_f)\d{\lambda_f}{I_4}(I_4)\d{I_4}{\vC}(\vC,\va_0),\label{eq:dpsidC}
+	\d{\Psi}{\vC}(\la) &= \d{\Psi}{\la}(\la)\d{\la}{I_4}(I_4)\d{I_4}{\vC}(\vC,\va_0),\label{eq:dpsidC}
 \end{align}
 with
 \begin{align*}
-		 \d{\Psi}{\lambda_f}(\lambda_f) &= b_1\lambda_f^{d_1-1} - b_1\lambda_f^{-1} = b_1\lambda_f^{-1}(\lambda_f^{d_1} - 1),\\
-		 \d{\lambda_f}{I_4}(I_4) &= \frac{1}{2\sqrt{I_4}} = \frac{1}{2\lambda_f}.
+		 \d{\Psi}{\la}(\la) &= b_1\la^{d_1-1} - b_1\la^{-1} = b_1\la^{-1}(\la^{d_1} - 1),\\
+		 \d{\la}{I_4}(I_4) &= \frac{1}{2\sqrt{I_4}} = \frac{1}{2\la}.
 \end{align*}
 With \eqref{def:dI4} and the above we get
 \begin{align*}
-	2\d{\Psi}{\vC}(\lambda_f) &= 2\left(b_1\lambda_f^{-1}(\lambda_f^{d_1} - 1)\right) \frac{1}{2\lambda_f}\va_0\otimes\va_0
-	= \frac{b_1}{\lambda_f^2}\left(\lambda_f^{d_1} - 1\right) \va_0\otimes\va_0,
+	2\d{\Psi}{\vC}(\la) &= 2\left(b_1\la^{-1}(\la^{d_1} - 1)\right) \frac{1}{2\la}\va_0\otimes\va_0
+	= \frac{b_1}{\la^2}\left(\la^{d_1} - 1\right) \va_0\otimes\va_0,
 \end{align*}
 leading to
 \begin{align}
-	\vSa(X,t) &= \frac{b_1}{\lambda_f^2(X,t)}\left(\lambda_f^{d_1}(X,t) - 1\right) \va_0(X)\otimes\va_0(X)\\
-	\vPa(X,t) &= \frac{b_1}{\lambda_f^2(X,t)}\left(\lambda_f^{d_1}(X,t) - 1\right) \vF(X,t)\va_0(X)\otimes\va_0(X)
+	\vSa(X,t) &= \frac{b_1}{\la^2(X,t)}\left(\la^{d_1}(X,t) - 1\right) \va_0(X)\otimes\va_0(X)\\
+	\vPa(X,t) &= \frac{b_1}{\la^2(X,t)}\left(\la^{d_1}(X,t) - 1\right) \vF(X,t)\va_0(X)\otimes\va_0(X)
 \end{align}
 
 \subsubsection{Active force tensor $\vSf$}
-Here we define
+We further assume to have a muscle activation $\alpha(X,t) \in [0,1]$, which is given by manual settings or motorunit models.
+We then define
 \begin{align}
-	\Psi(\lambda_f) &:= \intl{0}{\lambda_f} p^{act}(s)ds,\nonumber\\
-	p^{act}(\lambda_f) &:= p^{max}f_l(\lambda_f)\gamma(\alpha,\lambda_f'),\nonumber\\
-	f_l(\lambda_f) &:= \begin{cases}
-		-\frac{25}{4}\left(\frac{\lambda_f}{\lfo}\right)^2 + \frac{25}{2}\frac{\lambda_f}{\lfo} - 5.25 & 0.6 \leq \frac{\lambda_f}{\lfo} \leq 1.4\\ 
+	\Psi(\la) &:= \intl{0}{\la} p^{act}(s)ds,\nonumber\\
+	p^{act}(\la) &:= p^{max}f_l(\la)f_v(\dla)\alpha(X,t),\nonumber\\
+	f_l(\la) &:= \begin{cases}
+		-\frac{25}{4}\left(\frac{\la}{\lfo}\right)^2 + \frac{25}{2}\frac{\la}{\lfo} - 5.25 & 0.6 \leq \frac{\la}{\lfo} \leq 1.4\\ 
 		0 & \text{else}
-	\end{cases} \label{def:fl},
+	\end{cases} \label{def:fl},\\
+	f_v(\dla) &:= ??,
 \end{align}
-with maximum pressure $p^{max} = 7.3 \left[\frac{N}{cm^2}\right] = 73 [kPa]$ and dimensionless function $\gamma$.
+with maximum pressure $p^{max} = 7.3 \left[\frac{N}{cm^2}\right] = 73~[kPa]$ and.
 Similar to \eqref{eq:dpsidC} we obtain
 \begin{align}
-	\d{\Psi}{\vC}(\lambda_f) &= \frac{p^{max}}{2\lambda_f}f_l(\lambda_f)\gamma(\alpha,\lambda_f')\va_0\otimes\va_0
+	\d{\Psi}{\vC}(\la) &= \frac{p^{max}}{2\la}f_l(\la)f_v(\dla)\alpha(X,t)\va_0\otimes\va_0
 \end{align}
 This gives
 \begin{align}
-	\vSf(X,t) &= \frac{p^{max}}{\lambda_f(X,t)}f_l(\lambda_f(X,t))\gamma\left(\alpha,\d{\lambda_f}{t}(X,t)\right)\va_0(X)\otimes\va_0(X)\\
-	\vPf(X,t) &= \frac{p^{max}}{\lambda_f(X,t)}f_l(\lambda_f(X,t))\gamma\left(\alpha,\d{\lambda_f}{t}(X,t)\right)\vF(X,t)\va_0(X)\otimes\va_0(X)
+	\vSf(X,t) &= \frac{p^{max}}{\la(X,t)}f_l(\la(X,t))f_v(\dla(X,t))\alpha(X,t)\va_0(X)\otimes\va_0(X)\\
+	\vPf(X,t) &= \frac{p^{max}}{\la(X,t)}f_l(\la(X,t))f_v(\dla(X,t))\alpha(X,t)\vF(X,t)\va_0(X)\otimes\va_0(X)
 \end{align}
 
 \subsubsection{Viscous damping tensor $\vSv$/$\vPv$}
@@ -331,29 +334,29 @@ For the second Piola-Kirchhoff tensor that means
 Adding the different parts together as given in \eqref{def:S_split} now gives
 \begin{align}
 	\vS(X,t) &= p(X,t)\vC^{-1}(X,t) + 2(c_{10} + I_1c_{01})\vI - 2c_{01}\vC(X,t)\label{def:overallS}\\
-			 &\quad+\Biggl[\frac{b_1}{\lambda_f^2(X,t)}\left(\lambda_f^{d_1}(X,t) - 1\right)\nonumber\\
-			 &\quad+\frac{p^{max}}{\lambda_f(X,t)}f_l(\lambda_f(X,t))\gamma\left(\alpha,\d{\lambda_f}{t}(X,t)\right)\Biggr]\va_0(X)\otimes\va_0(X)\\
+			 &\quad+\Biggl[\frac{b_1}{\la^2(X,t)}\left(\la^{d_1}(X,t) - 1\right)\nonumber\\
+			 &\quad+\frac{p^{max}}{\la(X,t)}f_l(\la(X,t))f_v(\dla)\alpha(X,t)\Biggr]\va_0(X)\otimes\va_0(X)\\
 			 &\quad+\vSv(X,t)\nonumber\\
-	g(\lambda)&:= \frac{b_1}{\lambda^2}\left(\lambda^{d_1} - 1\right)
-		+\frac{p^{max}}{\lambda}f_l(\lambda)\gamma\left(\alpha,\d{}{t}\lambda\right)\label{def:g}\\			 
+	g(\la,\dla)&:= \frac{b_1}{\la^2}\left(\la^{d_1} - 1\right)
+		+\frac{p^{max}}{\la}f_l(\la)f_v(\dla)\alpha(X,t)\label{def:g}\\			 
 	\vP(X,t) &= \vF(X,t)\vS(X,t)\label{def:completeP}\\
 			 &= p(X,t)\vF^{-T}(X,t) + 2(c_{10} + I_1(\vC(X,t))c_{01})\vF(X,t) - 2c_{01}\vF(X,t)\vC(X,t)\nonumber\\
-			 &\quad+g(\lambda_f(X,t))\vF(X,t)\va_0(X)\otimes\va_0(X)+\eta\,\dot{\vF}(X,t)\nonumber
+			 &\quad+g(\la(X,t),\dla(X,t))\vF(X,t)\va_0(X)\otimes\va_0(X)+\eta\,\dot{\vF}(X,t)\nonumber
 \end{align}
 
 \subsubsection{Initial conditions}
 The reference configuration is \e{stress-free}, which means that $\vP(X,t) = \vS(X,t) = 0$.
 With the incompressibility conditions we also have
 \begin{align*}
-	\vF &= \vC = \vI_3, & \det(\vF) &= 1\\
-	I_1(\vC) &= \tr(\vI_3) = 3, & I_4(\vC,\va_0) & = \vI_3 : \va_0(X)\otimes\va_0(X)\\
-		\dot{\vF}&=\vnull,&&	= \tr(\va_0(X)\otimes\va_0(X)) = \no{\va_0}^2 = 1,\\
-		\lambda_f &= 1,\quad f_l(1) = 1, & \gamma(\alpha,\d{}{t}\lambda_f) &= 0,
+	\vF(X,0) &= \vC(X,0) = \vI_3, & \det(\vF(X,0)) &= 1\\
+	I_1(\vC(X,0)) &= \tr(\vI_3) = 3, & I_4(\vC(X,0),\va_0) & = \vI_3 : \va_0(X)\otimes\va_0(X)\\
+		\dot{\vF(X,0)}&=\vnull,&&	= \tr(\va_0(X)\otimes\va_0(X)) = \no{\va_0}^2 = 1,\\
+		\la(X,0) &= 1, f_l(1) = 1, f_v(1) = 1, & \alpha(X,0) &= 0,
 \end{align*}
 Hence we obtain from \eqref{def:overallS}
 \begin{align}
 	0 &= \vS(X,0) = p(X,0)\vI + 2(c_{10} + 3c_{01})\vI - 2c_{01}\vI\\
-			 &\quad+\left(\frac{b_1}{1}\left(1 - 1\right)+\frac{p^{max}}{1}1\gamma\left(0,0\right)\right)\va_0(X)\otimes\va_0(X)
+			 &\quad+\left(\frac{b_1}{1}\left(1 - 1\right)+\frac{p^{max}}{1}1\cdot1\cdot0\right)\va_0(X)\otimes\va_0(X)
 			 +\eta\vI\vnull\nonumber\\
 			 & = (p(X,0) + 2c_{10} + 4c_{01})\vI\\
 			 p(X,0) &= -(2c_{10} + 4c_{01})

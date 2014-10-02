@@ -111,9 +111,9 @@ classdef Dynamics < muscle.Dynamics;
             ft = mc.FibreTypes;
             this.nfibres = length(ft);
             
-            this.lambda_dot_pos = [];
+            this.lambda_dot_pos = double.empty(2,0);
+            this.FrequencyDetector = fullmuscle.FrequencyDetector(this.nfibres);
             if sys.HasSpindle
-                this.FrequencyDetector = fullmuscle.FrequencyDetector(this.nfibres);
                 this.lambda_dot_pos = mc.SpindlePositions;
                 this.lambda_dot = zeros(1,this.nfibres);
             end
@@ -121,8 +121,12 @@ classdef Dynamics < muscle.Dynamics;
             configUpdated@muscle.Dynamics(this);
             
             % fDim and xDim are from muscle.Dynamics, so add moto+sarco
-            this.fDim = this.fDim + (6+56+9)*this.nfibres;
-            this.xDim = this.xDim + (6+56+9)*this.nfibres;
+            this.fDim = this.fDim + (6+56)*this.nfibres;
+            this.xDim = this.xDim + (6+56)*this.nfibres;
+            if sys.HasSpindle
+                this.fDim = this.fDim + 9*this.nfibres;
+                this.xDim = this.xDim + 9*this.nfibres;
+            end
             this.sarcoconst = this.getSarcoConst(ft);
             
             this.moto_sarco_link_moto_out = sys.off_moto + (2:6:6*this.nfibres);
@@ -168,9 +172,9 @@ classdef Dynamics < muscle.Dynamics;
             %% Mechanics
             uvp_pos = 1:sys.num_uvp_dof;
             % Use uvp as argument and also pass in s (=sarco forces)
-%             force = max(0,y(sys.sarco_output_idx)-sys.sarco_mech_signal_offset);
+            force = max(0,y(sys.sarco_output_idx)-sys.sarco_mech_signal_offset);
 %             force = y(sys.sarco_output_idx);
-            force = zeros(size(sys.sarco_output_idx));
+%             force = zeros(length(sys.sarco_output_idx),1);
             uvps = [y(uvp_pos); force];
             dy(uvp_pos) = evaluate@muscle.Dynamics(this, uvps, t);
             
@@ -233,9 +237,9 @@ classdef Dynamics < muscle.Dynamics;
             
             %% Mechanics
             uvp_pos = 1:sys.num_uvp_dof;
-%             force = max(0,y(sys.sarco_output_idx)-sys.sarco_mech_signal_offset);
+            force = max(0,y(sys.sarco_output_idx)-sys.sarco_mech_signal_offset);
 %             force = y(sys.sarco_output_idx);
-            force = zeros(size(sys.sarco_output_idx));
+%             force = zeros(length(sys.sarco_output_idx),1);
             uvps = [y(uvp_pos); force];
             [J, Jalpha, JLamDot] = getStateJacobian@muscle.Dynamics(this, uvps, t);
             
