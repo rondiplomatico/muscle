@@ -9,9 +9,9 @@ We introduce the triple index
 	\vu[i] &:= (\vu_{3(i-1)+1}~~\vu_{3(i-1)+2}~~\vu_{3(i-1)+3})^T\in\R^{3\times 1}
 \end{align}
 for the $x,y,z$ components of the $i$-th coefficient and hence identify
-\[
-	\vF(X,t) = \sumi \vc_i(t)\otimes \nabla\varphi_i(X) = \sumi \vu[i](t)\otimes \nabla\varphi_i(X) =: \vF(X,\vu(t)).
-\]
+\begin{align}
+	\vF(X,t) &= \sumi \vc_i(t)\otimes \nabla\varphi_i(X) = \sumi \vu[i](t)\otimes \nabla\varphi_i(X) =: \vF(X,\vu(t)).\label{eq:Fdependencyrewrite}
+\end{align}
 
 From \eqref{def:discreteVphidX} we obtain a mass matrix $\vM\in\R^{3N\times 3N}$ via the operator $\vM$:
 \begin{align*}
@@ -40,9 +40,9 @@ For the linear part, we obtain with \eqref{def:discretePgradphidX} the damping m
 Also carrying the arguments through to $\vPnl(X,t) = \vPnl(X,\vu(t),\vw(t))$.
 This allows us to define operators $\vK: \R^{3N\times N_P}\to\R^{3N}, \vg:\R^{3N}\to\R^{N_P}$ (by components) as
 \begin{align}
-	\vK[k](\vu(t),\vw(t)) &:= \intor\vPnl(X,\vu(t),\vw(t))\dpk dX\\
-	&\re{def:discretePgradphidX} \sumvk\sumgp w_p\vPnl(\pmp,\vu(t),\vw(t))\dNkmp\jmp\in\R^3, && k=1\ldots N,\\
-	\vg_k(\vu(t)) &:= \intor (\det\vF(X,\vu(t))-1)\psi_k(X)dX\\
+	\vK[k](\vu(t),\vw(t)) &:= \intor\vPnl(X,\vu(t),\vw(t))\dpk dX\nonumber\\
+	&\re{def:discretePgradphidX} \sumvk\sumgp w_p\vPnl(\pmp,\vu(t),\vw(t))\dNkmp\jmp\in\R^3, && k=1\ldots N,\label{def:Kop}\\
+	\vg_k(\vu(t)) &:= \intor (\det\vF(X,\vu(t))-1)\psi_k(X)dX\nonumber\\
 	&\re{eq:weak_incomp_condition}\sumvk\sumgp w_p (\det\vF(\pmp,\vu(t))-1) \Nkmp\jmp, && k=1\ldots N_P.
 \end{align}
 
@@ -55,7 +55,7 @@ or differential-algebraic equation (DAE)
 which can be transformed to a first-order system with the substitution $\vv(t) := \vu'(t)$:
 \begin{align}
 	\m{\vI & \vnull\\ \vnull & \vM}\m{\vu'(t)\\ \vv'(t)} 
-	&= \m{\vv(t) \\ -\vK(\vu(t),\vw(t))} - \m{\vnull &\vnull\\ \vnull &\vD \\}\m{\vu \\ \vv},\\
+	&= \m{\vv(t) \\ -\vK(\vu(t),\vw(t))} - \m{\vnull &\vnull\\ \vnull &\vD \\}\m{\vu \\ \vv},\label{def:mainsys}\\
 	\text{s.t.}\quad \vg(\vu(t))		&= \vnull.
 \end{align}
 
@@ -126,17 +126,17 @@ In detail, we have
 % 				&= \det(\vF(X,\vu))\vF(X,\vu)^{-1}:\bullet\otimes\dpk
 % \end{align*}
 \subsubsection{Derivation of $\nabla_{\vu}\vK(\vu,\vw)$}
-\begin{align*}
+\begin{align}
 	\nabla_{\vu}\vK(\vu,\vw) &= \m{\nabla_{\vu}\vK[1](\vu,\vw)\\ \vdots \\ \nabla_{\vu}\vK[N](\vu,\vw)}
 	 = \m{\nabla_{\vu[1]}\vK[1](\vu,\vw) & \ldots & \nabla_{\vu[N]}\vK[1](\vu,\vw)\\
 	 	\vdots & \ddots & \vdots\\
 	   \nabla_{\vu[1]}\vK[N](\vu,\vw) & \ldots & \nabla_{\vu[N]}\vK[N](\vu,\vw)}\\
 	\nabla_{\vu[j]}\vK[k](\vu,\vw) &=\m{\d{\vK[k]}{\vu[j]_1}(\vu,\vw) & \ldots & \d{\vK[k]}{\vu[j]_3}(\vu,\vw)}\in\R^{3\times 3},\quad j,k=1\ldots N\\
-	\d{\vK[k]}{\vu[j]_i}(\vu,\vw) &= \d{}{\vu[j]_i} \intor\vPnl(X,\vu,\vw)\dpk dX\\
-		&=  \intor\d{\vPnl}{\vu[j]_i}(X,\vu,\vw) \dpk dX\\
-		&= \sumvk\sumgp w_p \d{\vPnl}{\vu[j]_i}(\pmp,\vu,\vw) \dNkmp\jmp\in\R^3
-\end{align*}
-Recall from \eqref{def:splitPnllin} that
+	\d{\vK[k]}{\vu[j]_i}(\vu,\vw) &= \d{}{\vu[j]_i} \intor\vPnl(X,\vu,\vw)\dpk dX\nonumber\\
+		&=  \intor\d{\vPnl}{\vu[j]_i}(X,\vu,\vw) \dpk dX\nonumber\\
+		&= \sumvk\sumgp w_p \d{\vPnl}{\vu[j]_i}(\pmp,\vu,\vw) \dNkmp\jmp\in\R^3\label{def:dKduji}
+\end{align}
+Recalling the notation from \eqref{def:splitPnllin} we also see that $\la(X,t) \equiv \la(X,\vu(t))$ and hence
 \begin{align*}
 \vPnl(X,\vu,\vw) &= p(X,\vw)\vF^{-T}(X,\vu) + 2(c_{10} + I_1(\vC(X,\vu))c_{01})\vF(X,\vu) - 2c_{01}\vF(X,\vu)\vC(X,\vu)\\
 	     &\quad+g(\la(X,\vu))\vF(X,\vu)\va_0(X)\otimes\va_0(X)
@@ -165,14 +165,14 @@ we consider the single summands of $\vPnl$ to derive $\d{\vPnl}{\vu[j]_i}(X,\vu,
 	=& 2c_{01}\left(\left(\vU^j_i(X)\right)\vC(X,\vu)
 	+ 2\vF(X,\vu)\suml{l}{N} \vu[l]_i(\dpj \otimes \divergence\varphi_l(X))\right)\in\R^{3\times 3}
 \end{align*}
-\begin{align*}
+\begin{align}
 	\nabla_{\vu[j]_i}\la(X,\vu) &= \nabla_{\vu[j]_i}\no{\vF(X,\vu)\va_0(X)} = \frac{(\vF(X,\vu)\va_0(X))^T}{\no{\vF(X,\vu)\va_0(X)}}\nabla_{\vu[j]_i}\vF(X,\vu)\va_0(X)\\
-	&= \frac{1}{\la(X,\vu)}(\vF(X,\vu)\va_0(X))^T\vU_i^j\va_0(X)
+	&= \frac{1}{\la(X,\vu)}(\vF(X,\vu)\va_0(X))^T\vU_i^j\va_0(X)\label{eq:dlamdvu}
 % 	\nabla_{\vu[j]}\la(X,\vu) &= \nabla_{\vu[j]}\sqrt{\suml{m,l}{N} (\vu[m] \cdot \vu[l])\left(\divergence\varphi_m(X)\cdot a_0(X)\right)(\divergence\varphi_l(X)\cdot a_0(X))}\\
 % 	&= \frac{1}{2\la(X,\vu)} \nabla_{\vu[j]}\suml{m,l}{N} (\vu[m] \cdot \vu[l])\left(\divergence\varphi_m(X)\cdot a_0(X)\right)(\divergence\varphi_l(X)\cdot a_0(X))\\
 % 	&= \frac{1}{2\la(X,\vu)} 2\suml{l}{N} \vu[l]\left(\dpj\cdot a_0(X)\right)(\divergence\varphi_l(X)\cdot a_0(X))\\
 % 	&= \frac{1}{\la(X,\vu)} \suml{l}{N} \vu[l]\left(\dpj\cdot a_0(X)\right)(\divergence\varphi_l(X)\cdot a_0(X))
-\end{align*}
+\end{align}
 \begin{align*}
 	  & \d{}{\vu[j]_i} g(\la(X,\vu))\vF(X,\vu)\va_0(X)\otimes\va_0(X)\\
 	 =& \left( \d{g}{\la}(\la(X,\vu))\d{}{\vu[j]_i}\la(X,\vu)\vF(X,\vu) + g(\la(X,\vu))\ve_i\otimes\dpj\right)\va_0(X)\otimes\va_0(X) 

@@ -6,7 +6,7 @@ We choose $\mups\in \N$ different motorunits in a ``motorunit-pool'', specified 
 \subsection{Motoneuron}
 The motoneuron model \cite{Cisi2008, negro2011} consists of $6$ degrees of freedom and reads as
 \begin{align}
-	\vq'(t) &= \fmo(\vq(t),\tau) + \ve_2\kappa(t)\eta(t,\tau) + \ve_2\eta_b(t) & \vq(0) &= \vnull,
+	\vq'(t) &= \fmo(\vq(t),\tau) + \ve_2\kappa(t)\eta(t,\tau) + \ve_2\eta_b(t) & \vq(0) &= \vnull,\label{def:motosys}
 \end{align}
 for any fibre type $\tau$.
 Here, $\ve_2\in\R^6$ is the second unit-vector, $\eta(t,\tau),\eta_b(t)$ describe noises (fibre-type dependent and base noise)
@@ -22,7 +22,7 @@ We will use $\vq^k(t) \in \R^6$ to indicate the current state of the $k$-th moto
 The sarcomere model describes the force development inside a muscle fibre and is taken from \cite{Shorten2007}.
 It has $56$ degrees of freedom and is given by
 \begin{align}
-	\vr'(t) &= \fsa(\vr(t),\tau) & \vr(0) &= \vr_0(\tau),
+	\vr'(t) &= \fsa(\vr(t),\tau) & \vr(0) &= \vr_0(\tau),\label{def:sarcosys}
 \end{align}
 for any fibre type $\tau$.
 There is a set of $105$ (fibre-type dependent) constants for the model, which we denote by $\csa(\tau)\in\R^{105}$.
@@ -41,7 +41,7 @@ number of motorunits, but we use $\mups$ here for simplicity.
 \subsection{Model connections}
 As the models have not been primarily designed to be used in a compound, we needed to develop appropriate means for their connection.
 In this Section we will detail how the different models have been connected.
-
+Figure \ref{fig:modelconn} shows an illustration of the overall model interaction and information flow.
 %
 \begin{figure}[!htp]
     \begin{center}%
@@ -67,10 +67,10 @@ In this Section we will detail how the different models have been connected.
         \node [block_big, below of=neuro, node distance=30mm] (cell)  {{\bf half-sarcomeres $\vr^k(t)$}\\ action potential, active stress};%
         \node [block_big, above of=neuro, node distance=30mm] (ext)  {{\bf External signal}\\ Control, central cortex};%
         \node [block_dashed, left of=cell, node distance=80mm] (spindle)  {{\bf spindles $\vs^k(t)$} \\ electrical feedback};%
-        \node [block_big, below of=cell, node distance=30mm] (mechanics)  {{\bf 3D continuum mechanics} \\ geometry, deformation};%
+        \node [block_big, below of=cell, node distance=30mm] (mechanics)  {{\bf 3D continuum mechanics $\vu(t),\vv(t),\vw(t)$} \\ geometry, deformation};%
         \path [line] (neuro) -- (cell) node[edgeLabel]{$q^k_2(t)$};
         \draw (cell.south) edge[stateEdge] node[edgeLabel]{$\alpha(X,t)$} (mechanics.north);
-        \path [line] (mechanics) -| (spindle) node[edgeLabelHigh]{$\dla(X_k),\la''(X_k)$};
+        \path [line] (mechanics) -| (spindle) node[edgeLabelHigh]{$\dla(X_k,t),\la''(X_k,t)$};
     	\path [line] ($(neuro.west) + (0,0.3)$) -| ($(spindle.north) + (-0.5,0)$);
     	\path [line] ($(spindle.north) + (0.5,0)$) |- ($(neuro.west) + (0,-0.3)$);
     	\path [line] (ext) -- (neuro.north) node[edgeLabel] {$\kappa(t),\eta(t),\eta_b(t)$}; 
@@ -78,7 +78,8 @@ In this Section we will detail how the different models have been connected.
     	\node at (-5.8,0.8) {$\kappa(q^k_2(t))$};
     \end{tikzpicture}%
     \end{center}%
-    \caption{Test}
+    \caption{Illustration of model connections and interaction}
+    \label{fig:modelconn}
 \end{figure}
 
 \subsubsection{Motoneuron to Sarcomere}
@@ -102,20 +103,21 @@ Figure \ref{MSLink} illustrates the
 \end{figure}
 Taking into account division by sarcomere model constants, the sarcomere models now read as
 \begin{align}
-	{\vr'}^k(t) &= \fsa(\vr^k(t),\tau_k) + \ve_1 \frac{\gamma(q_2^k(t))}{\csa_1(\tau_k)}q_2^k(t),
+	{\vr'}^k(t) &= \fsa(\vr^k(t),\tau_k) + \ve_1 \frac{\gamma(q_2^k(t))}{\csa_1(\tau_k)}q_2^k(t),\label{def:sarcosys_plus_moto}
 \end{align}
 where $\ve_1 \in \R^{56}$ denotes the first unit vector, i.e. the signal is added to the first component of the sarcomere models.
 
 \subsubsection{Sarcomere to Mechanics}
-The sarcomere model component $\vr_{53}^k(t)$ is an indicator for the currently developed force in the muscle fibre.
+The sarcomere model component $r_{53}^k(t)$ is an indicator for the currently developed force in the muscle fibre.
 \fix{hier das modell aus der diss erwähnen mit fasern und diffusion + erläuterung}
 Within the mechanics FE-framework, this can be transformed to active stress $\alpha(X,t)$ in $\vSf$ by weighting of all $\mups$ force signals at spatial locations.
 Hence, we make the ansatz
 \begin{align}
-	\alpha(X,t) = \sum\limits_{k=1}^\mups \frac{w_k(X)}{r^k_M} r^k_{53}(t).
+	\alpha(X,t) = \sum\limits_{k=1}^\mups w_k(X)\frac{r^k_{53}(t)-r^k_0}{r^k_M}.\label{def:alpha}
 \end{align}
 Here, we introduce weight functions $w_k(X)$ for the fibre forces satisfying $\sum w_k(X) = 1 \fo X$.
-Further, the constants $r^k_M\in\R$ are the maximum forces for each motorunit (i.e. $\tau_k$), determined by a long-time simulation of each sarcomere model using an
+Further, the constants $r_0^k$ denote the base-line level of the $53$rd component and
+$r^k_M\in\R$ are the maximum forces for each motorunit (i.e. $\tau_k$), determined by a long-time simulation of each sarcomere model using an
 artificial $60Hz$ stimulation.
 This ensures that $\alpha(X,t) \in [0,1] \fo X,t$. 
 
@@ -125,11 +127,11 @@ The current change rate $\dla$ of fibre stretch and the motoneuron frequency $\k
 \ref{subsec:moto_spindle}.
 As the fibre stretch is a local property of the continuum, we fix $\mups$ spindle locations $X_k\in\Omega$ and simply observe $\dla(X_k,t)$ to obtain the second
 argument of the $k$-th spindle dynamics $\fsp$.
-We recall the definition \ref{def:fibrestretch} and observe 
-\begin{align*}
-	\dla(X,t) &= \d{}{t}\no{\vF(X,t)\va_0(X)} = \frac{(\vF(X,t)\va_0(X))^T}{\no{\vF(X,t)\va_0(X)}}\d{}{t}\vF(X,t)\va_0(X)\\
-	  &= \frac{1}{\la(X,t)}\va_0(X)^T\vF(X,t)^T\vF'(X,t)\va_0(X).
-\end{align*}
+We recall the definition \eqref{def:fibrestretch} and observe 
+\begin{align}
+	\dla(X,t) &= \d{}{t}\no{\vF(X,t)\va_0(X)} = \frac{(\vF(X,t)\va_0(X))^T}{\no{\vF(X,t)\va_0(X)}}\d{}{t}\vF(X,t)\va_0(X)\nonumber\\
+	  &= \frac{1}{\la(X,t)}\va_0(X)^T\vF(X,t)^T\dot{\vF}(X,t)\va_0(X).\label{eq:dlambda}
+\end{align}
 Hence, if the $X_k$ are chosen among the set of all elements' Gauss integration points, quantities to compute $\dla$ are readily available during mechanics evaluation.
 
 \subsubsection{Spindle to Motoneuron}
@@ -143,7 +145,7 @@ This gives a \e{mean spindle activation} of
 \end{align}
 which is added to the change rate of each motoneuron's soma alike the external mean current:
 \begin{align}
-	\vq'(t) &= \fmo(\vq(t),\tau) + \ve_2(\kappa(t) + \kappa^s(t))\eta(t,\tau) + \ve_2\eta_b(t).
+	\dot{\vq}(t) &= \fmo(\vq(t),\tau) + \ve_2(\kappa(t) + \kappa^s(t))\eta(t,\tau) + \ve_2\eta_b(t).\label{def:motosys_plus_spindle}
 \end{align}    
 % [6{:}8] , where the \ML-like notation indicates which components of the spindle states $\vs$ are used as arguments.
 
@@ -206,3 +208,104 @@ In our applications $W=3$ or $W=4$ turned out to be appropriate choices.
 	\end{tabular}
 	\caption{Model design variables}\label{tab:params}
 \end{table}
+
+\subsection{Overall dynamical system}
+In this section we detail the numerical implementation of the overall connected model as system of ODEs.
+The muscle activation introduced in Section \ref{sec:active_force} now is computed using the sarcomere states $\vr^k$.
+This renders the stress tensor \eqref{def:completeP} and hence the operator $K$ from \eqref{def:Kop} dependent of $\vr^1(t),\ldots,\vr^\mups(t)$,
+so we write $K(\vu(t),\vw(t),\vr^1(t),\ldots,\vr^\mups(t))$.
+Moreover, the motoneurons \eqref{def:motosys} receive feedback from all spindles via $\kappa^s(\vs^1(t),\ldots,\vs^\mups(t))$.
+%As each sarcomere is linked to its motoneuron, the sarcomere dynamics \eqref{def:sarcosys} now read as $\fsa(\vr^k(t),\tau_k,\vq^k(t))$.
+The spindles \ref{def:spindlesys} receive lambda stretch information $\dla(X_k,t)$ from the mechanics model at locations $X_k$.
+Recalling \eqref{eq:Fdependencyrewrite} and the substitution $\vv(t) = \vu'(t)$ from Section \ref{sec:odeform} we see that similarly
+\begin{align}
+	\dot{\vF}(X,t) &= \sumi \vc'_i(t)\otimes \nabla\varphi_i(X) = \sumi \vv[i](t)\otimes \nabla\varphi_i(X) =: \dot{\vF}(X,\vv(t)).\label{eq:Fdotdependencyrewrite}
+\end{align}
+Hence, by virtue of \eqref{eq:dlambda}, we see that $\dla(X,t) =: \dla(X,\vu(t),\vv(t))$, which finally gives $\fsp(\vs^k(t),\vu(t),\vv(t))$.
+
+Finally, using the above, \eqref{def:motosys_plus_spindle} and \eqref{def:sarcosys_plus_moto}, the overall system \eqref{def:mainsys} can be extended to
+\begin{align}%\label{def:mainsys_full}
+	\dot{\vu}(t) &= \vv(t)\\
+	\vM\dot{\vv}(t) &= -K(\vu(t),\vw(t),\vr^1(t),\ldots,\vr^\mups(t)) - \vD\vv(t)\\
+		& \vdots\nonumber\\
+	\dot{\vq}^k(t) &= \fmo(\vq^k(t),\tau_k) + \ve_2^9(\kappa(t) + \kappa^s(\vs^1(t),\ldots,\vs^\mups(t)))\eta(t,\tau) + \ve_2^9\eta_b(t)\\
+		 & \vdots\nonumber\\
+	\dot{\vr}^k(t) &= \fsa(\vr^k(t),\tau_k) + \ve^{56}_1 \frac{\gamma(q_2^k(t))}{\csa_1(\tau_1)}q_2^k(t)\\
+		& \vdots\nonumber\\
+	\dot{\vs}^k(t) &= \fsp(\vs^k(t),\vu(t),\vv(t))\\
+		& \vdots\nonumber\\
+% 	\dot{\vq}^1(t) &= \fmo(\vq^1(t),\tau_1) + \ve_2(\kappa(t) + \kappa^s(\vs^1(t),\ldots,\vs^\mups(t)))\eta(t,\tau) + \ve_2\eta_b(t)\\
+% 		\vdots &= \vdots\nonumber\\
+% 	\dot{\vq}^\mups(t) &= \fmo(\vq^\mups(t),\tau_\mups) + \ve_2(\kappa(t) + \kappa^s(\vs^1(t),\ldots,\vs^\mups(t)))\eta(t,\tau) + \ve_2\eta_b(t)\\
+% 	\dot{\vr^1}(t) &= \fsa(\vr^1(t),\tau_1) + \ve_1 \frac{\gamma(\vq_2^1(t))}{\csa_1(\tau_1)}\vq_2^1(t)\\
+% 		\vdots &= \vdots\nonumber\\
+% 	\dot{\vr^\mups}(t) &= \fsa(\vr^\mups(t),\tau_\mups) + \ve_1 \frac{\gamma(\vq_2^\mups(t))}{\csa_1(\tau_\mups)}\vq_2^\mups(t)\\
+% 	\dot{\vs^1}(t) &= \fsp(\vs^1(t),\vu(t),\vv(t))\\
+% 		\vdots &= \vdots\nonumber\\
+% 	\dot{\vs^\mups}(t) &= \fsp(\vs^\mups(t),\vu(t),\vv(t))\\
+	\text{s.t.}\quad \vg(\vu(t))		&= \vnull.
+\end{align}
+
+\subsubsection{Derivation of $\nabla_{\vr^k}K(\vu(t),\vw(t),\vr^1(t),\ldots,\vr^\mups(t))$}
+For any $k = 1\ldots\mups, j=1\ldots N$ we have similar to \eqref{def:dKduji}
+\begin{align}
+	\d{K[j]}{r^k_i}(\vu,\vw,\vr^1,\ldots,\vr^\mups) &= \sumvk\sumgp w_p \d{\vPnl}{r^k_i}(\pmp,\vu,\vw,\ldots,\vr^k,\ldots) \dNjmp\jmp\\
+	\d{\vPnl}{r^k_i}(\ldots,\vr^k,\ldots) & \re{def:completeP} \d{}{r^k_i} g(\la(\pmp,\vu),\dla(\pmp,\vu,\vv),\alpha(\pmp,\vr^1,\ldots,\vr^\mups))\nonumber\\
+	&\qquad\cdot\vF(\pmp,\vu)\va_0(\pmp)\otimes\va_0(\pmp)\\
+	&= \d{g}{\alpha}(\la(\pmp,\vu),\dla(\pmp,\vu,\vv),\alpha)\d{\alpha}{r^k_i}(\pmp,\vr^1,\ldots,\vr^\mups)\nonumber\\
+	&\qquad\cdot\vF(\pmp,\vu)\va_0(\pmp)\otimes\va_0(\pmp)\\
+	\d{g}{\alpha}(\la,\dla,\alpha) &\re{def:g} \frac{p^{max}}{\la}f_l(\la)f_v(\dla)\\
+	\d{\alpha}{r^k_i}(\pmp,\vr^1,\ldots,\vr^\mups) &\re{def:alpha} \d{}{r^k_i}\sum\limits_{l=1}^\mups w_l(\pmp)\frac{r^l_{53}(t)-r^l_0}{r^l_M} = \begin{cases}
+		\frac{w_k(\pmp)}{r^k_M} & i=53\\
+		0 & \text{else}
+	\end{cases}
+\end{align}
+\begin{align}	
+	\Rightarrow\d{K[j]}{r^k_{53}} &= \sumvk\sumgp w_p \Biggl(\frac{p^{max}}{\la(\pmp,\vu)}f_l(\la(\pmp,\vu))f_v(\dla(\pmp,\vu,\vv))\frac{w_k(\pmp)}{r^k_M}\nonumber\\
+	&\qquad \cdot \vF(\pmp,\vu)\va_0(\pmp)\otimes\va_0(\pmp)\dNjmp\jmp\Biggr),\\
+	\d{K[j]}{r^k_i} &= 0 \qquad i \neq 53
+\end{align}
+
+\subsubsection{Moto to Sarco Jacobian}
+\begin{align}
+	\d{}{q_2^k}\dot{r}_1^k(\vr^k,\tau_k) &= \d{}{q_2^k}\frac{\gamma(q_2^k)}{\csa_1(\tau_k)}q_2^k = \frac{\gamma(q_2^k)}{\csa_1(\tau_k)} + \frac{q_2^k}{\csa_1(\tau_k)}\d{}{q_2^k}\gamma(q_2^k)\\
+	&=  \frac{\gamma(q_2^k)}{\csa_1(\tau_k)} - \frac{q_2^k(q_2^k-q_M)}{\csa_1(\tau_k)75}e^{-(q_2^k-q_M)^2/150}(\beta_M-\beta_m)
+\end{align}
+
+\subsubsection{Spindle to Moto}
+\begin{align}
+	\d{}{s^k_i}\dot{\vq}(t) &= \d{}{s^k_i}\ve_2(\kappa(t) + \kappa^s(\vs^1,\ldots,\vs^\mups))\eta(t,\tau)\\
+	&= \ve_2\eta(t,\tau)\d{}{s^k_i}\kappa^s(\vs^1,\ldots,\vs^\mups)\\
+	&= \ve_2\frac{\eta(t,\tau)}{\mups}\d{}{s^k_i}\sumjmups w_p\theta_p(\vs^j) + w_s\theta_s(\vs^j)\\
+	&= \ve_2\frac{\eta(t,\tau)}{\mups}\left(w_p\d{}{s^k_i}\theta_p(\vs^i) + w_s\d{}{s^k_i}\theta_s(\vs^i)\right)
+\end{align}
+
+\subsubsection{Mechanics to Spindle}
+For $k=1\ldots\mups, j = 1\ldots N, i=1\ldots3$ we have
+\begin{align}
+	\d{}{\vu[j]_i}\fsp(\vs^k,\dla(X,\vu,\vv),\nu) &= \d{}{\dla}\fsp(\vs^k,\dla,\nu)\d{}{\vu[j]_i}\dla(X,\vu,\vv)\\
+	\d{}{\vu[j]_i}\dla(X,\vu,\vv) &\re{eq:dlambda} \d{}{\vu[j]_i}\frac{1}{\la(X,\vu)}\va_0(X)^T\vF(X,\vu)^T\dot{\vF}(X,\vv)\va_0(X)
+\end{align}
+\begin{align*}
+   \d{}{\vu[j]_i} [\ldots] &= \d{}{\vu[j]_i}\left(\frac{1}{\la(X,\vu)}\right)\va_0(X)^T\vF(X,\vu)^T\dot{\vF}(X,\vv)\va_0(X)\\
+   &\quad+ \frac{1}{\la(X,\vu)}\d{}{\vu[j]_i}\va_0(X)^T\dot{\vF}(X,\vv)^T\vF(X,\vu)\va_0(X)\\
+   &= -\frac{1}{\la(X,\vu)^2}\d{}{\vu[j]_i}\Bigl(\la(X,\vu)\Bigr)\va_0(X)^T\vF(X,\vu)^T\dot{\vF}(X,\vv)\va_0(X)\\
+   &\quad+ \frac{1}{\la(X,\vu)}\va_0(X)^T\dot{\vF}(X,\vv)^T\vU_i^j\va_0(X)\\
+   &\re{eq:dlamdvu} -\frac{1}{\la(X,\vu)^3}\va_0(X)^T\vF(X,\vu)^T\Bigl(\vU_i^j+\dot{\vF}(X,\vv)\Bigr)\va_0(X)\\
+   &\quad+ \frac{1}{\la(X,\vu)}\va_0(X)^T\dot{\vF}(X,\vv)^T\vU_i^j\va_0(X)
+\end{align*}
+\begin{align}
+	\d{}{\vv[j]_i}\fsp(\vs^k,\dla(X,\vu,\vv),\nu) &= \d{}{\dla}\fsp(\vs^k,\dla,\nu)\d{}{\vv[j]_i}\dla(X,\vu,\vv)\\
+	\d{}{\vv[j]_i}\dla(X,\vu,\vv) &\re{eq:dlambda} \d{}{\vv[j]_i}\frac{1}{\la(X,\vu)}\va_0(X)^T\vF(X,\vu)^T\dot{\vF}(X,\vv)\va_0(X)\\
+		&=\frac{1}{\la(X,\vu)}\va_0(X)^T\vF(X,\vu)^T\d{}{\vv[j]_i}\dot{\vF}(X,\vv)\va_0(X)\\
+		&\re{eq:Fdotdependencyrewrite}\frac{1}{\la(X,\vu)}\va_0(X)^T\vF(X,\vu)^T\vU^j_i\va_0(X)
+\end{align}
+
+\subsubsection{Model connectivity}
+The above partial derivatives constitute the overall system Jacobian matrix.
+Figure \ref{fig:jacpattern} illustrates the Jacobian sparsity pattern for an example geometry with $18$ Taylor-Hood elements and $\mups=6$ motorunits and spindles.
+\begin{figure}[!ht]
+	\includegraphics[width=\textwidth]{sparsity_pattern}
+	\caption{Jacobian sparsity pattern}
+	\label{fig:jacpattern}
+\end{figure}

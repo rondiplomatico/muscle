@@ -295,7 +295,7 @@ leading to
 	\vPa(X,t) &= \frac{b_1}{\la^2(X,t)}\left(\la^{d_1}(X,t) - 1\right) \vF(X,t)\va_0(X)\otimes\va_0(X)
 \end{align}
 
-\subsubsection{Active force tensor $\vSf$}
+\subsubsection{Active force tensor $\vSf$}\label{sec:active_force}
 We further assume to have a muscle activation $\alpha(X,t) \in [0,1]$, which is given by manual settings or motorunit models.
 We then define
 \begin{align}
@@ -337,11 +337,11 @@ Adding the different parts together as given in \eqref{def:S_split} now gives
 			 &\quad+\Biggl[\frac{b_1}{\la^2(X,t)}\left(\la^{d_1}(X,t) - 1\right)\nonumber\\
 			 &\quad+\frac{p^{max}}{\la(X,t)}f_l(\la(X,t))f_v(\dla)\alpha(X,t)\Biggr]\va_0(X)\otimes\va_0(X)\\
 			 &\quad+\vSv(X,t)\nonumber\\
-	g(\la,\dla)&:= \frac{b_1}{\la^2}\left(\la^{d_1} - 1\right)
-		+\frac{p^{max}}{\la}f_l(\la)f_v(\dla)\alpha(X,t)\label{def:g}\\			 
+	g(\la,\dla,\alpha)&:= \frac{b_1}{\la^2}\left(\la^{d_1} - 1\right)
+		+\frac{p^{max}}{\la}f_l(\la)f_v(\dla)\alpha\label{def:g}\\			 
 	\vP(X,t) &= \vF(X,t)\vS(X,t)\label{def:completeP}\\
 			 &= p(X,t)\vF^{-T}(X,t) + 2(c_{10} + I_1(\vC(X,t))c_{01})\vF(X,t) - 2c_{01}\vF(X,t)\vC(X,t)\nonumber\\
-			 &\quad+g(\la(X,t),\dla(X,t))\vF(X,t)\va_0(X)\otimes\va_0(X)+\eta\,\dot{\vF}(X,t)\nonumber
+			 &\quad+g(\la(X,t),\dla(X,t),\alpha(X,t))\vF(X,t)\va_0(X)\otimes\va_0(X)+\eta\,\dot{\vF}(X,t)\nonumber
 \end{align}
 
 \subsubsection{Initial conditions}
