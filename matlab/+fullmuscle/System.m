@@ -26,15 +26,6 @@ classdef System < muscle.System;
         moto_input_noise_factors;
         sarco_output_idx;
         
-        % Membrane capacitance. Different values for different fibre types, 
-        % due to different action potential propagation speeds
-        % C_m is computed parameter-dependent.
-        % These constants are for both slow and fast muscle models and are also used in the
-        % first entry of the sarcomere constants computed in
-        % models.muscle.FibreDynamics.initSarcoConst @type double
-        C_m_slow = 0.58;
-        C_m_fast = 1;
-        
         % The upper limit polynomial for maximum mean current dependent on
         % the fibre type.
         %
@@ -52,6 +43,7 @@ classdef System < muscle.System;
         
         Motoneuron;
         Spindle;
+        Sarcomere;
         HasSpindle;
     end
     
@@ -74,6 +66,7 @@ classdef System < muscle.System;
 %             this.Inputs{2,1} = @(t)1;
             
             this.Motoneuron = fullmuscle.Motoneuron;
+            this.Sarcomere = fullmuscle.Sarcomere;
             
             % Compile information for plotting
             this.Plotter = fullmuscle.MusclePlotter(this);
@@ -88,6 +81,10 @@ classdef System < muscle.System;
             %% Configure motoneurons
             this.Motoneuron.setType(ft);
             
+            %% Configure sarcomeres
+            this.Sarcomere.setType(ft);
+            
+            %% Configure Spindle (if set)
             hassp = ~isempty(mc.SpindlePositions);
             this.HasSpindle = hassp;
             this.Spindle = [];

@@ -13,30 +13,6 @@ classdef Dynamics < muscle.Dynamics;
 % - \c Documentation http://www.agh.ians.uni-stuttgart.de/documentation/kermor/
 % - \c License @ref licensing
     
-    properties%(Access=private)
-        sarcoconst;
-        
-        % constants for sarcomere submodel specific for slow twitch fibre
-        %
-        % See also: Dynamics.initSarcoConst
-        SarcoConst_slow;
-        
-        % constants for sarcomere submodel specific for fast twitch fibre
-        %
-        % See also: Dynamics.initSarcoConst
-        SarcoConst_fast;
-        
-        % basis constant set for sarcomere submodel
-        %
-        % See also: Dynamics.initSarcoConst
-        SarcoConst_base;
-        
-        % Positions of type-dependent constants
-        %
-        % See also: Dynamics.initSarcoConst
-        SarcoConst_dynpos;
-    end
-    
     %% Properties for motoneuron - sarcomere linking
     properties
         % The `V_s` value of the motoneuron input at which the MSLink_MaxFactor should be attained
@@ -83,7 +59,7 @@ classdef Dynamics < muscle.Dynamics;
         UseFrequencyDetector;
     end
 
-    properties%(Access=private)
+    properties(Access=private)
         % The upper limit for the mean input current fed to the motoneuron
         % soma. as in this current version this is the sum of spindle
         % feedback and external signal, the max value needs to be available
@@ -96,12 +72,12 @@ classdef Dynamics < muscle.Dynamics;
         
         fUseFD = false;
         freq_kexp;
+        sarcoconst1;
     end
     
     methods
         function this = Dynamics(sys)
             this = this@muscle.Dynamics(sys);
-            this.initSarcoConst;
             this.UseFrequencyDetector = false;
         end
         
@@ -118,6 +94,9 @@ classdef Dynamics < muscle.Dynamics;
                 this.lambda_dot = zeros(1,this.nfibres);
             end
             
+            % Needed in evaluate & getStateJacobian
+            this.sarcoconst1 = sys.Sarcomere.SarcoConst(1,:);
+            
             configUpdated@muscle.Dynamics(this);
             
             % fDim and xDim are from muscle.Dynamics, so add moto+sarco
@@ -127,7 +106,6 @@ classdef Dynamics < muscle.Dynamics;
                 this.fDim = this.fDim + 9*this.nfibres;
                 this.xDim = this.xDim + 9*this.nfibres;
             end
-            this.sarcoconst = this.getSarcoConst(ft);
             
             this.moto_sarco_link_moto_out = sys.off_moto + (2:6:6*this.nfibres);
             this.moto_sarco_link_sarco_in = sys.off_sarco + (1:56:56*this.nfibres);
@@ -185,15 +163,16 @@ classdef Dynamics < muscle.Dynamics;
             dy(moto_pos) = dy_m(:);
             
             %% Sacromeres
+            sa = sys.Sarcomere;
             sarco_pos = sys.off_sarco + (1:sys.num_sarco_dof);
             ys = reshape(y(sarco_pos),56,[]);
-            dys = this.dydt_sarcomere(ys, t);
+            dys = sa.dydt(ys, t);
             dy(sarco_pos) = dys(:);
             
             %% Link of motoneurons to sarcomeres
             moto_out = y(this.moto_sarco_link_moto_out);
             fac = min(this.MSLink_MaxFactor,this.MSLinkFun(moto_out));
-            signal = fac.*moto_out./this.sarcoconst(1,:)';
+            signal = fac.*moto_out./this.sarcoconst1';
             % Add signal to corresponding locations
             dy(this.moto_sarco_link_sarco_in) = dy(this.moto_sarco_link_sarco_in) + signal;
             
@@ -251,9 +230,10 @@ classdef Dynamics < muscle.Dynamics;
             end
             
             %% Sarcomeres
+            sa = sys.Sarcomere;
             for k=1:this.nfibres
                 sarco_pos = sys.off_sarco + 56*(k-1) + (1:56);
-                J = blkdiag(J,this.Jac_Sarco(y(sarco_pos),t,this.sarcoconst(:,k)));
+                J = blkdiag(J,sa.Jdydt(y(sarco_pos),t,k));
             end
             
             %% Spindles
@@ -286,7 +266,7 @@ classdef Dynamics < muscle.Dynamics;
             moto_out = y(this.moto_sarco_link_moto_out);
             fac = min(this.MSLink_MaxFactor,this.MSLinkFun(moto_out));
             dfac = this.MSLinkFunDeriv(moto_out);
-            dsignal_dmotoout = (dfac .* moto_out + fac)./this.sarcoconst(1,:)';
+            dsignal_dmotoout = (dfac .* moto_out + fac)./this.sarcoconst1';
             for k=1:this.nfibres
                 J(this.moto_sarco_link_sarco_in(k),this.moto_sarco_link_moto_out(k)) = dsignal_dmotoout(k);
             end
@@ -412,9 +392,7 @@ classdef Dynamics < muscle.Dynamics;
             end
             
             % Sarco
-            mc = metaclass(this);
-            s = load(fullfile(fileparts(which(mc.Name)),'JSP_Sarco'));
-            J_sarco = s.JP;
+            J_sarco = sys.Sarcomere.JSparsityPattern;
             for k=1:this.nfibres
                 SP = blkdiag(SP, J_sarco);
             end
@@ -460,14 +438,5 @@ classdef Dynamics < muscle.Dynamics;
                 end
             end
         end
-    end
-    
-    methods(Access=private)
-        function sc = getSarcoConst(this, fibretypes)
-            sc = repmat(this.SarcoConst_base,1,this.nfibres);
-            sc(this.SarcoConst_dynpos,:) = this.SarcoConst_slow*(1-fibretypes) ...
-                + this.SarcoConst_fast * fibretypes;
-        end
-    end
-    
+    end    
 end
