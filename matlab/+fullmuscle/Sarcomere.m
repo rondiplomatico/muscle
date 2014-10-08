@@ -837,9 +837,6 @@ classdef Sarcomere < KerMorObject
             fprintf('J = sparse(56,56);\n');
             for i = 1:56
                 for j = 1:56
-                    if i == 31 && j == 49
-                        keyboard;
-                    end
                     pd = diff(dy(i),y(j));
                     if pd ~= 0
                         JP(i,j) = true;

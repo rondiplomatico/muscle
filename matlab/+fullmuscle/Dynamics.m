@@ -78,7 +78,8 @@ classdef Dynamics < muscle.Dynamics;
     methods
         function this = Dynamics(sys)
             this = this@muscle.Dynamics(sys);
-            this.UseFrequencyDetector = false;
+            s = load(fullfile(fileparts(which('fullmuscle.Model')),'FrequencyKexp.mat'));
+            this.freq_kexp = s.kexp.toTranslateBase;
         end
         
         function configUpdated(this)
@@ -370,10 +371,13 @@ classdef Dynamics < muscle.Dynamics;
         end
         
         function set.UseFrequencyDetector(this, value)
-            this.fUseFD = value;
-            if ~value
-                s = load(fullfile(fileparts(which('fullmuscle.Model')),'FrequencyKexp.mat'));
-                this.freq_kexp = s.kexp.toTranslateBase;
+            if ~isequal(value,this.fUseFD) || isempty(this.fUseFD)
+                this.fUseFD = value;
+                % Update pattern (learned frequency causes different
+                % spindle pattern)
+                if ~isempty(this.System.Model.Config)
+                    this.JSparsityPattern = this.computeSparsityPattern;
+                end
             end
         end
     end
@@ -437,10 +441,32 @@ classdef Dynamics < muscle.Dynamics;
                     spindle_pos = sys.off_spindle + 9*(k-1) + (1:9);
                     SP(spindle_pos,1:sys.num_u_dof+sys.num_v_dof) = ...
                         logical(Jspin_Ldot*double(SPLamDot(k,:)));
-                    SP(spindle_pos,spindle_pos) = ...
-                        SP(spindle_pos,spindle_pos) | logical(Jspin_dmoto*any(Jspin_Aff));
+                    % Create connecting link to self only when no frequency
+                    % detector is used!
+                    if ~this.fUseFD
+                        SP(spindle_pos,spindle_pos) = ...
+                            SP(spindle_pos,spindle_pos) | logical(Jspin_dmoto*any(Jspin_Aff));
+                    end
                 end
             end
         end
-    end    
+    end
+    
+    methods(Static)
+        function res = test_Dynamics
+            m = fullmuscle.Model(fullmuscle.CPull(1));
+            f = m.System.f;
+            res = true;
+            
+            f.UseFrequencyDetector = false;
+            [t, y] = m.simulate;
+            res = res & f.test_Jacobian;
+            res = res & f.test_Jacobian(y(:,end),t(end));
+            
+            f.UseFrequencyDetector = true;
+            [t, yfd] = m.simulate;
+            res = res & f.test_Jacobian;
+            res = res & f.test_Jacobian(yfd(:,end),t(end));
+        end
+    end
 end

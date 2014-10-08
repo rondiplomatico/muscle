@@ -3,7 +3,7 @@ The motoneurons and sarcomeres are used to model a \e{motorunit}, which is assoc
 Here, $\tau=0$/$\tau=1$ corresponds to slow/fast twitch fibres, respectively.
 We choose $\mups\in \N$ different motorunits in a ``motorunit-pool'', specified by $\tau_k\in[0,1], k=1\ldots\mups$.
 
-\subsection{Motoneuron}
+\subsection{Motoneuron}\label{sec:motoneuron}
 The motoneuron model \cite{Cisi2008, negro2011} consists of $6$ degrees of freedom and reads as
 \begin{align}
 	\vq'(t) &= \fmo(\vq(t),\tau) + \ve_2\kappa(t)\eta(t,\tau) + \ve_2\eta_b(t) & \vq(0) &= \vnull,\label{def:motosys}
@@ -173,11 +173,41 @@ Then the frequency sequence is then given by
 	\nu_n &:= \begin{cases}
 		\frac{W}{t_n - t^p_{k-W}} & k \geq W,\\
 		0 & k < W.
-	\end{cases}
+	\end{cases}\label{def:FD_freq}
 \end{align}
 As the detector essentially computes a local average over $W$ peaks, a larger ``window size'' $W$ improves accuracy with respect to a noisy signal,
 while a smaller $W$ renders the detector more sensitive to quick frequency changes.
 In our applications $W=3$ or $W=4$ turned out to be appropriate choices.
+
+Alternatively, as the frequency detector has a window-size dependent delay, the resulting motoneuron frequency for any given fibre type and 
+mean current can be approximated by a machine learning approach \cite{Wirtz2013a}.
+Essentially, collected frequencies $\nu_l$ for parameter pairs $(\tau_l,\kappa_l), l = 1\ldots L$ are used as training data
+and the approximation is build to have $\nu \approx \tnu(\tau,\kappa)$ for a new, previously unknown pair $(\tau,\kappa)$ and actual frequency $\nu$.
+The left image of Figure \ref{fig:motofreq} shows the raw frequency data measured by the frequency detector described above for a sufficiently long run-time using a suitable training set.
+The data is then smoothed by multiple 2D-convolution and learned by the VKOGA algorithm using Wendland kernels \cite{Wirtz2013a, Wirtz2013, Wendland2005}.
+Figure \ref{fig:motofreq} shows the smoothed frequency responses and the learned surface.
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=\third]{freq_raw_data}
+	\includegraphics[width=\third]{freq_smoothed}
+	\includegraphics[width=\third]{freq_approx}
+	\caption{Frequency response of Motoneurons in Hz for different fibre types $\tau$ and mean currents $\kappa$.
+	Left: Raw data, center: smoothed data, right: Learned response surface (cut to the region of valid inputs, see Section \ref{sec:motoneuron})}
+	\label{fig:motofreq}
+\end{figure}
+Mathematically, the VKOGA yields a kernel expansion
+\begin{align}
+	\tnu(\vz) &= \suml{j=1}{C}c_j\Phi(\vz,\vz_j), & c_j &\in \R,  & \vz_j\in\R^2. 
+\end{align}
+Here, the kernel $\Phi$ is a Wendland kernel given by
+\begin{align}
+	\Phi(\vz,\tilde{\vz}) &= \phi\left(\frac{\noG{\vz-\tilde{\vz}}}{\gamma}\right), & \phi(r) &= (1-r)^{l+k}_+p(r),\\
+	p(r) &= \frac{1}{3}(l^2 + 4l + 3)r^2 + (l + 2)r + 1, & l &:= \lfloor d/2\rfloor + k + 1.
+\end{align}
+where we used $k=d=2$.
+Here, $k$ is a hyperparameter for \e{smoothness} in the sense of $\Phi\in C^{2k}(\Omega)$ if $\Omega \subseteq \R^{\hat{d}}, \hat{d}\leq d$, see \cite{Wendland2005}.
+
+With this, instead of using \eqref{def:FD_freq}, one can obtain the current $k$-th motoneuron frequency as $\tnu(\tau_k,\kappa)$ for given mean current $\kappa$.
 
 \subsubsection{Model parameters}
 \begin{table}[!ht]
@@ -278,7 +308,25 @@ For any $k = 1\ldots\mups, j=1\ldots N$ we have similar to \eqref{def:dKduji}
 	\d{}{s^k_i}\dot{\vq}(t) &= \d{}{s^k_i}\ve_2(\kappa(t) + \kappa^s(\vs^1,\ldots,\vs^\mups))\eta(t,\tau)\\
 	&= \ve_2\eta(t,\tau)\d{}{s^k_i}\kappa^s(\vs^1,\ldots,\vs^\mups)\\
 	&= \ve_2\frac{\eta(t,\tau)}{\mups}\d{}{s^k_i}\sumjmups w_p\theta_p(\vs^j) + w_s\theta_s(\vs^j)\\
-	&= \ve_2\frac{\eta(t,\tau)}{\mups}\left(w_p\d{}{s^k_i}\theta_p(\vs^i) + w_s\d{}{s^k_i}\theta_s(\vs^i)\right)
+	&= \ve_2\frac{\eta(t,\tau)}{\mups}\left(w_p\d{}{s^k_i}\theta_p(\vs^k) + w_s\d{}{s^k_i}\theta_s(\vs^k)\right)
+\end{align}
+
+\subsection{Spindle via learned Frequency}
+If the learned frequency $\tnu$ is used, the spindle link via the motoneuron leads to an immediate feedback for the spindle dynamics as then
+\begin{align}
+	\dot{\vs}^k(t) &= \fsp(\vs^k(t),\dla(t),\tnu(t))\\
+	&= \fsp(\vs^k(t),\dla(t),\tnu(\tau_k,\kappa(t) + \kappa^s(\vs^1(t),\ldots,\vs^\mups(t))))
+\end{align}
+Hence we get
+\begin{align}
+	\d{}{s_i^j}\fsp(\vs^k,\dla,\tnu(\vs^1,\ldots,\vs^\mups)) &= \delta_{jk}\frac{\partial_1}{\partial s_i^j}\fsp(\vs^k,\dla,\tnu)
+	 + \frac{\partial_3}{\partial s_i^j}\fsp(\vs^k,\dla,\tnu(\vs^1,\ldots,\vs^\mups))\\
+	\frac{\partial_3}{\partial s_i^j}\fsp(\vs^k,\dla,\tnu(\vs^1,\ldots,\vs^\mups))
+	&= \d{}{\tnu}\fsp(\vs^k,\dla,\tnu)\d{}{\kappa}\tnu(\tau,\kappa)\d{}{s_i^j}\kappa^s(\vs^1,\ldots,\vs^\mups)
+\end{align}
+\begin{align}
+	[\ldots]&= \d{}{\tnu}\fsp(\vs^k,\dla,\tnu)\suml{l=1}{C}c_l\d{}{\kappa}\Phi((\tau_k,\kappa),\vz_l)
+	\frac{1}{\mups}\left(w_p\d{}{s^j_i}\theta_p(\vs^j) + w_s\d{}{s^j_i}\theta_s(\vs^j)\right)
 \end{align}
 
 \subsubsection{Mechanics to Spindle}
