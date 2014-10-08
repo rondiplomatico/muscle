@@ -52,7 +52,7 @@ classdef Dynamics < muscle.Dynamics;
         % (then added to the external signal)
         %
         % @type rowvec<double> @default [1 1]*0.002
-        SpindleAffarentWeights = [1 1]*0.002;
+        SpindleAffarentWeights = sparse([1 1]*0.002);
     end
     
     properties(Dependent)
@@ -236,32 +236,6 @@ classdef Dynamics < muscle.Dynamics;
                 J = blkdiag(J,sa.Jdydt(y(sarco_pos),t,k));
             end
             
-            %% Spindles
-            if sys.HasSpindle
-                sp = sys.Spindle;
-                if this.fUseFD
-                    freq = this.FrequencyDetector.Frequency;
-                else
-                    % For no detection, the current spindle signal is
-                    % required
-                    spindle_pos = sys.off_spindle + (1:sys.num_spindle_dof);
-                    yspindle = reshape(y(spindle_pos),9,[]);
-                    % Get single spindle signals
-                    spindle_sig = this.SpindleAffarentWeights*sp.getAfferents(yspindle);
-                    % Compute the mean value over all signals
-                    spindle_sig = ones(1,this.nfibres)*mean(spindle_sig);
-                    % Use the upper bounded sum
-                    eff_spindle_sig = min(this.max_moto_signals, spindle_sig + sys.Inputs{2,1}(t));
-                    freq = this.freq_kexp.evaluate([sys.Model.Config.FibreTypes; eff_spindle_sig]);
-                end
-                for k=1:this.nfibres
-                    spindle_pos = sys.off_spindle + 9*(k-1) + (1:9);
-                    [Jspin, Jspin_Ldot] = sp.Jdydt(y(spindle_pos), t, freq(k), this.lambda_dot(k), 0);
-                    J = blkdiag(J,Jspin);
-                    J(spindle_pos,1:sys.num_u_dof+sys.num_v_dof) = Jspin_Ldot'*JLamDot(k,:);
-                end
-            end
-            
             %% Motoneuron to Sarcomere coupling
             moto_out = y(this.moto_sarco_link_moto_out);
             fac = min(this.MSLink_MaxFactor,this.MSLinkFun(moto_out));
@@ -277,30 +251,52 @@ classdef Dynamics < muscle.Dynamics;
             % there anyways. its not 100% clean OOP, but works for now.
             J(sys.num_u_dof + (1:sys.num_v_dof), sys.off_sarco+(1:sys.num_sarco_dof)) = Jalpha;
             
+            %% Spindle stuff
             if sys.HasSpindle
-                %% Motoneuron to Spindle coupling
-                % The frequency-detector is giving piecewise constant signals,
-                % hence there is no detectable change in that direction.
-                
-                if ~this.fUseFD
-                    % TODO implement wendland derivatives and use kexp deriv
-                    % here for frequency forwarding
+                sp = sys.Spindle;
+                if this.fUseFD
+                    freq = this.FrequencyDetector.Frequency;
+                else
+                    % For no detection, the current spindle signal is
+                    % required
+                    spindle_pos = sys.off_spindle + (1:sys.num_spindle_dof);
+                    yspindle = reshape(y(spindle_pos),9,[]);
+                    % Get single spindle signals
+                    spindle_sig = this.SpindleAffarentWeights*sp.getAfferents(yspindle);
+                    % Compute the mean value over all signals
+                    spindle_sig = ones(1,this.nfibres)*mean(spindle_sig);
+                    % Use the upper bounded sum
+                    eff_spindle_sig = min(this.max_moto_signals, spindle_sig + sys.Inputs{2,1}(t));
+                    freq_kexp_arg = [sys.Model.Config.FibreTypes; eff_spindle_sig];
+                    freq = this.freq_kexp.evaluate(freq_kexp_arg);
                 end
                 
-                %% Spindle to Motoneuron coupling
                 i = []; j = []; s = [];
                 moto_pos = 2:6:6*this.nfibres;
                 for k=1:this.nfibres
                     spindle_pos = sys.off_spindle + 9*(k-1) + (1:9);
+                    
+                    %% Spindles by themselves
+                    [Jspin, Jspin_dLdot, Jspin_dmoto] = sp.Jdydt(y(spindle_pos), t, freq(k), this.lambda_dot(k), 0);
+                    J = blkdiag(J,Jspin);
+                    
+                    %% Mechanics to spindle coupling
+                    J(spindle_pos,1:sys.num_u_dof+sys.num_v_dof) = Jspin_dLdot'*JLamDot(k,:);
+                    
+                    %% Spindle to Motoneuron coupling
                     daffk_dy = this.SpindleAffarentWeights*sp.getAfferentsJacobian(y(spindle_pos));
                     dnoise_daff = mo.TypeNoise(:,round(t)+1).*mo.FibreTypeNoiseFactors(:);
                     i = [i repmat(moto_pos',1,9)];%#ok
                     j = [j repmat(9*(k-1) + (1:9),this.nfibres,1)];%#ok
                     s = [s dnoise_daff*daffk_dy/this.nfibres];%#ok
-
-%                         spindle_sig = this.SpindleAffarentWeights*sp.getAfferents(y(spindle_pos));
-%                         ext_sig = sys.Inputs{2,1}(t);
-%                         eff_spindle_sig = min(spindle_sig,this.max_moto_signals - ext_sig);
+                    
+                    %% Moto to Spindle coupling for learned frequencies
+                    if ~this.fUseFD
+                        kexp_Jac = this.freq_kexp.getStateJacobian(freq_kexp_arg(:,k));
+                        
+                        J(spindle_pos,spindle_pos) = J(spindle_pos,spindle_pos) ...
+                            + Jspin_dmoto'*kexp_Jac(2)*daffk_dy;
+                    end
                 end
                 J(sys.off_moto + (1:sys.num_motoneuron_dof),...
                   sys.off_spindle + (1:sys.num_spindle_dof))...
@@ -342,21 +338,25 @@ classdef Dynamics < muscle.Dynamics;
                 dlam(:,k) = this.lambda_dot;
             end
             JLamFD = (dlam - LAM)./dx(1:uv)';
-            [J, JLamDot] = this.getStateJacobian(y,t);
-            difn = norm(JLamFD-JLamDot)
+            [~, JLamDot] = this.getStateJacobian(y,t);
+            difn = norm(JLamFD-JLamDot);
             res = difn < 1e-13;
             
-            freq = zeros(1,this.nfibres);
+            freq = ones(1,this.nfibres)*30;
             dx = ones(this.nfibres,1)*sqrt(eps(class(ldotbase))).*max(abs(ldotbase),1);
             sp = sys.Spindle;
             for k = 1:this.nfibres
                 spindle_pos = sys.off_spindle + 9*(k-1) + (1:9);
                 fx = sp.dydt(y(spindle_pos),t,freq(k),ldotbase(k),0);
-                fxh = sp.dydt(y(spindle_pos),t,freq(k),ldotbase(k)+dx(k),0);
-                Jspin_Ldot_FD = (fxh-fx) / dx(k);
-                [~, Jspin_Ldot] = sp.Jdydt(y(spindle_pos), t, freq(k), ldotbase(k), 0);
-                difn = norm(Jspin_Ldot_FD - Jspin_Ldot')
-                res = res && difn < 1e-3;
+                fxh_dldot = sp.dydt(y(spindle_pos),t,freq(k),ldotbase(k)+dx(k),0);
+                fxh_dmoto = sp.dydt(y(spindle_pos),t,freq(k)+dx(k),ldotbase(k),0);
+                Jspin_Ldot_FD = (fxh_dldot-fx) / dx(k);
+                Jspin_moto_FD = (fxh_dmoto-fx) / dx(k);
+                [~, Jspin_dLdot, Jspin_dmoto] = sp.Jdydt(y(spindle_pos), t, freq(k), ldotbase(k), 0);
+                difn = norm(Jspin_Ldot_FD - Jspin_dLdot');
+                res = res && difn < 1e-7;
+                difn = norm(Jspin_moto_FD - Jspin_dmoto');
+                res = res && difn < 1e-7;
             end
             
             res = res & test_Jacobian@muscle.Dynamics(this, y, t, mu);
@@ -431,10 +431,14 @@ classdef Dynamics < muscle.Dynamics;
                 
                 % Mechanics -> spindle
                 Jspin_Ldot = double(sys.Spindle.JLdotSparsityPattern);
+                Jspin_dmoto = double(sys.Spindle.JMotoSparsityPattern);
+                Jspin_Aff = double(sys.Spindle.JAfferentSparsityPattern);
                 for k=1:this.nfibres
                     spindle_pos = sys.off_spindle + 9*(k-1) + (1:9);
                     SP(spindle_pos,1:sys.num_u_dof+sys.num_v_dof) = ...
                         logical(Jspin_Ldot*double(SPLamDot(k,:)));
+                    SP(spindle_pos,spindle_pos) = ...
+                        SP(spindle_pos,spindle_pos) | logical(Jspin_dmoto*any(Jspin_Aff));
                 end
             end
         end

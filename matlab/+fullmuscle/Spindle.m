@@ -17,6 +17,8 @@ classdef Spindle < KerMorObject
         spindleConst;
         JSparsityPattern;
         JLdotSparsityPattern;
+        JMotoSparsityPattern;
+        JAfferentSparsityPattern;
         y0;
         UseSecondAsTimeUnit;
     end
@@ -35,18 +37,23 @@ classdef Spindle < KerMorObject
             j = [1 1 1 1 2 2 3 3 4 4 5 5 6 7 8 9 9 9 ];
             this.JSparsityPattern = sparse(i,j,true,9,9);
             
+            i = [1 1 2 1 2 2 ];
+            j = [6 7 7 8 8 9];
+            this.JAfferentSparsityPattern = logical(sparse(i,j,ones(6,1),2,9));
+            
             J = logical(sparse(9,1));
             J([3:5 9]) = true;
             this.JLdotSparsityPattern = J;
+            
+            J = logical(sparse(9,1));
+            J([1:2 5]) = true;
+            this.JMotoSparsityPattern = J;
         end
         
         function dy = dydt(this, y, t, moto_sig, Ldot, Lddot)
             % dydt_spindle: Function for change rate of spindle y.
 
             %% Init
-            moto_freq_dyn = moto_sig;
-            moto_freq_static = moto_sig;
-            
             C = 0.42;
             % C = 1 if Ldot > 0
             % Numerically -.0001, as ldot=0 happens quite often and hence
@@ -78,6 +85,8 @@ classdef Spindle < KerMorObject
             tmpcneg = tmpc < 0;
             tmpcpos = ~tmpcneg;
             
+            moto_freq_dyn = moto_sig;
+            moto_freq_static = moto_sig;
             % f_dyn_bag1
             dy(1,:) = (moto_freq_dyn.^c(22)./(moto_freq_dyn.^c(22)+c(21)^c(22)) - y(1,:))/c(20);
             % f_stat_bag2
@@ -136,8 +145,11 @@ classdef Spindle < KerMorObject
             bag2_and_chain = Aff_pot_prim_bag2 + Aff_pot_prim_chain;
             
             % Primary_afferent
-            af(1,:) = max(Aff_pot_prim_bag1,bag2_and_chain) ...
-                + 0.156*min(Aff_pot_prim_bag1,bag2_and_chain);
+            bag1bigger = Aff_pot_prim_bag1 > Aff_pot_prim_chain;
+            af(1,:) = bag1bigger.*Aff_pot_prim_bag1 + (1-bag1bigger).*bag2_and_chain...
+                + .156*((1-bag1bigger).*Aff_pot_prim_bag1 + bag1bigger.*bag2_and_chain);
+%             af(1,:) = max(Aff_pot_prim_bag1,bag2_and_chain) ...
+%                 + 0.156*min(Aff_pot_prim_bag1,bag2_and_chain);
             
             Aff_pot_sec_bag2  = c(53)*(c(41)*c(49)/c(47)*(y(7,:)/c(31)-(c(42)-c(47)))...
                 + (1-c(41))*c(49)/c(48)*(y(9,:)-y(7,:)/c(31)-c(47)-c(43)));
@@ -189,11 +201,9 @@ classdef Spindle < KerMorObject
             pm.done;
         end
         
-        function [J, JLdot] = Jdydt(this, y, t, moto_sig, Ldot, Lddot)
+        function [J, JLdot, Jmoto] = Jdydt(this, y, t, moto_sig, Ldot, Lddot)
             % computes the Jacobian for dydt
             %
-            moto_freq_dyn = moto_sig;
-            moto_freq_static = moto_sig;
 
             C = 0.42;
             C = C + (Ldot > -.0001)*.58; % C = 1 if Ldot > 0
@@ -230,9 +240,9 @@ classdef Spindle < KerMorObject
             J(4,7) = -(c(31)*(c(32)/c(31) - (C*co*(tmp2neg*(-(Ldot - y(4)/c(31))/scalefac)^c(45) - tmp2pos*((Ldot - y(4)/c(31))/scalefac)^c(45))*(c(34) + c(35)*y(1) + c(36)*y(2)))/c(31) + 1))/c(33);
             J(4,9) = (c(31)*(c(32) - C*co*(tmp2neg*(-(Ldot - y(4)/c(31))/scalefac)^c(45) - tmp2pos*((Ldot - y(4)/c(31))/scalefac)^c(45))*(c(34) + c(35)*y(1) + c(36)*y(2))))/c(33);
             J(5,1) = (c(61)*(c(67) + C*c(65)*co*(tmpcneg*(-(Ldot - y(5)/c(61))/scalefac)^c(75) - tmpcpos*((Ldot - y(5)/c(61))/scalefac)^c(75))*(c(76) + c(77) - y(9) + y(8)/c(61))))/c(63);
-            J(5,5) = (C*c(61)*co*((c(75)*tmpcneg*(-(Ldot - y(5)/c(61))/scalefac)^(c(75) - 1))/(c(61)*scalefac) + (c(75)*tmpcpos*((Ldot - y(5)/c(61))/scalefac)^(c(75) - 1))/(c(61)*scalefac))*(c(64) + c(65)*y(1) + (c(66)*moto_freq_static^c(82))/(c(81)^c(82) + moto_freq_static^c(82)))*(c(76) + c(77) - y(9) + y(8)/c(61)))/c(63);
-            J(5,8) = -(c(61)*(c(62)/c(61) - (C*co*(tmpcneg*(-(Ldot - y(5)/c(61))/scalefac)^c(75) - tmpcpos*((Ldot - y(5)/c(61))/scalefac)^c(75))*(c(64) + c(65)*y(1) + (c(66)*moto_freq_static^c(82))/(c(81)^c(82) + moto_freq_static^c(82))))/c(61) + 1))/c(63);
-            J(5,9) = (c(61)*(c(62) - C*co*(tmpcneg*(-(Ldot - y(5)/c(61))/scalefac)^c(75) - tmpcpos*((Ldot - y(5)/c(61))/scalefac)^c(75))*(c(64) + c(65)*y(1) + (c(66)*moto_freq_static^c(82))/(c(81)^c(82) + moto_freq_static^c(82)))))/c(63);
+            J(5,5) = (C*c(61)*co*((c(75)*tmpcneg*(-(Ldot - y(5)/c(61))/scalefac)^(c(75) - 1))/(c(61)*scalefac) + (c(75)*tmpcpos*((Ldot - y(5)/c(61))/scalefac)^(c(75) - 1))/(c(61)*scalefac))*(c(64) + c(65)*y(1) + (c(66)*moto_sig^c(82))/(c(81)^c(82) + moto_sig^c(82)))*(c(76) + c(77) - y(9) + y(8)/c(61)))/c(63);
+            J(5,8) = -(c(61)*(c(62)/c(61) - (C*co*(tmpcneg*(-(Ldot - y(5)/c(61))/scalefac)^c(75) - tmpcpos*((Ldot - y(5)/c(61))/scalefac)^c(75))*(c(64) + c(65)*y(1) + (c(66)*moto_sig^c(82))/(c(81)^c(82) + moto_sig^c(82))))/c(61) + 1))/c(63);
+            J(5,9) = (c(61)*(c(62) - C*co*(tmpcneg*(-(Ldot - y(5)/c(61))/scalefac)^c(75) - tmpcpos*((Ldot - y(5)/c(61))/scalefac)^c(75))*(c(64) + c(65)*y(1) + (c(66)*moto_sig^c(82))/(c(81)^c(82) + moto_sig^c(82)))))/c(63);
             J(6,3) = 1;
             J(7,4) = 1;
             J(8,5) = 1;
@@ -240,8 +250,13 @@ classdef Spindle < KerMorObject
             JLdot = sparse(1,9);
             JLdot(1,3) = -(C*c(1)*co*((c(15)*tmp1neg*(-(Ldot - y(3)/c(1))/scalefac)^(c(15) - 1))/scalefac + (c(15)*tmp1pos*((Ldot - y(3)/c(1))/scalefac)^(c(15) - 1))/scalefac)*(c(4) + c(5)*y(1))*(c(16) + c(17) - y(9) + y(6)/c(1)))/c(3);
             JLdot(1,4) = -(C*c(31)*co*((c(45)*tmp2neg*(-(Ldot - y(4)/c(31))/scalefac)^(c(45) - 1))/scalefac + (c(45)*tmp2pos*((Ldot - y(4)/c(31))/scalefac)^(c(45) - 1))/scalefac)*(c(34) + c(35)*y(1) + c(36)*y(2))*(c(46) + c(47) - y(9) + y(7)/c(31)))/c(33);
-            JLdot(1,5) = -(C*c(61)*co*((c(75)*tmpcneg*(-(Ldot - y(5)/c(61))/scalefac)^(c(75) - 1))/scalefac + (c(75)*tmpcpos*((Ldot - y(5)/c(61))/scalefac)^(c(75) - 1))/scalefac)*(c(64) + c(65)*y(1) + (c(66)*moto_freq_static^c(82))/(c(81)^c(82) + moto_freq_static^c(82)))*(c(76) + c(77) - y(9) + y(8)/c(61)))/c(63);
+            JLdot(1,5) = -(C*c(61)*co*((c(75)*tmpcneg*(-(Ldot - y(5)/c(61))/scalefac)^(c(75) - 1))/scalefac + (c(75)*tmpcpos*((Ldot - y(5)/c(61))/scalefac)^(c(75) - 1))/scalefac)*(c(64) + c(65)*y(1) + (c(66)*moto_sig^c(82))/(c(81)^c(82) + moto_sig^c(82)))*(c(76) + c(77) - y(9) + y(8)/c(61)))/c(63);
             JLdot(1,9) = 1;
+            
+            Jmoto = sparse(1,9);
+            Jmoto(1,1) = ((c(22)*moto_sig^(c(22) - 1))/(c(21)^c(22) + moto_sig^c(22)) - (c(22)*moto_sig^c(22)*moto_sig^(c(22) - 1))/(c(21)^c(22) + moto_sig^c(22))^2)/c(20);
+            Jmoto(1,2) = ((c(52)*moto_sig^(c(52) - 1))/(c(51)^c(52) + moto_sig^c(52)) - (c(52)*moto_sig^c(52)*moto_sig^(c(52) - 1))/(c(51)^c(52) + moto_sig^c(52))^2)/c(50);
+            Jmoto(1,5) = (c(61)*((c(68)*c(82)*moto_sig^(c(82) - 1))/(c(81)^c(82) + moto_sig^c(82)) + C*co*((c(66)*c(82)*moto_sig^(c(82) - 1))/(c(81)^c(82) + moto_sig^c(82)) - (c(66)*c(82)*moto_sig^c(82)*moto_sig^(c(82) - 1))/(c(81)^c(82) + moto_sig^c(82))^2)*(tmpcneg*(-(Ldot - y(5)/c(61))/scalefac)^c(75) - tmpcpos*((Ldot - y(5)/c(61))/scalefac)^c(75))*(c(76) + c(77) - y(9) + y(8)/c(61)) - (c(68)*c(82)*moto_sig^c(82)*moto_sig^(c(82) - 1))/(c(81)^c(82) + moto_sig^c(82))^2))/c(63);
         end
     end
     
@@ -379,13 +394,14 @@ classdef Spindle < KerMorObject
             sp{2} = fullmuscle.Spindle(true);
             d = 9;
             n = 10;
-            moto_sig = rand(n,2);
-            Ldot = 0;
+            rs = RandStream('mt19937ar','Seed',0);
+            moto_sig = rs.rand(n,1);
+            Ldot = (rs.rand-.5)/10;
             Lddot = 0;
-            for k=1:2
-                s = sp{k};
-                testx = [s.y0 bsxfun(@times,s.y0,rand(d,n-1)*10)];
-                res = true;
+            res = true;
+            for sk=1:2
+                s = sp{sk};
+                testx = [s.y0 bsxfun(@times,s.y0,rs.rand(d,n-1)*10)];
                 for k = 1:n
                     x = testx(:,k);
                     X = repmat(x,1,d);
@@ -400,8 +416,23 @@ classdef Spindle < KerMorObject
                     reldiff = abs(absdiff./J);
                     maxabsdiff = max(absdiff(s.JSparsityPattern));
                     maxreldiff = max(reldiff(s.JSparsityPattern));
-                    fprintf('Max abs diff: %g, max rel diff: %g\n',maxabsdiff,maxreldiff);
-                    res = res & maxreldiff < .005;
+                    if maxreldiff > .005
+                        fprintf('Max abs diff: %g, max rel diff: %g\n',maxabsdiff,maxreldiff);
+                        res = false;
+                    end
+                    
+                    J = s.getAfferentsJacobian(x);
+                    Jc = (s.getAfferents(X+DX)...
+                        - repmat(s.getAfferents(x),1,d))*diag(1./dx);
+%                     [full(J) Jc]
+                    absdiff = abs(Jc-J);
+                    reldiff = abs(absdiff./J);
+                    maxabsdiff = max(absdiff(s.JAfferentSparsityPattern));
+                    maxreldiff = max(reldiff(s.JAfferentSparsityPattern));
+                    if maxreldiff > .005
+                        fprintf('JAfferent max abs diff: %g, max rel diff: %g\n',maxabsdiff,maxreldiff);
+                        res = false;
+                    end
                 end
             end
         end
@@ -411,8 +442,7 @@ classdef Spindle < KerMorObject
             y = sym('y',[11 1]); 
             dy = sym('dy',[11 1]);
 
-            moto_freq_dyn = sym('moto_freq_dyn','positive');
-            moto_freq_static = sym('moto_freq_static','positive');
+            moto_sig = sym('moto_sig');
             C = sym('C','positive');
             Ldot = sym('Ldot');
             Lddot = sym('Lddot');
@@ -437,6 +467,8 @@ classdef Spindle < KerMorObject
 %             tmpcneg = tmpc < 0;
 %             tmpcpos = ~tmpcneg;
             
+            moto_freq_dyn = moto_sig;
+            moto_freq_static = moto_sig;
             % f_dyn_bag1
             dy(1,:) = (moto_freq_dyn^c(22)./(moto_freq_dyn^c(22)+c(21)^c(22)) - y(1,:))/c(20);
             % f_stat_bag2
@@ -503,10 +535,24 @@ classdef Spindle < KerMorObject
             sprintf('%d ',j)
             
             %% Derivatives w.r.t. Ldot
-            fprintf('\ndy / Ldot:\n');
+            fprintf('\ndy / dLdot:\n');
             JP = false(9,1);
             for i = 1:9
                 pd = diff(dy(i),Ldot);
+                if pd ~= 0
+                    JP(i) = true;
+                    % Convert y14 to y(14) etc, also for c
+                    body = regexprep(char(pd), '(c|y)(\d+)', '$1($2)');
+                    fprintf('J(1,%d) = %s;\n',i,body);
+                end
+            end
+            sprintf('%d ',i)
+            
+            %% Derivatives w.r.t. moto_sig
+            fprintf('\ndy / dmoto_sig:\n');
+            JP = false(9,1);
+            for i = 1:9
+                pd = diff(dy(i),moto_sig);
                 if pd ~= 0
                     JP(i) = true;
                     % Convert y14 to y(14) etc, also for c

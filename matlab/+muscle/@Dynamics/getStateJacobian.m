@@ -193,6 +193,8 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
                             Ua0 = U1k*fibres(:,1);
                             % dLdot / du[i]_x
                             JLamDot(idx(1)) = JLamDot(idx(1)) + Ua0'*Fdota0;
+%                             JLamDot(idx(1)) = JLamDot(idx(1)) + Ua0'*Fdota0/lambdaf ...
+%                                 -Fa0'*(Ua0 + Fdota0)/lambdaf^3;
                             % dLdot / dv[i]_x
                             JLamDot(idxv(1)) = JLamDot(idxv(1)) + Fa0'*Ua0;
 
@@ -200,6 +202,8 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
                             Ua0 = U2k*fibres(:,1);
                             % dLdot / du[i]_x
                             JLamDot(idx(2)) = JLamDot(idx(2)) + Ua0'*Fdota0;
+%                             JLamDot(idx(2)) = JLamDot(idx(2)) + Ua0'*Fdota0/lambdaf ...
+%                                 -Fa0'*(Ua0 + Fdota0)/lambdaf^3;
                             % dLdot / dv[i]_x
                             JLamDot(idxv(2)) = JLamDot(idxv(2)) + Fa0'*Ua0;
 
@@ -207,6 +211,8 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
                             Ua0 = U3k*fibres(:,1);
                             % dLdot / du[i]_x
                             JLamDot(idx(3)) = JLamDot(idx(3)) + Ua0'*Fdota0;
+%                             JLamDot(idx(3)) = JLamDot(idx(3)) + Ua0'*Fdota0/lambdaf...
+%                                 -Fa0'*(Ua0 + Fdota0)/lambdaf^3;
                             % dLdot / dv[i]_x
                             JLamDot(idxv(3)) = JLamDot(idxv(3)) + Fa0'*Ua0;
                         end
