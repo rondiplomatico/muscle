@@ -240,7 +240,7 @@ With this, instead of using \eqref{def:FD_freq}, one can obtain the current $k$-
 	\caption{Model design variables}\label{tab:params}
 \end{table}
 
-\subsection{Overall dynamical system}
+\section{Overall dynamical system}
 In this section we detail the numerical implementation of the overall connected model as system of ODEs.
 The muscle activation introduced in Section \ref{sec:active_force} now is computed using the sarcomere states $\vr^k$.
 This renders the stress tensor \eqref{def:completeP} and hence the operator $K$ from \eqref{def:Kop} dependent of $\vr^1(t),\ldots,\vr^\mups(t)$,
@@ -277,7 +277,7 @@ Finally, using the above, \eqref{def:motosys_plus_spindle} and \eqref{def:sarcos
 	\text{s.t.}\quad \vg(\vu(t))		&= \vnull.
 \end{align}
 
-\subsubsection{Derivation of $\nabla_{\vr^k}K(\vu(t),\vw(t),\vr^1(t),\ldots,\vr^\mups(t))$}
+\subsection{Derivation of $\nabla_{\vr^k}K(\vu(t),\vw(t),\vr^1(t),\ldots,\vr^\mups(t))$}
 For any $k = 1\ldots\mups, j=1\ldots N$ we have similar to \eqref{def:dKduji}
 \begin{align}
 	\d{K[j]}{r^k_i}(\vu,\vw,\vr^1,\ldots,\vr^\mups) &= \sumvk\sumgp w_p \d{\vPnl}{r^k_i}(\pmp,\vu,\vw,\ldots,\vr^k,\ldots) \dNjmp\jmp\\
@@ -297,13 +297,13 @@ For any $k = 1\ldots\mups, j=1\ldots N$ we have similar to \eqref{def:dKduji}
 	\d{K[j]}{r^k_i} &= 0 \qquad i \neq 53
 \end{align}
 
-\subsubsection{Moto to Sarco Jacobian}
+\subsection{Moto to Sarco Jacobian}
 \begin{align}
 	\d{}{q_2^k}\dot{r}_1^k(\vr^k,\tau_k) &= \d{}{q_2^k}\frac{\gamma(q_2^k)}{\csa_1(\tau_k)}q_2^k = \frac{\gamma(q_2^k)}{\csa_1(\tau_k)} + \frac{q_2^k}{\csa_1(\tau_k)}\d{}{q_2^k}\gamma(q_2^k)\\
 	&=  \frac{\gamma(q_2^k)}{\csa_1(\tau_k)} - \frac{q_2^k(q_2^k-q_M)}{\csa_1(\tau_k)75}e^{-(q_2^k-q_M)^2/150}(\beta_M-\beta_m)
 \end{align}
 
-\subsubsection{Spindle to Moto}
+\subsection{Spindle to Moto}
 \begin{align}
 	\d{}{s^k_i}\dot{\vq}(t) &= \d{}{s^k_i}\ve_2(\kappa(t) + \kappa^s(\vs^1,\ldots,\vs^\mups))\eta(t,\tau)\\
 	&= \ve_2\eta(t,\tau)\d{}{s^k_i}\kappa^s(\vs^1,\ldots,\vs^\mups)\\
@@ -329,7 +329,7 @@ Hence we get
 	\frac{1}{\mups}\left(w_p\d{}{s^j_i}\theta_p(\vs^j) + w_s\d{}{s^j_i}\theta_s(\vs^j)\right)
 \end{align}
 
-\subsubsection{Mechanics to Spindle}
+\subsection{Mechanics to Spindle}
 For $k=1\ldots\mups, j = 1\ldots N, i=1\ldots3$ we have
 \begin{align}
 	\d{}{\vu[j]_i}\fsp(\vs^k,\dla(X,\vu,\vv),\nu) &= \d{}{\dla}\fsp(\vs^k,\dla,\nu)\d{}{\vu[j]_i}\dla(X,\vu,\vv)\\
@@ -350,7 +350,7 @@ For $k=1\ldots\mups, j = 1\ldots N, i=1\ldots3$ we have
 		&\re{eq:Fdotdependencyrewrite}\frac{1}{\la(X,\vu)}\va_0(X)^T\vF(X,\vu)^T\vU^j_i\va_0(X)
 \end{align}
 
-\subsubsection{Model connectivity}
+\subsection{Model connectivity}
 The above partial derivatives constitute the overall system Jacobian matrix.
 Figure \ref{fig:jacpattern} illustrates the Jacobian sparsity pattern for an example geometry with $18$ Taylor-Hood elements and $\mups=6$ motorunits and spindles.
 \begin{figure}[!ht]
