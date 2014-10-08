@@ -94,14 +94,14 @@ where we choose a threshold signal of $q_M = 40$ to pinpoint the signal from whi
 		\beta_M & q \geq q_M,
 	\end{cases}
 \end{align}
-Figure \ref{MSLink} illustrates the 
+Figure \ref{fig:MSLink} illustrates the function for the current working choice of parameters.
 \begin{figure}[!ht]
 	\centering
 	\includegraphics[width=\single]{moto_sarco_link_factor.pdf}
 	\caption{Amplification factor for motoneuron signals}
 	\label{fig:MSLink}
 \end{figure}
-Taking into account division by sarcomere model constants, the sarcomere models now read as
+Taking into account division by sarcomere model constants for the input signal (see \cite{Shorten2007}), the sarcomere models now read as
 \begin{align}
 	{\vr'}^k(t) &= \fsa(\vr^k(t),\tau_k) + \ve_1 \frac{\gamma(q_2^k(t))}{\csa_1(\tau_k)}q_2^k(t),\label{def:sarcosys_plus_moto}
 \end{align}
