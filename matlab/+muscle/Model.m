@@ -45,7 +45,9 @@ classdef Model < models.BaseFullModel
             % This defines a default behaviour for all muscle models.
             % Override in AModelConfig.configureModel for dependent
             % behaviour.
-            this.DefaultMu = [1; 50; 0; 0];
+            this.DefaultMu = [1; 50; 0; 0; 2.756e-5; 43.373; 7.99; 16.6];
+            % Contains anisotropic parameters (Markert)  [kPa] and [-]
+        
             this.TrainingParams = [1 2];
             
             this.T = 10; % [ms]
@@ -92,17 +94,25 @@ classdef Model < models.BaseFullModel
             t.Format = 'tex';
         end
         
-        function plotForceLengthCurve(this, pm)
-            if nargin < 2
+        function plotForceLengthCurve(this, mu, pm)
+            if nargin < 3
                 pm = PlotManager(false,1,2);
                 pm.LeaveOpen = true;
+                if nargin < 2
+                    mu = this.DefaultMu;
+                end
             end
             f = this.System.f;
             
+            % Simply use muscle parameter values
+            b1 = mu(1);
+            d1 = mu(2);
+            warning('Using muscle parameters only (ignoring tendon)');
+            
             lambda = .5:.005:2;
             fl = (f.Pmax / f.lambdafopt) * f.ForceLengthFun(lambda/f.lambdafopt);
-            markertf = max(0,(f.b1./lambda.^2).*(lambda.^f.d1-1));
-%             markertf = (f.b1./lambda.^2).*(lambda.^f.d1-1);
+            markertf = max(0,(b1./lambda.^2).*(lambda.^d1-1));
+%             markertf = (b1./lambda.^2).*(lambda.^d1-1);
             
             pos = find(markertf > max(fl)*1.4,1,'first');
             if ~isempty(pos)
@@ -117,7 +127,7 @@ classdef Model < models.BaseFullModel
             legend(h,'Active','Passive','Total','Location','NorthWest');
             
             dfl = (f.Pmax / f.lambdafopt) * f.ForceLengthFunDeriv(lambda/f.lambdafopt);
-            dmarkertf = (lambda>=1).*(f.b1./lambda.^3).*((f.d1-2)*lambda.^f.d1 + 2);
+            dmarkertf = (lambda>=1).*(b1./lambda.^3).*((d1-2)*lambda.^d1 + 2);
             h = pm.nextPlot('force_length_deriv',sprintf('Derivative of Force-Length curve for model %s',this.Name),'\lambda','deriv [kPa/ms]');
             plot(h,lambda,dfl,'r',lambda,dmarkertf,'g',lambda,dfl + dmarkertf,'b');
 %             axis(h,[0 2 -7 9]);
@@ -138,17 +148,25 @@ classdef Model < models.BaseFullModel
             end
         end
         
-        function plotAnisotropicPressure(this)
+        function plotAnisotropicPressure(this, mu)
+            if nargin < 2
+                mu = this.DefaultMu;
+            end
 %             pm = PlotManager(false,1,2);
             pm = PlotManager;
             pm.LeaveOpen = true;
             f = this.System.f;
             
+            % Simply use muscle parameter values
+            b1 = mu(1);
+            d1 = mu(2);
+            warning('Using muscle parameters only (ignoring tendon)');
+            
             [lambda, alpha] = meshgrid(.02:.02:1.5,0:.01:1);
             
             fl = f.ForceLengthFun(lambda/f.lambdafopt);
             active = f.Pmax./lambda.*fl.*alpha;% + 1*max(0,(lambda-1)).*alpha;
-            passive = max(0,(f.b1./lambda.^2).*(lambda.^f.d1-1));
+            passive = max(0,(b1./lambda.^2).*(lambda.^d1-1));
             
             h = pm.nextPlot('aniso_pressure',sprintf('Pressure in fibre direction for model %s',this.Name),'Stretch \lambda','Activation \alpha');
             surf(h,lambda,alpha,active+passive,'EdgeColor','k','FaceColor','interp');
@@ -169,6 +187,9 @@ classdef Model < models.BaseFullModel
         end
         
         function varargout = plotGeometrySetup(this, varargin)
+            if isempty(this.System.mu)
+                this.System.prepareSimulation(this.DefaultMu, this.DefaultInput);
+            end
             if ~isempty(varargin) && isa(varargin{1},'PlotManager')
                 varargin = [{'PM'} varargin];
             end
@@ -178,6 +199,17 @@ classdef Model < models.BaseFullModel
                 varargin(end+1:end+2) = {'NF',nf};
             end
             [varargout{1:nargout}] = this.System.plot(0,x0,varargin{:});
+        end
+        
+        function plotGeometryInfo(this, allnode, elemnr)
+            if nargin < 2
+                allnode = false;
+                if nargin < 3
+                    elemnr = 1;
+                end
+            end
+            g = this.Config.PosFE.Geometry;
+            g.plot(allnode,elemnr);
         end
         
         function [residuals_dirichlet, residuals_neumann] = getResidualForces(this, t, uvw)

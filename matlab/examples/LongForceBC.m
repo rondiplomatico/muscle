@@ -13,7 +13,7 @@ classdef LongForceBC < muscle.AModelConfig
         function configureModel(this, m)
             m.T = 40;
             m.dt = .2;
-            m.DefaultMu = [.1; 0; 1; 0];
+            m.DefaultMu = [.1; 0; 1; 0; 2.756e-5; 43.373; 7.99; 16.6];
             m.DefaultInput = 1;
             f = m.System.f;
             f.alpha = this.getAlphaRamp(5,.4);

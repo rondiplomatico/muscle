@@ -86,8 +86,8 @@ classdef QuickRelease < muscle.AModelConfig
             % Material set (see main comment)
             f.c10 = 6.352e-10; % [kPa]
             f.c01 = 3.627; % [kPa]
-            f.b1 = 0.00355439810963035; % [kPa]
-            f.d1 = 12.660539325481963;%14.5; % [-]
+            m.DefaultMu(5) = 0.00355439810963035; % [kPa]
+            m.DefaultMu(6) = 12.660539325481963; % 14.5; % [-]
             f.Pmax = 250; % [kPa], in Paper 25N/cm², but kPa = 0.1N/cm² 
             f.lambdafopt = 1.2; % [-]
             

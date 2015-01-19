@@ -13,8 +13,6 @@ function duvw  = evaluate(this, uvwdof, t)
     num_v_glob = num_u_glob;
 
     % Cache variables instead of accessing them via this. in loops
-    b1 = this.b1;
-    d1 = this.d1;
     lfopt = this.lambdafopt;
     Pmax = this.Pmax;
     flfun = this.ForceLengthFun;
@@ -27,19 +25,23 @@ function duvw  = evaluate(this, uvwdof, t)
     end
     ldotpos = this.lambda_dot_pos;
     
-    if havefibretypes
-        alphaconst = [];
-        fibretypeweights = mc.FibreTypeWeights;
-        if sys.HasMotoPool
-            FibreForces = mc.Pool.getActivation(t);
-        elseif sys.HasForceArgument
-            FibreForces = uvwdof(sys.num_uvp_dof+1:end);
+    if havefibres
+        b1 = sys.MuscleTendonParamB1;
+        d1 = sys.MuscleTendonParamD1;
+        if havefibretypes
+            alphaconst = [];
+            fibretypeweights = mc.FibreTypeWeights;
+            if sys.HasMotoPool
+                FibreForces = mc.Pool.getActivation(t);
+            elseif sys.HasForceArgument
+                FibreForces = uvwdof(sys.num_uvp_dof+1:end);
+            else
+                FibreForces = ones(size(fibretypeweights,2),1)*this.alpha(t);
+            end
+    %         FibreForces = this.APExp.evaluate(forceargs)';
         else
-            FibreForces = ones(size(fibretypeweights,2),1)*this.alpha(t);
+            alphaconst = this.alpha(t);
         end
-%         FibreForces = this.APExp.evaluate(forceargs)';
-    else
-        alphaconst = this.alpha(t);
     end
 
     % Include dirichlet values to state vector
@@ -128,7 +130,7 @@ function duvw  = evaluate(this, uvwdof, t)
                 % It is very very close to one, but sometimes 1e-7 smaller
                 % or bigger.. and that makes all the difference!
                 if lambdaf > .999
-                    markert = (b1/lambdaf^2)*(lambdaf^d1-1);
+                    markert = (b1(gp,m)/lambdaf^2)*(lambdaf^d1(gp,m)-1);
                 end
                 gval = markert + (Pmax/lambdaf)*fl*alpha; %+ 1000*max(0,(lambdaf-1))*alpha;
                 P = P + gval*F*sys.a0oa0(:,:,fibrenr);
@@ -149,10 +151,12 @@ function duvw  = evaluate(this, uvwdof, t)
                 
                 %% Check if change rate of lambda at a certain gauss point should be tracked
                 % (corresponds to a spindle location in fullmuscle.Model)
-                k = find(ldotpos(1,:) == m & ldotpos(2,:) == gp);
-                if ~isempty(k)
-                    Fdot = uvwcomplete(elemidx_v) * dtn;
-                    this.lambda_dot(k) = (F*fibres(:,1))'*(Fdot*fibres(:,1))/lambdaf;
+                if ~isempty(ldotpos)
+                    k = find(ldotpos(1,:) == m & ldotpos(2,:) == gp);
+                    if ~isempty(k)
+                        Fdot = uvwcomplete(elemidx_v) * dtn;
+                        this.lambda_dot(k) = (F*fibres(:,1))'*(Fdot*fibres(:,1))/lambdaf;
+                    end
                 end
             end
             

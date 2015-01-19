@@ -17,8 +17,7 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
     num_elements = geo.NumElements;
     
     % Cache variables instead of accessing them via "this." in loops
-    b1 = this.b1;
-    d1 = this.d1;
+    
     lfopt = this.lambdafopt;
     Pmax = this.Pmax;
 
@@ -53,28 +52,31 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
     s = zeros(totalsize,1);
     
     %% Extra stuff if fibres are used
-    if havefibretypes
-        alphaconst = [];
-        fibretypeweights = mc.FibreTypeWeights;
-        nfibres = size(fibretypeweights,2);
-        if sys.HasMotoPool
-            FibreForces = mc.Pool.getActivation(t);
-        elseif hasforceargument
-            FibreForces = uvwdof(sys.num_uvp_dof+1:end) * min(1,t);
-            totalsizeS = num_elements*num_gausspoints*nfibres;
-            iS = zeros(totalsizeS,1);
-            jS = zeros(totalsizeS,1);
-            sS = zeros(totalsizeS,1);
-            cur_offS = 0;
-            columns_sarco_link = 53:56:56*nfibres;
+    if havefibres
+        b1 = sys.MuscleTendonParamB1;
+        d1 = sys.MuscleTendonParamD1;
+        if havefibretypes
+            alphaconst = [];
+            fibretypeweights = mc.FibreTypeWeights;
+            nfibres = size(fibretypeweights,2);
+            if sys.HasMotoPool
+                FibreForces = mc.Pool.getActivation(t);
+            elseif hasforceargument
+                FibreForces = uvwdof(sys.num_uvp_dof+1:end) * min(1,t);
+                totalsizeS = num_elements*num_gausspoints*nfibres;
+                iS = zeros(totalsizeS,1);
+                jS = zeros(totalsizeS,1);
+                sS = zeros(totalsizeS,1);
+                cur_offS = 0;
+                columns_sarco_link = 53:56:56*nfibres;
+            else
+                error('No implemented');
+            end
+    %         FibreForces = this.APExp.evaluate(forceargs)';
         else
-            error('No implemented');
+            alphaconst = this.alpha(t);
         end
-%         FibreForces = this.APExp.evaluate(forceargs)';
-    else
-        alphaconst = this.alpha(t);
     end
-
     %% -I part in u'(t) = -v(t)
     i(1:dofs_pos) = (1:dofs_pos)';
     j(1:dofs_pos) = ((1:dofs_pos)+dofs_pos)';
@@ -146,8 +148,8 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
                 % It is very very close to one, but sometimes 1e-7 smaller
                 % or bigger.. and that makes all the difference!
                 if lambdaf > .999
-                    g_value = g_value + (b1/lambdaf^2)*(lambdaf^d1-1);
-                    dg_dlam = dg_dlam + (b1/lambdaf^3)*((d1-2)*lambdaf^d1 + 2);
+                    g_value = g_value + (b1(gp,m)/lambdaf^2)*(lambdaf^d1(gp,m)-1);
+                    dg_dlam = dg_dlam + (b1(gp,m)/lambdaf^3)*((d1(gp,m)-2)*lambdaf^d1(gp,m) + 2);
                 end
                 a0 = sys.a0oa0(:,:,fibrenr);
                 

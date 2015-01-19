@@ -63,8 +63,9 @@ classdef SidePressureTest < muscle.AModelConfig
             % Material set (see main comment)
             f.c10 = 6.352e-10; % [kPa]
             f.c01 = 3.627; % [kPa]
-            f.b1 = 2.756e-5; % [kPa]
-            f.d1 = 43.373; % [-]
+            m.DefaultMu(5) = 2.756e-5; % [kPa]
+            m.DefaultMu(6) = 43.373; % [-]
+            
             % Cross-fibre markert part
             f.b1cf = 53163.72204148964/10; % [kPa] = [N/mm²]
             f.d1cf = 0.014991843974911; % [-]

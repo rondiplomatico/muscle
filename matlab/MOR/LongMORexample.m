@@ -43,7 +43,7 @@ classdef LongMORexample < muscle.AModelConfig
             model.ComputeTrajectoryFxiData = true;
             
             % default model parameters 
-            model.DefaultMu = [1; 50];      % mu = [viscosity; activation duration]
+            model.DefaultMu = [1; 50; 0; 0];      % mu = [viscosity; activation duration]
             
             % specify model parameters (mu = [viscosity; activation duration])
             sys = model.System;
@@ -61,8 +61,8 @@ classdef LongMORexample < muscle.AModelConfig
             % Material set (see main comment)
             f.c10 = 6.352e-10; % [kPa]
             f.c01 = 3.627; % [kPa]
-            f.b1 = 2.756e-5; % [kPa]
-            f.d1 = 43.373; % [-]
+            model.DefaultMu(5) = 2.756e-5; % [kPa]
+            model.DefaultMu(6) = 43.373; % [-]
 
             f.Pmax = 73; % [kPa]
             f.lambdafopt = 1.2; % [-]            

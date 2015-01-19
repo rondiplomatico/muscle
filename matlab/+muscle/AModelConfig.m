@@ -13,6 +13,7 @@ classdef AModelConfig < handle
     
     properties(SetAccess=protected)
         FibreTypeWeights = [];
+        
         Pool;
         
         % The coordinate system in which to interpret the applied pressure
@@ -65,7 +66,7 @@ classdef AModelConfig < handle
             % Overload this method to set model-specific quantities like
             % simulation time etc
             
-            % do nothing by default
+            % Do nothing
         end
         
         function prepareSimulation(this, mu, inputidx)
@@ -118,6 +119,15 @@ classdef AModelConfig < handle
                 end
             end
             alpha = @(t)(t >= starttime) .* (alphamax * (((t-starttime)<ramptime).*(t-starttime)/ramptime + (t>=ramptime+starttime)));
+        end
+        
+        function tmr = getTendonMuscleRatio(this)
+            % Returns the [0,1] ratio between tendon and muscle at all
+            % gauss points of all elements
+            %
+            % This method simply returns an all-zero ratio, meaning muscle only. 
+            fe = this.PosFE;
+            tmr = zeros(fe.GaussPointsPerElem,fe.Geometry.NumElements);
         end
     end
     

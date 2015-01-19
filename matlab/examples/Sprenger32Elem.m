@@ -10,7 +10,7 @@ classdef Sprenger32Elem < muscle.AModelConfig
             m.T = 1;
             m.dt = .01;
             f = m.System.f;
-            m.DefaultMu = [1; 0];
+            m.DefaultMu = [1; 0; 0; 0];
             
             %% Material configuration from CMISS/3Elem_sprenger.xml
             % malpha_calculation
@@ -23,10 +23,9 @@ classdef Sprenger32Elem < muscle.AModelConfig
             f.c01 = 3.859558659683; % [kPa]
             
             % c3M = 3.05907e-10 MPa
-            f.b1 = 3.05907e-7; % [kPa]
-            
+            m.DefaultMu(5) = 3.05907e-7; % [kPa]
             % c4M 
-            f.d1 = 47.270456264135881; % [-]
+            m.DefaultMu(6) = 47.270456264135881; % [-]
             
             % sigma_max_calculation = 0.3 in MPa
             f.Pmax = 300; % [kPa]

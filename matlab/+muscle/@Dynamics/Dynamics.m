@@ -7,10 +7,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
        c10 = 6.352e-10; % [kPa]
        c01 = 3.627; % [kPa]
        
-       %% Anisotropic parameters (Markert)
-       b1 = 2.756e-5; % [kPa]
-       d1 = 43.373; % [-]
-       
        % Cross-fibre markert part
        b1cf = 53163.72204148964; % [kPa] = [N/mm²]
        d1cf = 0.014991843974911; % [-]

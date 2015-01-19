@@ -98,6 +98,13 @@ classdef System < models.BaseDynSystem
        dNa0;
        a0Base;
        
+       %% Tendon stuff
+       HasTendons = false;
+       % Fields to read the passive markert law parameters b1,d1 from at
+       % each gauss point
+       MuscleTendonParamB1 = [];
+       MuscleTendonParamD1 = [];
+       
        %% Cross-fibre stiffness stuff
        % normals to a0
        a0oa0n1;
@@ -153,6 +160,22 @@ classdef System < models.BaseDynSystem
             % For some variants, we have the mean input current for the
             % motoneuron pool (generating activation)
             this.addParam('mean input current',[0 1],10);
+            
+            % anisotropic passive stiffness for muscle material
+            % markert law b1
+            this.addParam('muscle passive b1',[0 1],10);
+            
+            % anisotropic passive stiffness for muscle material
+            % markert law d1
+            this.addParam('muscle passive d1',[1 100],10);
+            
+            % anisotropic passive stiffness for tendon material
+            % markert law b1
+            this.addParam('tendon passive b1',[0 1],10);
+            
+            % anisotropic passive stiffness for tendon material
+            % markert law d1
+            this.addParam('tendon passive d1',[1 100],10);
             
             %% Set system components
             % Core nonlinearity
@@ -233,16 +256,25 @@ classdef System < models.BaseDynSystem
 
                 this.f.configUpdated;
                 
-                % Compile information for plotting
+                %% Tendon stuff
+                % Detect of tendons are present
+                tmr = mc.getTendonMuscleRatio;
+                this.HasTendons = ~all(tmr(:) == 0);
+                
+                %% Compile information for plotting
                 this.Plotter = muscle.MusclePlotter(this);
             end
         end
         
         function prepareSimulation(this, mu, inputidx)
+            % Check for viscosity setting
             this.A = [];
             if mu(1) > 0
                 this.A = this.fD;
             end
+            % update muscle/tendon ratios
+            this.updateTendonMuscleRatio(mu);
+            
             prepareSimulation@models.BaseDynSystem(this, mu, inputidx);
         end
         
@@ -588,6 +620,33 @@ classdef System < models.BaseDynSystem
                     this.a0oa0n1 = a0a0n1;
                     this.a0oa0n2 = a0a0n2;    
                 end
+            end
+        end
+    end
+    
+    methods(Access=private)
+        function updateTendonMuscleRatio(this, mu)
+            % Updates the markert coefficients for muscle or tendons
+            % according to the current gauss points ratio of muscle and
+            % tendon material.
+            tmr = this.Model.Config.getTendonMuscleRatio;
+            
+            % All muscle - set without extra computations
+            if ~this.HasTendons
+                tmr(:) = mu(1);
+                this.MuscleTendonParamB1 = tmr;
+                tmr(:) = mu(2);
+                this.MuscleTendonParamD1 = tmr;
+            else
+                b1_muscle_log = log10(mu(5)); 
+                b1_tendon_log = log10(mu(7));
+                % Log-interpolated Markert parameter b1
+                this.MuscleTendonParamB1 = 10.^(b1_muscle_log + tmr*(b1_tendon_log-b1_muscle_log));
+
+                d1_muscle_log = log10(mu(6));
+                d1_tendon_log = log10(mu(8));
+                % Log-interpolated Markert parameter d1
+                this.MuscleTendonParamD1 = 10.^(d1_muscle_log + tmr*(d1_tendon_log-d1_muscle_log));
             end
         end
     end

@@ -201,6 +201,11 @@ classdef MusclePlotter < handle
                     gps = u*pd.Ngp;
                     anull = u*sys.dNa0(:,:,m);
                     quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'.','Color','w');
+                    
+                    %% tendon ratio
+                    if ~isempty(pd.gpcol)
+                        scatter3(h,gps(1,:),gps(2,:),gps(3,:),1,pd.gpcol(:,:,m),'*','SizeData',30);
+                    end
                 end
             end
         end
@@ -265,6 +270,17 @@ classdef MusclePlotter < handle
             if ~opts.Skel
         %                 light('Position',[1 1 1],'Style','infinite','Parent',h);
                 pd.musclecol = [0.854688, 0.201563, 0.217188];
+            end
+            
+            %% Tendon plotting
+            pd.gpcol = [];
+            if sys.HasTendons
+                tmr = mc.getTendonMuscleRatio;
+                [gp,m] = find(tmr);
+                gpcol = zeros(size(tmr,1),3,size(tmr,2));
+                % Blue markers everywhere for now
+                gpcol(gp,3,m) = 1;
+                pd.gpcol = gpcol;
             end
         end
         
