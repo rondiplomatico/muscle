@@ -17,10 +17,11 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
     num_elements = geo.NumElements;
     
     % Cache variables instead of accessing them via "this." in loops
-    
     lfopt = this.lambdafopt;
     Pmax = this.Pmax;
-
+    c10 = sys.MuscleTendonParamc10;
+    c01 = sys.MuscleTendonParamc01;
+    
     havefibres = sys.HasFibres;
     havefibretypes = sys.HasFibreTypes;
     usecrossfibres = this.crossfibres;
@@ -236,8 +237,8 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
                 U3k = [0 0 0; 0 0 0; dtn(k,:)];
 
                 dI1duk = 2*sum([1; 1; 1] * (dtn(k,:) * dtn') .* u, 2);
-                fac1 = 2*dI1duk*this.c01;
-                fac2 = 2*(this.c10 + I1*this.c01);
+                fac1 = 2*dI1duk*c01(gp,m);
+                fac2 = 2*(c10(gp,m) + I1*c01(gp,m));
 
                 %% grad_u K(u,v,w)
                 % Recall: gradients from nabla K_{u,w} are
@@ -251,7 +252,7 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
                 dFtF1 = U1k'*F + F'*U1k;
                 dPx = -p * (Finv * U1k * Finv)'...
                     + fac1(1)*F + fac2*U1k...
-                    -2*this.c01 * (U1k * C + F*dFtF1);%#ok<*MINV>
+                    -2*c01(gp,m) * (U1k * C + F*dFtF1);%#ok<*MINV>
                 if havefibres
                     dlambda_dux = Fa0'*U1k*fibres(:,1)/lambdaf;
                     dPx = dPx + (dg_dlam*dlambda_dux*F + g_value*U1k)*a0;
@@ -275,7 +276,7 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
                 dFtF2 = U2k'*F + F'*U2k;
                 dPy = -p * (Finv * U2k * Finv)'...
                     +fac1(2)*F + fac2*U2k...
-                    -2*this.c01 * (U2k * C + F*dFtF2);
+                    -2*c01(gp,m) * (U2k * C + F*dFtF2);
                 if havefibres
                     dlambda_duy = Fa0'*U2k*fibres(:,1)/lambdaf;
                     dPy = dPy + (dg_dlam*dlambda_duy*F + g_value*U2k)*a0;
@@ -299,7 +300,7 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
                 dFtF3 = U3k'*F + F'*U3k;
                 dPz = -p * (Finv * U3k * Finv)'...
                     +fac1(3)*F + fac2*U3k ...
-                    - 2*this.c01 * (U3k * C + F*dFtF3);
+                    - 2*c01(gp,m) * (U3k * C + F*dFtF3);
                 if havefibres
                     dlambda_duz = Fa0'*U3k*fibres(:,1)/lambdaf;
                     dPz = dPz + (dg_dlam*dlambda_duz*F + g_value*U3k)*a0;

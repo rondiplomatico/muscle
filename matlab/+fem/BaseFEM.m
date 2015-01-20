@@ -142,6 +142,11 @@ classdef BaseFEM < handle
             facejac = zeros(nf,ngp);
             dNN = zeros(npf,ngp,nf);
             transNormals = zeros(3,ngp,nf);
+            % tangent dimensions (1st+2nd row) and normal dimension index
+            % (3rd row)
+            tangidx = [2 2 1 1 1 1;
+                       3 3 3 3 2 2];
+            signum = [-1 1 1 -1 -1 1];
             for fn = 1:nf
                 elemidx = g.Faces(1,fn);
                 faceidx = g.Faces(2,fn);
@@ -163,8 +168,9 @@ classdef BaseFEM < handle
                     [q, ~] = qr(Jac);
                     
                     % Precompute transformed normals
-                    transNormals(:,gi,fn) = q*g.FaceNormals(:,faceidx);
-%                     transNormals(:,gi,fn) = Jac*g.FaceNormals(:,faceidx);
+                    % sign(Jac(tangidx(3,fn),tangidx(3,fn)))...
+                    transNormals(:,gi,fn) = signum(faceidx)...
+                        *cross(Jac(:,tangidx(1,faceidx)),Jac(:,tangidx(2,faceidx)));
                     
                     % Take out rotational part (stretch only)
                     Jac = q\Jac;

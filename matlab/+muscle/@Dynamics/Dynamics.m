@@ -2,11 +2,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     % This class implements the nonlinear continuum mechanics as described
     % in @cite Heidlauf2013 .
     
-    properties
-       %% Isotropic parameters (Moonley-Rivlin)
-       c10 = 6.352e-10; % [kPa]
-       c01 = 3.627; % [kPa]
-       
+    properties       
        % Cross-fibre markert part
        b1cf = 53163.72204148964; % [kPa] = [N/mm²]
        d1cf = 0.014991843974911; % [-]

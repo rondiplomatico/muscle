@@ -184,11 +184,11 @@ classdef MusclePlotter < handle
                 pneg = p<0;
                 % Negative pressures
                 if any(pneg)
-                    scatter3(h,u(1,pn(pneg)),u(2,pn(pneg)),u(3,pn(pneg)),-p(pneg)*10,'b');
+                    scatter3(h,u(1,pn(pneg)),u(2,pn(pneg)),u(3,pn(pneg)),-p(pneg)*10+1,'b');
                 end
                 % Positive pressures
                 if any(~pneg)
-                    scatter3(h,u(1,pn(~pneg)),u(2,pn(~pneg)),u(3,pn(~pneg)),p(~pneg)*10,'b');
+                    scatter3(h,u(1,pn(~pneg)),u(2,pn(~pneg)),u(3,pn(~pneg)),p(~pneg)*10+1,'b');
                 end
             end
 
@@ -204,7 +204,7 @@ classdef MusclePlotter < handle
                     
                     %% tendon ratio
                     if ~isempty(pd.gpcol)
-                        scatter3(h,gps(1,:),gps(2,:),gps(3,:),1,pd.gpcol(:,:,m),'*','SizeData',30);
+                        scatter3(h,gps(1,:),gps(2,:),gps(3,:),1,pd.gpcol(:,:,m),'.','SizeData',30);
                     end
                 end
             end
@@ -276,11 +276,14 @@ classdef MusclePlotter < handle
             pd.gpcol = [];
             if sys.HasTendons
                 tmr = mc.getTendonMuscleRatio;
-                [gp,m] = find(tmr);
-                gpcol = zeros(size(tmr,1),3,size(tmr,2));
+                % Simply set the black-to-white ratio according to tendon
+                % part
+                pd.gpcol = permute(repmat(tmr,[1 1 3]),[1 3 2]);
+                
+                %[gp,m] = find(tmr);
+                %gpcol = zeros(size(tmr,1),3,size(tmr,2));
                 % Blue markers everywhere for now
-                gpcol(gp,3,m) = 1;
-                pd.gpcol = gpcol;
+                %gpcol(gp,1,m) = tmr;
             end
         end
         

@@ -24,6 +24,9 @@ function duvw  = evaluate(this, uvwdof, t)
         d1cf = this.d1cf;
     end
     ldotpos = this.lambda_dot_pos;
+    c10 = sys.MuscleTendonParamc10;
+    c01 = sys.MuscleTendonParamc01;
+    pconst = sys.ConstPTest;
     
     if havefibres
         b1 = sys.MuscleTendonParamB1;
@@ -95,6 +98,9 @@ function duvw  = evaluate(this, uvwdof, t)
             pos = 3*(gp-1)+1:3*gp;
             dtn = fe_pos.transgrad(:,pos,m);
 
+            if any(isnan(u(:)))
+                keyboard;
+            end
             % Deformation gradient
             F = u * dtn;
             C = F'*F;
@@ -104,8 +110,8 @@ function duvw  = evaluate(this, uvwdof, t)
             I1 = C(1,1) + C(2,2) + C(3,3);
             
             %% Compile tensor
-            P = p*inv(F)' + 2*(this.c10 + I1*this.c01)*F ...
-                - 2*this.c01*F*C;
+            P = pconst(gp,m)*eye(3) + p*inv(F)' + 2*(c10(gp,m) + I1*c01(gp,m))*F ...
+                - 2*c01(gp,m)*F*C;
             
             %% Anisotropic part (Invariant I4 related)
             if havefibres
@@ -121,7 +127,8 @@ function duvw  = evaluate(this, uvwdof, t)
                 if havefibretypes
                     alpha = ftwelem(gp);
                 else
-                    alpha = alphaconst;
+                    alpha = (1-sys.MuscleTendonRatios(gp,m))*alphaconst;
+                    %[t sys.MuscleTendonRatios(gp,m) alpha]
                 end
                 markert = 0;
                 % Using > 1 is deadly. All lambdas are equal to one at t=0

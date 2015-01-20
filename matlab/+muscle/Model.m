@@ -45,9 +45,13 @@ classdef Model < models.BaseFullModel
             % This defines a default behaviour for all muscle models.
             % Override in AModelConfig.configureModel for dependent
             % behaviour.
-            this.DefaultMu = [1; 50; 0; 0; 2.756e-5; 43.373; 7.99; 16.6];
-            % Contains anisotropic parameters (Markert)  [kPa] and [-]
-        
+            this.DefaultMu = [1; 50; 0; 0
+                % Anisotropic parameters muscle+tendon (Markert)
+                2.756e-5; 43.373; 7.99; 16.6
+                % Isotropic parameters muscle+tendon (Moonley-Rivlin)
+                35.6; 3.86; 2310; 1.15e-3]; % Micha
+                    % 6.352e-10; 3.627 [Kpa] thomas alt
+            
             this.TrainingParams = [1 2];
             
             this.T = 10; % [ms]
@@ -76,6 +80,19 @@ classdef Model < models.BaseFullModel
 %             if ~chk
 %                 error('Health tests failed!');
 %             end
+        end
+        
+        function [t,y] = simulateAndPlot(this, withResForce, varargin)
+            if nargin < 2
+                withResForce = true;
+            end
+            [t,y] = this.simulate(varargin{:});
+            xargs = {};
+            if (withResForce)
+                [df,nf] = this.getResidualForces(t,y);
+                xargs = {'NF',nf,'DF',df};
+            end
+            this.plot(t,y,xargs{:});
         end
         
         function [t, x, time, cache] = computeTrajectory(this, mu, inputidx)
@@ -193,7 +210,7 @@ classdef Model < models.BaseFullModel
             if ~isempty(varargin) && isa(varargin{1},'PlotManager')
                 varargin = [{'PM'} varargin];
             end
-            x0 = this.System.x0.evaluate(1);
+            x0 = this.System.x0.evaluate(this.System.mu);
             [~, nf] = this.getResidualForces(0, x0);
             if ~isempty(nf)
                 varargin(end+1:end+2) = {'NF',nf};
@@ -202,10 +219,10 @@ classdef Model < models.BaseFullModel
         end
         
         function plotGeometryInfo(this, allnode, elemnr)
-            if nargin < 2
-                allnode = false;
-                if nargin < 3
-                    elemnr = 1;
+            if nargin < 3
+                elemnr = 1;
+                if nargin < 2
+                    allnode = false;
                 end
             end
             g = this.Config.PosFE.Geometry;

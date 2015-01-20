@@ -100,10 +100,17 @@ classdef System < models.BaseDynSystem
        
        %% Tendon stuff
        HasTendons = false;
+       MuscleTendonRatios = [];
        % Fields to read the passive markert law parameters b1,d1 from at
        % each gauss point
        MuscleTendonParamB1 = [];
        MuscleTendonParamD1 = [];
+       % Fields to contain c10/c01 values for mooney-rivlin law
+       % (muscle+tendon)
+       MuscleTendonParamc10 = [];
+       MuscleTendonParamc01 = [];
+       ConstPTest = [];
+       
        
        %% Cross-fibre stiffness stuff
        % normals to a0
@@ -176,6 +183,22 @@ classdef System < models.BaseDynSystem
             % anisotropic passive stiffness for tendon material
             % markert law d1
             this.addParam('tendon passive d1',[1 100],10);
+            
+            % isotropic muscle material
+            % mooney-rivlin law c10
+            this.addParam('muscle mooney-rivlin c10',[0 1e-2],10);
+            
+            % isotropic muscle material
+            % mooney-rivlin law c01
+            this.addParam('muscle mooney-rivlin c01',[0 5],10);
+            
+            % isotropic tendon material
+            % mooney-rivlin law c10
+            this.addParam('tendon mooney-rivlin c10',[0 1e-2],10);
+            
+            % isotropic tendon material
+            % mooney-rivlin law c01
+            this.addParam('tendon mooney-rivlin c01',[0 5],10);
             
             %% Set system components
             % Core nonlinearity
@@ -251,15 +274,17 @@ classdef System < models.BaseDynSystem
                 %% Compile Damping Matrix
                 this.fD = this.assembleDampingMatrix;
 
-                %% Initial value
-                this.x0 = dscomponents.ConstInitialValue(this.assembleX0);
-
+                %% Tell f we have a new config
                 this.f.configUpdated;
                 
                 %% Tendon stuff
                 % Detect of tendons are present
                 tmr = mc.getTendonMuscleRatio;
                 this.HasTendons = ~all(tmr(:) == 0);
+                this.MuscleTendonRatios = tmr;
+                
+                %% Initial value
+                this.x0 = dscomponents.PointerInitialValue(@this.getX0);
                 
                 %% Compile information for plotting
                 this.Plotter = muscle.MusclePlotter(this);
@@ -347,7 +372,7 @@ classdef System < models.BaseDynSystem
             this.num_uvp_dof = this.num_uvp_glob - length(this.val_uv_bc_glob);
         end
         
-        function x0 = assembleX0(this)
+        function x0 = getX0(this, mu)
             % Constant initial values as current node positions
             mc = this.Model.Config;
             tq = mc.PosFE;
@@ -365,7 +390,20 @@ classdef System < models.BaseDynSystem
             end
             
             % Initial conditions for pressure (s.t. S(X,0) = 0)
-            x0(geo.NumNodes*6+1 :end) = -2*this.f.c10-4*this.f.c01;
+            this.updateTendonMuscleRatio(mu);
+            pgauss = -2*this.MuscleTendonParamc10-4*this.MuscleTendonParamc01;
+            this.ConstPTest = pgauss;
+%             pfe = mc.PressFE;
+%             ne = pfe.Geometry.NumElements;
+%             A = sparse(pfe.GaussPointsPerElem*ne,this.num_p_dof);
+%             for m=1:ne
+%                 pos = (m-1)*pfe.GaussPointsPerElem+1 : m*pfe.GaussPointsPerElem;
+%                 A(pos,pfe.Geometry.Elements(m,:)) = pfe.Ngp(:,:,m)';
+%             end
+%             %A = mc.PressFE.Ngp';
+%             % Use pseudoinverse
+%             pnodes = (A'*A)\(A'*pgauss(:));
+%             x0(geo.NumNodes*6+1:end) = pnodes;
 
             % Give the model config a chance to provide x0
             x0 = mc.getX0(x0);
@@ -629,24 +667,29 @@ classdef System < models.BaseDynSystem
             % Updates the markert coefficients for muscle or tendons
             % according to the current gauss points ratio of muscle and
             % tendon material.
-            tmr = this.Model.Config.getTendonMuscleRatio;
             
+            tmr = this.Model.Config.getTendonMuscleRatio;
+
             % All muscle - set without extra computations
             if ~this.HasTendons
                 tmr(:) = mu(1);
                 this.MuscleTendonParamB1 = tmr;
                 tmr(:) = mu(2);
                 this.MuscleTendonParamD1 = tmr;
+                tmr(:) = mu(9);
+                this.MuscleTendonParamc10 = tmr;
+                tmr(:) = mu(10);
+                this.MuscleTendonParamc01 = tmr;
             else
-                b1_muscle_log = log10(mu(5)); 
-                b1_tendon_log = log10(mu(7));
+                logfun = @(v,mi,ma)10.^(log10(mi) + v*(log10(ma)-log10(mi)));
                 % Log-interpolated Markert parameter b1
-                this.MuscleTendonParamB1 = 10.^(b1_muscle_log + tmr*(b1_tendon_log-b1_muscle_log));
-
-                d1_muscle_log = log10(mu(6));
-                d1_tendon_log = log10(mu(8));
+                this.MuscleTendonParamB1 = logfun(tmr,mu(5),mu(7));
                 % Log-interpolated Markert parameter d1
-                this.MuscleTendonParamD1 = 10.^(d1_muscle_log + tmr*(d1_tendon_log-d1_muscle_log));
+                this.MuscleTendonParamD1 = logfun(tmr,mu(6),mu(8));
+                % Log-interpolated MR c10
+                this.MuscleTendonParamc10 = logfun(tmr,mu(9),mu(11));
+                % Log-interpolated MR c01
+                this.MuscleTendonParamc01 = logfun(tmr,mu(10),mu(12));
             end
         end
     end
