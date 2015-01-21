@@ -127,7 +127,7 @@ function duvw  = evaluate(this, uvwdof, t)
                 if havefibretypes
                     alpha = ftwelem(gp);
                 else
-                    alpha = (1-sys.MuscleTendonRatios(gp,m))*alphaconst;
+                    alpha = (1-sys.MuscleTendonRatioGP(gp,m))*alphaconst;
                     %[t sys.MuscleTendonRatios(gp,m) alpha]
                 end
                 markert = 0;

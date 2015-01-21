@@ -2,7 +2,23 @@ classdef MuscleTendonMix < muscle.AModelConfig
     % Muscle - Tendon mixed geometries
     %
     % Contains several examples:
-    % Variant 1: Simple 
+    % Variant 1: A 4 element long block with 4 block-wise constant,
+    % linearly changing muscle-to-tendon material. The tendon part is at a
+    % dirichlet xz-fixed side and the other side gets increasingly pulled over
+    % 4 sec until 4000kPa
+    %
+    % Variant 2: A single element with the top 9 gauss points as tendons
+    % (tmr=1) and the lower part muscle (tmr=0). Fixed (xz only) on right
+    % side and pulled on left side over 4 seconds increasing to 4000kPa
+    %
+    % Variant 3: A 2x2x3 geometry on domain [0 2]x[0 6]x[0 2] with a
+    % nonlinear muscle/tendon function (use plotTMRFun to see). Fixed xz on
+    % right side (with xyz fix in center node) and pulled on left with
+    % 4000kPa. The fibres are at 45deg throughout the muscle
+    %
+    % Variant 4: The same geometry as Variant 4 with same muscle/tendon
+    % ratio, but this time completely fixed at both long ends. An
+    % activation ramp is applied over 4s from 0 to 1.
     
     properties
         Variant;
@@ -51,11 +67,13 @@ classdef MuscleTendonMix < muscle.AModelConfig
                     % 6.352e-10; 3.627 [Kpa] thomas alt
             switch this.Variant
                 case {1 2}
-                    mu(3) = 40;
+                    mu(3) = 4000;
                 case 3
-                    mu(3) = 10;
+                    mu(3) = 4000;
+                    m.ODESolver.AbsTol = .1;
                 case 4
                     mu(2) = m.T;
+                    mu(3) = 0;
                     m.ODESolver.RelTol = .1;
                     m.ODESolver.AbsTol = .1;
                 case 5
@@ -80,33 +98,45 @@ classdef MuscleTendonMix < muscle.AModelConfig
             end
         end
         
-        function tmr = getTendonMuscleRatio(this)
+        function tmr = getTendonMuscleRatio(this, points)
             % Returns the [0,1] ratio between tendon and muscle at all
-            % gauss points of all elements
+            % specified points
             %
             % This method simply returns an all-zero ratio, meaning muscle only. 
-            tmr = getTendonMuscleRatio@muscle.AModelConfig(this);
+            tmr = zeros(1,size(points,2));
             switch this.Variant
                 case 1
-                    tmr(:,1) = 0;%.4;
-                    tmr(:,2) = .33;%.4;
-                    tmr(:,3) = .66;%.4;
-                    tmr(:,4) = 1;%.4;
-                case {2 5} 
-                    %tmr(:) = 1;
-                    tmr(19:27,:) = 1;%.4;
-                case {3 4}
-                    f = @(x,z)min(1,max(0,-.5+.5./((x/2+.1).*(1.5*z+.08*x+.1))));
-                    fges = @(x,z)f(x,z) + f(6-x,2-z);
-                    fe = this.PosFE;
-                    g = fe.Geometry;
-                    for m = 1:g.NumElements
-                        % Get coordinates of gauss points in element
-                        gp = g.Nodes(:,g.Elements(m,:)) * fe.N(fe.GaussPoints);
-                        tmr(:,m) = fges(gp(2,:),gp(3,:));
+                    ratios = linspace(0,1,4);
+                    for k=1:4
+                        tmr(points(2,:) >= k-1 .* points(2,:) < k) = ratios(k);
                     end
-                    tmr = tmr/5;
+                case {2 5}
+                    tmr(points(3,:) > .66) = 1;
+                case {3 4}
+                    tmr = this.TMRFun(points(2,:),points(3,:));
+                    % Take only half - too stiff otherwise
+                    tmr = tmr/2;
             end
+            % Use max .2 tendon - works but needs to be checked for higher
+            % tendon parts (and current default parameter mu!!!!)
+            if this.Variant == 4
+                tmr = 2*tmr/5;
+            end
+        end
+        
+        function tmr = TMRFun(~, z, y)
+            f = @(z,y)min(1,max(0,-.5+.5./((z/2+.1).*(1.5*y+.08*z+.1))));
+            tmr = f(z,y) + f(6-z,2-y);
+        end
+        
+        function plotTMRFun(this)
+            [Y,Z] = meshgrid(0:.01:2.1,0:.01:6.1);
+            tmr = this.TMRFun(Z,Y);
+            pm = PlotManager;
+            pm.LeaveOpen = true;
+            ax = pm.nextPlot('tmr_func','Muscle/Tendon ratio function');
+            surfc(Z,Y,tmr,'Parent',ax);
+            axis(ax,'equal');
         end
         
         function P = getBoundaryPressure(this, elemidx, faceidx)
@@ -144,6 +174,7 @@ classdef MuscleTendonMix < muscle.AModelConfig
                     displ_dir(2,geo.Elements(geo.NumElements,geo.MasterFaces(4,:))) = true;
                 case 3
                     displ_dir(2,geo.Elements([5 6 11 12],geo.MasterFaces(4,:))) = true;
+                    displ_dir(:,geo.Elements(5,geo.MasterFaces(4,9))) = true;
                 case 4
                     %displ_dir(2,geo.Elements([5 6 11 12],geo.MasterFaces(4,:))) = true;
                     %displ_dir(2,geo.Elements([1 2 7 8],geo.MasterFaces(3,:))) = true;

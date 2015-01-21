@@ -121,8 +121,14 @@ classdef MusclePlotter < handle
                 end
             else
                 geo = this.Config.PosFE.Geometry;
-                p = patch('Faces',geo.PatchFaces,'Vertices',u','Parent',h);
-                set(p,'EdgeColor',.8*pd.musclecol,'FaceColor',pd.musclecol,'FaceAlpha',.3);
+                p = patch('Faces',geo.PatchFaces,'Vertices',u',...
+                    'Parent',h,'FaceAlpha',.3);
+                if sys.HasTendons
+                    set(p,'FaceVertexCData',pd.vertexcol,'FaceColor',...
+                        'interp','FaceAlpha',.5,'EdgeColor','interp');
+                else
+                    set(p,'EdgeColor',.8*pd.musclecol,'FaceColor',pd.musclecol);
+                end
             end
 
             % Velocities
@@ -184,11 +190,13 @@ classdef MusclePlotter < handle
                 pneg = p<0;
                 % Negative pressures
                 if any(pneg)
-                    scatter3(h,u(1,pn(pneg)),u(2,pn(pneg)),u(3,pn(pneg)),-p(pneg)*10+1,'b');
+                    scatter3(h,u(1,pn(pneg)),u(2,pn(pneg)),u(3,pn(pneg)),...
+                        -p(pneg)*10+1,[188 188 255]/255);%
                 end
                 % Positive pressures
                 if any(~pneg)
-                    scatter3(h,u(1,pn(~pneg)),u(2,pn(~pneg)),u(3,pn(~pneg)),p(~pneg)*10+1,'b');
+                    scatter3(h,u(1,pn(~pneg)),u(2,pn(~pneg)),u(3,pn(~pneg)),...
+                        p(~pneg)*10+1,[255 188 188]/255); %[244 149 25]/255
                 end
             end
 
@@ -271,20 +279,6 @@ classdef MusclePlotter < handle
         %                 light('Position',[1 1 1],'Style','infinite','Parent',h);
                 pd.musclecol = [0.854688, 0.201563, 0.217188];
             end
-            
-            %% Tendon plotting
-            pd.gpcol = [];
-            if sys.HasTendons
-                tmr = mc.getTendonMuscleRatio;
-                % Simply set the black-to-white ratio according to tendon
-                % part
-                pd.gpcol = permute(repmat(tmr,[1 1 3]),[1 3 2]);
-                
-                %[gp,m] = find(tmr);
-                %gpcol = zeros(size(tmr,1),3,size(tmr,2));
-                % Blue markers everywhere for now
-                %gpcol(gp,1,m) = tmr;
-            end
         end
         
         function opts = parsePlotArgs(~, args)
@@ -339,6 +333,23 @@ classdef MusclePlotter < handle
             %% Fibres
             if sys.HasFibres
                 pd.Ngp = dfem.N(dfem.GaussPoints);
+            end
+            
+            % Set muscle color either way
+            pd.musclecol = [0.854688, 0.201563, 0.217188];
+            pd.gpcol = [];
+            %% Muscle/Tendon patch vertex colors
+            if sys.HasTendons
+                tendoncol = [1, .8, .6]; %Micha [.9 .7 .5]
+                % Vertex coloring
+                pd.vertexcol = ones(geo.NumNodes,1)*pd.musclecol ...
+                    + sys.MuscleTendonRatioNodes'*(tendoncol-pd.musclecol);
+                % Gauss point coloring
+                tmr = sys.MuscleTendonRatioGP;
+                pd.gpcol(:,:,1) = pd.musclecol(1) + tmr*(tendoncol(1)-pd.musclecol(1));
+                pd.gpcol(:,:,2) = pd.musclecol(2) + tmr*(tendoncol(2)-pd.musclecol(2));
+                pd.gpcol(:,:,3) = pd.musclecol(3) + tmr*(tendoncol(3)-pd.musclecol(3));
+                pd.gpcol = permute(pd.gpcol,[1 3 2]);%*.8;
             end
         end
 %     end

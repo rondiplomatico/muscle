@@ -100,7 +100,9 @@ classdef System < models.BaseDynSystem
        
        %% Tendon stuff
        HasTendons = false;
-       MuscleTendonRatios = [];
+       MuscleTendonRatioGP = [];
+       MuscleTendonRatioNodes = [];
+       
        % Fields to read the passive markert law parameters b1,d1 from at
        % each gauss point
        MuscleTendonParamB1 = [];
@@ -286,9 +288,7 @@ classdef System < models.BaseDynSystem
                 
                 %% Tendon stuff
                 % Detect of tendons are present
-                tmr = mc.getTendonMuscleRatio;
-                this.HasTendons = ~all(tmr(:) == 0);
-                this.MuscleTendonRatios = tmr;
+                this.initMuscleTendonRatios;
                 
                 %% Initial value
                 this.x0 = dscomponents.ConstInitialValue(this.assembleX0);
@@ -306,9 +306,14 @@ classdef System < models.BaseDynSystem
             if mu(1) > 0
                 this.A = this.fD;
             end
-            % Update muscle/tendon ratios
-            this.updateTendonMuscleRatio(mu);
+            % Update muscle/tendon parameters on all gauss points
+            % We have mu-dependent mooney-rivlin and markert laws, but they
+            % are constant over one simulation. So precompute here.
+            this.updateTendonMuscleParamsGP(mu);
+            
             % Update the MooneyRivlinICConst to have stress-free IC
+            % This depends on the current muscle/tendon parameters for
+            % mooney-rivlin (updated one step before)
             this.MooneyRivlinICConst = -2*this.MuscleTendonParamc10...
                 -4*this.MuscleTendonParamc01;
             
@@ -662,17 +667,30 @@ classdef System < models.BaseDynSystem
                 end
             end
         end
+        
+        function initMuscleTendonRatios(this)
+            mc = this.Model.Config;
+            fe = mc.PosFE;
+            g = fe.Geometry;
+            tmr = zeros(fe.GaussPointsPerElem,fe.Geometry.NumElements);
+            for m = 1:g.NumElements
+                % Get coordinates of gauss points in element
+                tmr(:,m) = mc.getTendonMuscleRatio(g.Nodes(:,g.Elements(m,:)) * fe.N(fe.GaussPoints));
+            end
+            this.HasTendons = ~all(tmr(:) == 0);
+            this.MuscleTendonRatioGP = tmr;
+            this.MuscleTendonRatioNodes = mc.getTendonMuscleRatio(g.Nodes);
+        end
     end
     
     methods(Access=private)
-        function updateTendonMuscleRatio(this, mu)
+        function updateTendonMuscleParamsGP(this, mu)
             % Updates the markert coefficients for muscle or tendons
             % according to the current gauss points ratio of muscle and
             % tendon material.
             
-            tmr = this.Model.Config.getTendonMuscleRatio;
-
             % All muscle - set without extra computations
+            tmr = this.MuscleTendonRatioGP;
             if ~this.HasTendons
                 tmr(:) = mu(1);
                 this.MuscleTendonParamB1 = tmr;

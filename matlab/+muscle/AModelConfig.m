@@ -111,7 +111,7 @@ classdef AModelConfig < handle
             u = {this.getAlphaRamp(30,1)};
         end
         
-        function x0 = getX0(this, x0)
+        function x0 = getX0(~, x0)
             %% do nothing
         end
         
@@ -125,13 +125,20 @@ classdef AModelConfig < handle
             alpha = @(t)(t >= starttime) .* (alphamax * (((t-starttime)<ramptime).*(t-starttime)/ramptime + (t>=ramptime+starttime)));
         end
         
-        function tmr = getTendonMuscleRatio(this)
+        function tmr = getTendonMuscleRatio(~, ~)
             % Returns the [0,1] ratio between tendon and muscle at all
             % gauss points of all elements
             %
-            % This method simply returns an all-zero ratio, meaning muscle only. 
-            fe = this.PosFE;
-            tmr = zeros(fe.GaussPointsPerElem,fe.Geometry.NumElements);
+            % This method simply returns an empty ratio, meaning muscle only.
+            %
+            % Parameters:
+            % x: A 3xn vector of coordinates at which to get the
+            % tendonmuscle ratio @type matrix<double>
+            %
+            % Return values:
+            % tmr: A row vector of tendonmuscle ratio values in [0 1] for
+            % each of the n locations
+            tmr = []; % zeros(1,size(x,2));
         end
     end
     
