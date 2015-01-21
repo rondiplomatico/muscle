@@ -26,7 +26,7 @@ function duvw  = evaluate(this, uvwdof, t)
     ldotpos = this.lambda_dot_pos;
     c10 = sys.MuscleTendonParamc10;
     c01 = sys.MuscleTendonParamc01;
-    pconst = sys.ConstPTest;
+    mooneyrivlin_ic_const = sys.MooneyRivlinICConst;
     
     if havefibres
         b1 = sys.MuscleTendonParamB1;
@@ -110,7 +110,7 @@ function duvw  = evaluate(this, uvwdof, t)
             I1 = C(1,1) + C(2,2) + C(3,3);
             
             %% Compile tensor
-            P = pconst(gp,m)*eye(3) + p*inv(F)' + 2*(c10(gp,m) + I1*c01(gp,m))*F ...
+            P = mooneyrivlin_ic_const(gp,m)*eye(3) + p*inv(F)' + 2*(c10(gp,m) + I1*c01(gp,m))*F ...
                 - 2*c01(gp,m)*F*C;
             
             %% Anisotropic part (Invariant I4 related)

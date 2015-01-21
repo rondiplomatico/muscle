@@ -109,7 +109,14 @@ classdef System < models.BaseDynSystem
        % (muscle+tendon)
        MuscleTendonParamc10 = [];
        MuscleTendonParamc01 = [];
-       ConstPTest = [];
+       % Stress free initial condition constant for mooney-rivlin law
+       % This was "classically" done by setting the pressure to this
+       % constant, however, if inhomogeneous material constants are
+       % present, the linear pressure model cannot resolve those values and
+       % hence any initial condition would be inconsistent.
+       % Now, the pressure is initialized as zero and the
+       % MooneyRivlinICConst takes care of consistent initial conditions.
+       MooneyRivlinICConst = [];
        
        
        %% Cross-fibre stiffness stuff
@@ -284,7 +291,7 @@ classdef System < models.BaseDynSystem
                 this.MuscleTendonRatios = tmr;
                 
                 %% Initial value
-                this.x0 = dscomponents.PointerInitialValue(@this.getX0);
+                this.x0 = dscomponents.ConstInitialValue(this.assembleX0);
                 
                 %% Compile information for plotting
                 this.Plotter = muscle.MusclePlotter(this);
@@ -293,12 +300,17 @@ classdef System < models.BaseDynSystem
         
         function prepareSimulation(this, mu, inputidx)
             % Check for viscosity setting
+            %
+            % See also: muslce.System.MooneyRivlinICConst
             this.A = [];
             if mu(1) > 0
                 this.A = this.fD;
             end
-            % update muscle/tendon ratios
+            % Update muscle/tendon ratios
             this.updateTendonMuscleRatio(mu);
+            % Update the MooneyRivlinICConst to have stress-free IC
+            this.MooneyRivlinICConst = -2*this.MuscleTendonParamc10...
+                -4*this.MuscleTendonParamc01;
             
             prepareSimulation@models.BaseDynSystem(this, mu, inputidx);
         end
@@ -372,7 +384,7 @@ classdef System < models.BaseDynSystem
             this.num_uvp_dof = this.num_uvp_glob - length(this.val_uv_bc_glob);
         end
         
-        function x0 = getX0(this, mu)
+        function x0 = assembleX0(this)
             % Constant initial values as current node positions
             mc = this.Model.Config;
             tq = mc.PosFE;
@@ -390,20 +402,10 @@ classdef System < models.BaseDynSystem
             end
             
             % Initial conditions for pressure (s.t. S(X,0) = 0)
-            this.updateTendonMuscleRatio(mu);
-            pgauss = -2*this.MuscleTendonParamc10-4*this.MuscleTendonParamc01;
-            this.ConstPTest = pgauss;
-%             pfe = mc.PressFE;
-%             ne = pfe.Geometry.NumElements;
-%             A = sparse(pfe.GaussPointsPerElem*ne,this.num_p_dof);
-%             for m=1:ne
-%                 pos = (m-1)*pfe.GaussPointsPerElem+1 : m*pfe.GaussPointsPerElem;
-%                 A(pos,pfe.Geometry.Elements(m,:)) = pfe.Ngp(:,:,m)';
-%             end
-%             %A = mc.PressFE.Ngp';
-%             % Use pseudoinverse
-%             pnodes = (A'*A)\(A'*pgauss(:));
-%             x0(geo.NumNodes*6+1:end) = pnodes;
+            % This was set to the negative residual of the mooney-rivlin
+            % law, but since we allow inhomogeneous material this is no
+            % longer suitable (using p=0 now)
+            % See System.MooneyRivlinICConst
 
             % Give the model config a chance to provide x0
             x0 = mc.getX0(x0);
