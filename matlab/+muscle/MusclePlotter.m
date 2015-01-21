@@ -48,7 +48,20 @@ classdef MusclePlotter < handle
             this.plotdata = pd;
 
             if opts.Vid
-                avifile = fullfile(pwd,'output.avi');
+                [p,n,e] = fileparts(opts.Vid);
+                if ~isempty(p) && exist(p,'file') ~= 7
+                    error('Directory %s not found',p);
+                end
+                if isempty(p)
+                    p = pwd;
+                end
+                if isempty(n)
+                    n = 'output';
+                end
+                if isempty(e)
+                    e = '.avi';
+                end
+                avifile = fullfile(pwd,[n e]);
                 vw = VideoWriter(avifile);
                 vw.FrameRate = 25;
                 vw.open;
@@ -71,6 +84,9 @@ classdef MusclePlotter < handle
             for ts = 1:length(t)
                 % Quit if figure has been closed
                 if ~ishandle(h)
+                    if opts.Vid
+                        vw.close;
+                    end
                     break;
                 end
                 this.plotGeometry(h, t(ts), pd.yfull(:,ts), ts, opts);
@@ -84,8 +100,17 @@ classdef MusclePlotter < handle
                     plot(hf,times,alpha);
                     plot(hf,times,walpha,'LineWidth',2);
                 end
+                
+%                 % Quit if figure has been closed (extra check - runtime
+%                 % thing)
+%                 if ~ishandle(h)
+%                     if opts.Vid
+%                         vw.close;
+%                     end
+%                     break;
+%                 end
 
-                if opts.Vid
+                if ~isempty(opts.Vid) && ishandle(h)
                     vw.writeVideo(getframe(gcf));
                 else
                     pause(.01);
@@ -287,7 +312,7 @@ classdef MusclePlotter < handle
         function opts = parsePlotArgs(~, args)
             i = inputParser;
             i.KeepUnmatched = true;
-            i.addParamValue('Vid',false,@(v)~isempty(v) || exist(v,'file') == 7);
+            i.addParamValue('Vid',[],@(v)~isempty(v));
             i.addParamValue('Forces',false,@(v)islogical(v));
             i.addParamValue('Velo',false,@(v)islogical(v));
             i.addParamValue('Pressure',false,@(v)islogical(v));

@@ -59,7 +59,9 @@ classdef MuscleTendonMix < muscle.AModelConfig
             end
             this = this@muscle.AModelConfig(geo);
             this.Variant = variantnr;
-            this.ylen = yl;
+            if any(variantnr == [6 7])
+                this.ylen = yl;
+            end
             %this.NeumannCoordinateSystem = 'global';
         end
         
