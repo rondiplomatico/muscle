@@ -59,8 +59,8 @@ classdef AModelConfig < handle
             else
                 this.PosFE = fem.HexahedronSerendipity(pos_geo);
             end
-            %this.PressFE = fem.HexahedronTrilinear(press_geo);
-            this.PressFE = fem.HexahedronSerendipity(press_geo.toCube20Node);
+            this.PressFE = fem.HexahedronTrilinear(press_geo);
+            %this.PressFE = fem.HexahedronSerendipity(press_geo.toCube20Node);
             %this.PressFE = fem.HexahedronTriquadratic(press_geo.toCube27Node);
         end
         

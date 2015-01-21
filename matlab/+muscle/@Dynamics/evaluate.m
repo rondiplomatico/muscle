@@ -128,7 +128,7 @@ function duvw  = evaluate(this, uvwdof, t)
                     alpha = ftwelem(gp);
                 else
                     alpha = (1-sys.MuscleTendonRatioGP(gp,m))*alphaconst;
-                    %[t sys.MuscleTendonRatios(gp,m) alpha]
+                    %[t sys.MuscleTendonRatiosGP(gp,m) alpha]
                 end
                 markert = 0;
                 % Using > 1 is deadly. All lambdas are equal to one at t=0

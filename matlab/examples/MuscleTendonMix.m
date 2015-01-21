@@ -19,9 +19,19 @@ classdef MuscleTendonMix < muscle.AModelConfig
     % Variant 4: The same geometry as Variant 4 with same muscle/tendon
     % ratio, but this time completely fixed at both long ends. An
     % activation ramp is applied over 4s from 0 to 1.
+    %
+    % Variant 5: The same geometry as variant 2 (single cube) with same
+    % setup. No pulling force is applied but the muscle activated over 4s
+    % to 1
+    %
+    % Variant 6: A belly-shaped 
     
     properties
         Variant;
+    end
+    
+    properties(SetAccess=private)
+        ylen;
     end
     
     methods
@@ -40,10 +50,16 @@ classdef MuscleTendonMix < muscle.AModelConfig
                     % 2x4x2 geometry
                     [pts, cubes] = geometry.Cube8Node.DemoGrid(0:2,0:2:6,0:2);
             end
-            
-            geo = geometry.Cube8Node(pts, cubes);
-            this = this@muscle.AModelConfig(geo.toCube27Node);
+            if any(variantnr == [6 7])
+                yl = 10;
+                geo = Belly.getBelly(6,yl,1,.2,2);
+            else
+                geo = geometry.Cube8Node(pts, cubes);
+                geo = geo.toCube27Node;
+            end
+            this = this@muscle.AModelConfig(geo);
             this.Variant = variantnr;
+            this.ylen = yl;
             %this.NeumannCoordinateSystem = 'global';
         end
         
@@ -80,6 +96,13 @@ classdef MuscleTendonMix < muscle.AModelConfig
                     mu(2) = m.T;
                     m.ODESolver.RelTol = .1;
                     m.ODESolver.AbsTol = .1;
+                case 6
+                    mu(3) = 10000;
+                case 7
+                    m.T = 30;
+                    m.dt = .05;
+                    mu(2) = m.T*2/3; % activate 2/3rds of the time
+                    mu(3) = 0;
             end
             m.DefaultMu = mu;
             
@@ -92,7 +115,7 @@ classdef MuscleTendonMix < muscle.AModelConfig
             % that are fixed for each simulation
             %
             % Called by override of computeTrajectory in muscle.Model
-            if any(this.Variant == [4 5])
+            if any(this.Variant == [4 5 7])
                 f = this.Model.System.f;
                 f.alpha = this.getAlphaRamp(mu(2),1,0);
             end
@@ -116,6 +139,17 @@ classdef MuscleTendonMix < muscle.AModelConfig
                     tmr = this.TMRFun(points(2,:),points(3,:));
                     % Take only half - too stiff otherwise
                     tmr = tmr/2;
+                case {6 7}
+                    % Set the middle 20% percent to 100% muscle
+                    zeroperc = .2;
+                    
+                    y = points(2,:);
+                    cent = this.ylen/2;
+                    left = y <= cent*(1-zeroperc/2);
+                    tmr(left) = 1-y(left)/(cent*(1-zeroperc/2));
+                    right = y > cent + this.ylen*zeroperc/2;
+                    tmr(right) = (y(right)-(this.ylen*(.5+zeroperc/2)))/...
+                        (this.ylen*(.5-zeroperc/2));
             end
             % Use max .2 tendon - works but needs to be checked for higher
             % tendon parts (and current default parameter mu!!!!)
@@ -153,10 +187,10 @@ classdef MuscleTendonMix < muscle.AModelConfig
                     if any(elemidx == [1 2 7 8]) && faceidx == 3
                         P = 1;
                     end
-                %case 2
-                %    if elemidx == 1 && faceidx == 1
-                %        P = 1;
-                %    end
+                case 6
+                    if any(elemidx == 1:4) && faceidx == 3
+                        P = 1;
+                    end
             end
         end
     end
@@ -180,14 +214,18 @@ classdef MuscleTendonMix < muscle.AModelConfig
                     %displ_dir(2,geo.Elements([1 2 7 8],geo.MasterFaces(3,:))) = true;
                     displ_dir(:,geo.Elements([5 6 11 12],geo.MasterFaces(4,:))) = true;
                     displ_dir(:,geo.Elements([1 2 7 8],geo.MasterFaces(3,:))) = true;
-                %case 5
-                %    displ_dir(:,geo.Elements(geo.NumElements,geo.MasterFaces(4,:))) = true;
+                case 6
+                    displ_dir(:,geo.Elements(13:16,geo.MasterFaces(4,:))) = true;
+                case 7
+                    displ_dir(:,geo.Elements(1:4,geo.MasterFaces(3,:))) = true;
+                    last = size(geo.Elements,1)-3:size(geo.Elements,1);
+                    displ_dir(:,geo.Elements(last,geo.MasterFaces(4,:))) = true;
             end
         end
         
         function anull = seta0(this, anull)
             switch this.Variant
-                case {1 2 5}
+                case {1 2 5 6 7}
                     % Direction is y
                     anull(2,:,:) = 1;
                 case {3 4}
