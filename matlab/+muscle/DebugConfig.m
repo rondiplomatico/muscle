@@ -39,7 +39,7 @@ classdef DebugConfig < muscle.AModelConfig
                 version = 3;
             end
             % Single cube with same config as reference element
-            [pts, cubes] = geometry.Cube8Node.DemoGrid([0 .5 1],[0 .5 1],[0 1]);
+            [pts, cubes] = geometry.Cube8Node.DemoGrid([0 1],[0 1],[0 1]);
             if version == 11 || version == 12
                 [pts, cubes] = geometry.Cube8Node.DemoGrid([-1 1],[-1 1],[-1 1]);
                 pts(1,[6 8]) = 2;
@@ -71,7 +71,7 @@ classdef DebugConfig < muscle.AModelConfig
                 f.alpha = @(t)0;
             case 2
                 f.alpha = this.getAlphaRamp(.04,1);
-                m.DefaultMu = [.01; 0; 0; 0];
+                m.DefaultMu(1:4) = [.01; 0; 0; 0];
             case 3
                 m.T = 400;
                 m.dt = 1;
@@ -126,7 +126,7 @@ classdef DebugConfig < muscle.AModelConfig
                 m.ODESolver.AbsTol = .03;
                 m.T = 1;
                 m.dt = .01;
-                m.DefaultMu = [0;0];
+                m.DefaultMu(1:3) = [0;0;1];
                 m.DefaultInput = 1;
             case 11
                 f.alpha = @(t)0;
@@ -138,7 +138,7 @@ classdef DebugConfig < muscle.AModelConfig
                 f.b1 = 1;
                 f.d1 = 1;
                 f.alpha = this.getAlphaRamp(.04,1);
-                m.DefaultMu = [.01; 0];
+                m.DefaultMu(1:2) = [.01; 0];
                 m.System.UseCrossFibreStiffness = true;
             end
         end

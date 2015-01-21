@@ -671,15 +671,17 @@ classdef System < models.BaseDynSystem
         function initMuscleTendonRatios(this)
             mc = this.Model.Config;
             fe = mc.PosFE;
-            g = fe.Geometry;
+            this.HasTendons = ~isempty(mc.getTendonMuscleRatio(zeros(3,1)));
             tmr = zeros(fe.GaussPointsPerElem,fe.Geometry.NumElements);
-            for m = 1:g.NumElements
-                % Get coordinates of gauss points in element
-                tmr(:,m) = mc.getTendonMuscleRatio(g.Nodes(:,g.Elements(m,:)) * fe.N(fe.GaussPoints));
+            if this.HasTendons
+                g = fe.Geometry;
+                for m = 1:g.NumElements
+                    % Get coordinates of gauss points in element
+                    tmr(:,m) = mc.getTendonMuscleRatio(g.Nodes(:,g.Elements(m,:)) * fe.N(fe.GaussPoints));
+                end
+                this.MuscleTendonRatioNodes = mc.getTendonMuscleRatio(g.Nodes);
             end
-            this.HasTendons = ~all(tmr(:) == 0);
             this.MuscleTendonRatioGP = tmr;
-            this.MuscleTendonRatioNodes = mc.getTendonMuscleRatio(g.Nodes);
         end
     end
     

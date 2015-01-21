@@ -150,13 +150,14 @@ classdef MusclePlotter < handle
             plot3(h,uvdir(1,:),uvdir(2,:),uvdir(3,:),'g.','MarkerSize',20);
 
             %% Dirichlet Forces
-            if ~isempty(opts.DF)
+            if ~isempty(pd.DF)
                 residuals = pd.residuals;
                 have_residuals = pd.have_residuals;
                 udir = u(:,have_residuals);
-                residuals(pd.residuals_pos) = opts.DF(pd.sortidx)/pd.maxdfval;
+                residuals(pd.residuals_pos) = pd.DF(pd.sortidx,ts)/pd.maxdfval;
                 quiver3(h,udir(1,:),udir(2,:),udir(3,:),...
-                    residuals(1,have_residuals),residuals(2,have_residuals),residuals(3,have_residuals),'k', 'MarkerSize',14);
+                    residuals(1,have_residuals),residuals(2,have_residuals),...
+                    residuals(3,have_residuals),0,'k', 'MarkerSize',14);
             end
 
             %% Neumann condition forces
@@ -174,8 +175,8 @@ classdef MusclePlotter < handle
                     quiver3(h,facecenter(1),facecenter(2),facecenter(3),...
                         pd.meanforces(1,k),pd.meanforces(2,k),pd.meanforces(3,k),0.1,'LineWidth',2,'Color','b','MaxHeadSize',1);
 
-                    if ~isempty(opts.NF)
-                        pd.residual_neumann_forces(sys.bc_neum_forces_nodeidx) = opts.NF(:,ts);
+                    if ~isempty(pd.NF)
+                        pd.residual_neumann_forces(sys.bc_neum_forces_nodeidx) = pd.NF(:,ts);
                         meanforce = mean(pd.residual_neumann_forces(:,facenodeidx),2);
                         quiver3(h,facecenter(1),facecenter(2),facecenter(3),...
                         meanforce(1),meanforce(2),meanforce(3),0.1,'LineWidth',2,'Color','k','MaxHeadSize',1);
@@ -224,15 +225,17 @@ classdef MusclePlotter < handle
             dfem = mc.PosFE;
             geo = dfem.Geometry;
 
+            pd.DF = opts.DF;
+            pd.NF = opts.NF;
             %% "Speedup" factor for faster plots
             if ~isempty(opts.F)
                 t = t(1:opts.F:end);
                 y = y(:,1:opts.F:end);
-                if ~isempty(opts.DF)
-                    opts.DF = opts.DF(:,1:opts.F:end);
+                if ~isempty(pd.DF)
+                    pd.DF = pd.DF(:,1:opts.F:end);
                 end
-                if ~isempty(opts.NF)
-                    opts.NF = opts.NF(:,1:opts.F:end);
+                if ~isempty(pd.NF)
+                    pd.NF = pd.NF(:,1:opts.F:end);
                 end
             end
             
