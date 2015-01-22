@@ -48,6 +48,7 @@ classdef SidePressureTest < muscle.AModelConfig
             this = this@muscle.AModelConfig(geo);
             this.GeoNr = geonr;
             this.NeumannCoordinateSystem = 'global';
+            this.ActivationRampMax = .5;
         end
         
         function configureModel(this, m)
@@ -55,24 +56,25 @@ classdef SidePressureTest < muscle.AModelConfig
             m.T = this.ActivationTime+this.RelaxTime+this.LoadRampTime+10;
             m.dt = m.T/200;
             m.DefaultInput = 1;
-            m.DefaultMu = [.1; 0];
+            m.DefaultMu(1) = .1;
+            m.DefaultMu(2) = this.ActivationTime;
+            % Apply boundary pressure (magnitude given by input!)
+            m.DefaultMu(3) = 1;
             
             % Use the material set of
             f = m.System.f;
             
-            % Material set (see main comment)
-            f.c10 = 6.352e-10; % [kPa]
-            f.c01 = 3.627; % [kPa]
-            m.DefaultMu(5) = 2.756e-5; % [kPa]
-            m.DefaultMu(6) = 43.373; % [-]
+            m.DefaultMu(5) = 2.756e-5; % b1 [kPa]
+            m.DefaultMu(6) = 43.373; % d1 [-]
+            m.DefaultMu(9) = 6.352e-10; % c10 [kPa]
+            m.DefaultMu(10) = 3.627; % c01 [kPa]
             
             % Cross-fibre markert part
             f.b1cf = 53163.72204148964/10; % [kPa] = [N/mm²]
             f.d1cf = 0.014991843974911; % [-]
+            
             f.Pmax = 250; % [kPa]
             f.lambdafopt = 1; % [-]
-            
-            f.alpha = this.getAlphaRamp(this.ActivationTime,1);
             
             os = m.ODESolver;
             switch this.GeoNr
@@ -239,9 +241,9 @@ classdef SidePressureTest < muscle.AModelConfig
             c = ColorMapCreator;
             c.useJet([0.01 0.05 0.1 .5]);
             
-            %mus = [.01 .1 1];
-            mus = .1;
-            mus = [mus; zeros(size(mus))];
+            muv = [.01 .1 1];
+            mus = repmat(m.DefaultMu,1,length(muv));
+            mus(1,:) = muv;
             m.Data.ParamSamples = mus;
             nparams = size(mus,2);
             pi = ProcessIndicator('Running %d scenarios',nparams*m.System.InputCount,false,nparams*m.System.InputCount);

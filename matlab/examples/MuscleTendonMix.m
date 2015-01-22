@@ -112,17 +112,6 @@ classdef MuscleTendonMix < muscle.AModelConfig
             m.System.Inputs{1} = this.getAlphaRamp(1,1);
         end
         
-        function prepareSimulation(this, mu, inputidx)
-            % Overload this method to initialize model-specific quantities
-            % that are fixed for each simulation
-            %
-            % Called by override of computeTrajectory in muscle.Model
-            if any(this.Variant == [4 5 7])
-                f = this.Model.System.f;
-                f.alpha = this.getAlphaRamp(mu(2),1,0);
-            end
-        end
-        
         function tmr = getTendonMuscleRatio(this, points)
             % Returns the [0,1] ratio between tendon and muscle at all
             % specified points

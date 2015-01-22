@@ -12,14 +12,8 @@ classdef Cube12 < muscle.AModelConfig
         function configureModel(this, m)
             m.T = 40;
             m.dt = .05;
-            m.DefaultMu = [1; 20; 0; 0];
-            
+            m.DefaultMu(2) = 20;
             m.System.f.Pmax = 200;
-        end
-        
-        function prepareSimulation(this, mu, ~)
-            sys = this.Model.System;
-            sys.f.alpha = this.getAlphaRamp(mu(2),1);
         end
     end
     

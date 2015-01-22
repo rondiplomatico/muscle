@@ -8,18 +8,38 @@ classdef LongForceBC < muscle.AModelConfig
             [pts, cubes] = geometry.Cube8Node.DemoGrid([0 20],-40:10:40,[0 15],.1);
             geo = geometry.Cube8Node(pts, cubes);
             this = this@muscle.AModelConfig(geo.toCube20Node);
+            this.ActivationRampMax = .4;
         end
         
-        function configureModel(this, m)
+        function configureModel(~, m)
             m.T = 40;
             m.dt = .2;
-            m.DefaultMu = [.1; 0; 1; 0; 2.756e-5; 43.373; 7.99; 16.6];
+            m.DefaultMu(1) = .1;
+            m.DefaultMu(2) = 5;
+            m.DefaultMu(3) = 100;
             m.DefaultInput = 1;
-            f = m.System.f;
-            f.alpha = this.getAlphaRamp(5,.4);
             os = m.ODESolver;
             os.RelTol = .001;
             os.AbsTol = .05;
+        end
+        
+        function u = getInputs(this)
+            % Returns the inputs `u(t)` of the model.
+            %
+            % if neumann boundary conditions are used, this input is
+            % multiplied with the mu(3) parameter, which determines the
+            % maximum force that is applied. u(t) determines its temporal
+            % strength.
+            %
+            % this.Model can be used to get access to the model this
+            % configuration is applied to.
+            %
+            % Return values:
+            % u: The cell array of input functions to use within this
+            % model.
+            %
+            % @type cell @default {}
+            u = {this.getAlphaRamp(30,1)};
         end
         
         function P = getBoundaryPressure(~, elemidx, faceidx)

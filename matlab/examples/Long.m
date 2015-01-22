@@ -5,7 +5,7 @@ classdef Long < muscle.AModelConfig
     methods
         function this = Long(devi)
             if nargin < 1
-                devi = .2;
+                devi = 2;
             end
             % Single cube with same config as reference element
             [pts, cubes] = geometry.Cube20Node.DemoGrid(-10:10:10,-40:10:40, [0 10], devi);
@@ -13,12 +13,11 @@ classdef Long < muscle.AModelConfig
             this = this@muscle.AModelConfig(geo);
         end
         
-        function configureModel(this, m)
+        function configureModel(~, m)
             m.T = 50;
             m.dt = 1;
-            m.DefaultMu = [.1; 0; 0; 0];
-            f = m.System.f;
-            f.alpha = this.getAlphaRamp(10,1);
+            m.DefaultMu(1) = .1;
+            m.DefaultMu(2) = 20;
         end
     end
     

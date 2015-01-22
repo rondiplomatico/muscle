@@ -82,19 +82,18 @@ classdef QuickRelease < muscle.AModelConfig
                     end
             end
             %% Material setup
-            f = m.System.f;
             % Material set (see main comment)
-            f.c10 = 6.352e-10; % [kPa]
-            f.c01 = 3.627; % [kPa]
-            m.DefaultMu(5) = 0.00355439810963035; % [kPa]
-            m.DefaultMu(6) = 12.660539325481963; % 14.5; % [-]
+            m.DefaultMu(5) = 0.00355439810963035; % b1 [kPa]
+            m.DefaultMu(6) = 12.660539325481963; % d1 [-]
+            m.DefaultMu(9) = 6.352e-10; % c10 [kPa]
+            m.DefaultMu(10) = 3.627; % c01 [kPa]
+            f = m.System.f;
             f.Pmax = 250; % [kPa], in Paper 25N/cm², but kPa = 0.1N/cm² 
             f.lambdafopt = 1.2; % [-]
             
-            alpha = 1;
             if this.ICCompMode
                 % No activation needed for position/IC computing
-                f.alpha = @(t)0;
+                m.DefaultMu(2) = 0;
 %                 f.alpha = this.getAlphaRamp(this.icAlphaRampTime, alpha);
                 m.T = max(this.icMovetime, this.icAlphaRampTime) + this.icRelaxTime;
                 m.dt = m.T / 300;
@@ -102,7 +101,7 @@ classdef QuickRelease < muscle.AModelConfig
             else
                 m.T = 20;
                 m.dt = .1;
-                f.alpha = this.getAlphaRamp(2*m.dt,alpha);
+                m.DefaultMu(2) = 2*m.dt;
                 m.EnableTrajectoryCaching = true;
             end
         end
@@ -301,7 +300,9 @@ classdef QuickRelease < muscle.AModelConfig
             if exist(x0file,'file') ~= 2
                 mc = QuickRelease(geonr, true);
                 m = muscle.Model(mc);
-                [t, y] = m.simulate([.001; 0]);
+                mu = m.DefaultMu;
+                mu(1) = .001;
+                [t, y] = m.simulate(mu);
 %                 m.plot(t,y);
                 yfull = m.System.includeDirichletValues(t,y);
                 x0 = yfull(:,end);%#ok
@@ -329,8 +330,8 @@ classdef QuickRelease < muscle.AModelConfig
             c = ColorMapCreator;
             c.useJet([0.01 0.05 0.1 .5]);
             
-            mus = [.1 1];
-            mus = [mus; zeros(size(mus))];
+            mus = repmat(m.DefaultMu,1,2);
+            mus(1,:) = [.1 1];
             m.Data.ParamSamples = mus;
             nparams = length(mus);
             for k=1:nparams

@@ -7,20 +7,20 @@ classdef EntireTA < muscle.AModelConfig
             this = this@muscle.AModelConfig(s.geo27);
 
             %% Muscle fibre weights
-            geo = s.geo27;
-            types = [0 .2 .4 .6 .8 1];
-            ftw = zeros(this.PosFE.GaussPointsPerElem,length(types),geo.NumElements);
-            % Test: Use only slow-twitch muscles
-            ftw(:,1,:) = .4;
-            ftw(:,2,:) = .05;
-            ftw(:,3,:) = .05;
-            ftw(:,4,:) = .1;
-            ftw(:,5,:) = .2;
-            ftw(:,6,:) = .2;
-            this.FibreTypeWeights = ftw;
-            p = models.motorunit.Pool;
-            p.FibreTypes = types;
-            this.Pool = p;
+%             geo = s.geo27;
+%             types = [0 .2 .4 .6 .8 1];
+%             ftw = zeros(this.PosFE.GaussPointsPerElem,length(types),geo.NumElements);
+%             % Test: Use only slow-twitch muscles
+%             ftw(:,1,:) = .4;
+%             ftw(:,2,:) = .05;
+%             ftw(:,3,:) = .05;
+%             ftw(:,4,:) = .1;
+%             ftw(:,5,:) = .2;
+%             ftw(:,6,:) = .2;
+%             this.FibreTypeWeights = ftw;
+%             p = models.motorunit.Pool;
+%             p.FibreTypes = types;
+%             this.Pool = p;
         end
         
         function configureModel(this, m)
@@ -28,8 +28,9 @@ classdef EntireTA < muscle.AModelConfig
             % simulation time etc
             m.T = 200;
             m.dt = 1;
-            m.DefaultMu = [.1; 0];
-            m.System.f.alpha = this.getAlphaRamp(50,1);
+            m.DefaultMu(1) = .1;
+            m.DefaultMu(2) = 50;
+%             m.DefaultMu(4) = 4;
             os = m.ODESolver;
             os.RelTol = .01;
             os.AbsTol = .08;

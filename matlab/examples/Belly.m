@@ -27,11 +27,10 @@ classdef Belly < muscle.AModelConfig
             this.Pool = p;
         end
         
-        function configureModel(~, model)
-            model.T = 150;
-            model.dt = .1;
-            f = model.System.f;
-            f.alpha = @(t)0;
+        function configureModel(~, m)
+            m.T = 150;
+            m.dt = .1;
+            m.DefaultMu(4) = 6;
         end
     end
     

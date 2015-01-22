@@ -114,7 +114,7 @@ classdef AModelConfig < handle
             P = [];
         end
         
-        function u = getInputs(this)
+        function u = getInputs(~)
             % Returns the inputs `u(t)` of the model.
             %
             % if neumann boundary conditions are used, this input is
@@ -129,8 +129,8 @@ classdef AModelConfig < handle
             % u: The cell array of input functions to use within this
             % model.
             %
-            % @type cell @default {this.getAlphaRamp(30,1)}
-            u = {this.getAlphaRamp(30,1)};
+            % @type cell @default {}
+            u = {};
         end
         
         function x0 = getX0(~, x0)

@@ -11,10 +11,9 @@ classdef Cube2ForceBC < muscle.AModelConfig
         function configureModel(this, m)
             m.T = 4;
             m.dt = .01;
-            m.DefaultMu = [.1; 0];
+            m.DefaultMu(1) = .1;
+            m.DefaultMu(3) = 100;
             m.DefaultInput = 1;
-            f = m.System.f;
-            f.alpha = @(t)0;
             os = m.ODESolver;
             os.RelTol = .0001;
             os.AbsTol = .05;

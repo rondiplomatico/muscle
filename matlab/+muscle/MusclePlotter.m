@@ -31,7 +31,6 @@ classdef MusclePlotter < handle
             opts = this.parsePlotArgs(varargin);
 
             mc = this.Config;
-            sys = this.System;
 
             if isempty(opts.PM)
                 if ~isempty(mc.Pool) && opts.Pool
@@ -92,8 +91,7 @@ classdef MusclePlotter < handle
                 this.plotGeometry(h, t(ts), pd.yfull(:,ts), ts, opts);
 
                 if ~isempty(mc.Pool) && opts.Pool
-                    dt = sys.Model.dt;
-                    times = 0:dt:ts*dt;
+                    times = t(1:ts);
                     alpha = mc.Pool.getActivation(times);
                     walpha = mc.FibreTypeWeights(1,:,1) * alpha;
                     cla(hf);
@@ -135,9 +133,10 @@ classdef MusclePlotter < handle
             sys = this.System;
 
             u = reshape(y_dofs(1:pd.vstart-1),3,[]);
-            v = reshape(y_dofs(pd.vstart+1:pd.pstart),3,[]);
+            v = reshape(y_dofs(pd.vstart:pd.pstart-1),3,[]);
             cla(h);
 
+            geo = this.Config.PosFE.Geometry;
             if opts.Skel
                 e = pd.e;
                 plot3(h,u(1,pd.no_bc),u(2,pd.no_bc),u(3,pd.no_bc),'r.','MarkerSize',14);
@@ -145,7 +144,6 @@ classdef MusclePlotter < handle
                     plot3(h,u(1,[e(k,1) e(k,2)]),u(2,[e(k,1) e(k,2)]),u(3,[e(k,1) e(k,2)]),'r');
                 end
             else
-                geo = this.Config.PosFE.Geometry;
                 p = patch('Faces',geo.PatchFaces,'Vertices',u',...
                     'Parent',h,'FaceAlpha',.3);
                 if sys.HasTendons
@@ -158,7 +156,7 @@ classdef MusclePlotter < handle
 
             % Velocities
             if opts.Velo
-                quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),0,'b', 'MarkerSize',14);
+                quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),1,'b', 'MarkerSize',14);
             end
 
             %% Dirichlet conditions
