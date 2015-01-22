@@ -55,7 +55,6 @@ classdef DebugConfig < muscle.AModelConfig
             end
             geo = geometry.Cube8Node(pts, cubes);
             this = this@muscle.AModelConfig(geo.toCube27Node);
-            
             this.Version = version;
         end
         
@@ -68,10 +67,9 @@ classdef DebugConfig < muscle.AModelConfig
             m.ODESolver.AbsTol = .002;
             switch this.Version
             case 1
-                f.alpha = @(t)0;
+                m.DefaultMu(2) = -1;
             case 2
-                f.alpha = this.getAlphaRamp(.04,1);
-                m.DefaultMu(1:4) = [.01; 0; 0; 0];
+                m.DefaultMu(1:2) = [.01; .06];
             case 3
                 m.T = 400;
                 m.dt = 1;
@@ -92,16 +90,20 @@ classdef DebugConfig < muscle.AModelConfig
                 this.Pool = p;
                 m.ODESolver.RelTol = .01;
                 m.ODESolver.AbsTol = .1;
+                m.PlotterDefaultArgs = {'Pool',true};
+                m.DefaultMu(4) = 4;
             case {4,5,6}
-                %% Material configuration from CMISS/3Elem_sprenger.xml
-                % c1M = 3.56463903963e-02 MPa
-                f.c10 = 35.6463903963; % [kPa]
-                % c2M = 3.859558659683e-3 MPa
-                f.c01 = 3.859558659683; % [kPa]
+                %% Material configuration from CMISS/3Elem_sprenger.xml                
+                % Here in kPa
                 % c3M = 3.05907e-10 MPa
-                f.b1 = 3.05907e-7; % [kPa]
-                % c4M 
-                f.d1 = 47.270456264135881; % [-]
+                m.DefaultMu(5) = 3.05907e-7; % b1 [kPa]
+                % c4M = 47.270456264135881
+                m.DefaultMu(6) = 47.270456264135881; % d1 [-]
+                % c1M = 3.56463903963e-02 MPa
+                m.DefaultMu(9) = 35.6463903963; % c10 [kPa]
+                % c2M = 3.859558659683e-3 MPa
+                m.DefaultMu(10) = 3.859558659683; % c01 [kPa]
+                
                 % sigma_max_calculation = 0.3 in MPa
                 f.Pmax = 300; % [kPa]
                 % lambda_ofl_calculation
@@ -112,14 +114,17 @@ classdef DebugConfig < muscle.AModelConfig
                     - (ratio > 1) .* ((1/.14) .* (((ratio-1)/.14).^2) .* exp(-((ratio-1)/.14).^3));
                 m.T = 12;
                 m.dt = .2;
-                f.alpha = @(t)0;
                 sys.ApplyVelocityBCUntil = 10;
             case {7,8,9}
-                %% Using the "normal" Material configuration of Heidlauf
+                %% Using the Material configuration of Heidlauf
+                m.DefaultMu(5) = 0.00355439810963035; % b1 [kPa]
+                m.DefaultMu(6) = 12.660539325481963; % d1 [-]
+                m.DefaultMu(9) = 6.352e-10; % c10 [kPa]
+                m.DefaultMu(10) = 3.627; % c01 [kPa]
+                
                 m.T = 15;
                 m.dt = .1;
-                f.alpha = @(t)0;
-                sys.ApplyVelocityBCUntil = 10;
+                sys.ApplyVelocityBCUntil = 9.5;
             case 10
                 f.alpha = @(t)0;
                 m.ODESolver.RelTol = .001;
@@ -129,16 +134,12 @@ classdef DebugConfig < muscle.AModelConfig
                 m.DefaultMu(1:3) = [0;0;1];
                 m.DefaultInput = 1;
             case 11
-                f.alpha = @(t)0;
                 m.ODESolver.RelTol = .001;
                 m.ODESolver.AbsTol = .05;
                 m.T = 10;
                 m.dt = .05;
             case 12
-                f.b1 = 1;
-                f.d1 = 1;
-                f.alpha = this.getAlphaRamp(.04,1);
-                m.DefaultMu(1:2) = [.01; 0];
+                m.DefaultMu(1:2) = [.01; .04];
                 m.System.UseCrossFibreStiffness = true;
             end
         end
@@ -238,8 +239,7 @@ classdef DebugConfig < muscle.AModelConfig
                 version = 4;
             end
             m = muscle.Model(muscle.DebugConfig(version));
-            mu = 1;
-            [t,y] = m.simulate(mu);
+            [t,y] = m.simulate;
             pdf = m.getResidualForces(t,y);
             
             % 1..27 are residual forces from fixed position nodes
@@ -255,8 +255,7 @@ classdef DebugConfig < muscle.AModelConfig
             xpos = yall((15-1)*3+1,end);
             fprintf('Force at T=%g, x-position (center node) %g: %gmN\n',t(end),xpos,force_on_moved_side(end));
             
-            %m.plot(t,y,'PDF',pdf,'Velo',true);
-%             m.plot(t,y,'PDF',pdf);
+            m.plot(t,y,'DF',pdf,'Velo',true,'Pause',.02);
         end
     end
     

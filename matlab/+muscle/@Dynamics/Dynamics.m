@@ -124,6 +124,10 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             if ~isempty(mc.Pool)
                 mc.Pool.prepareSimulation(sys.Model.T,mu(4));
             end
+            % Returns an all zero function if mu(2) is less or equal to zero!
+            this.alpha = mc.getAlphaRamp(mu(2));
+            
+            % Cache stuff
             this.usemassinv = sys.UseDirectMassInversion;
             this.crossfibres = sys.HasFibres && sys.UseCrossFibreStiffness;
         end

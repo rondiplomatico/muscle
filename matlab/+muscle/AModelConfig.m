@@ -43,6 +43,28 @@ classdef AModelConfig < handle
         a0CoordinateSystem = 'master';
     end
     
+    properties
+        % Determines the default value for maximum activation in activation
+        % ramps.
+        %
+        % This is e.g. implicitly used by
+        % muscle.Dynamics.prepareSimulation, when the alpha ramp is created
+        % for positive mu(2) values (=ramp times).
+        %
+        % @type double @default 1
+        ActivationRampMax = 1;
+        
+        % Determines the default number of milliseconds to wait before
+        % activation is started.
+        %
+        % This is e.g. implicitly used by
+        % muscle.Dynamics.prepareSimulation, when the alpha ramp is created
+        % for positive mu(2) values (=ramp times).
+        %
+        % @type double @default 0
+        ActivationRampOffset = 0;
+    end
+    
     methods
         function this = AModelConfig(geo)
             if isa(geo,'geometry.Cube8Node')
@@ -115,11 +137,27 @@ classdef AModelConfig < handle
             %% do nothing
         end
         
-        function alpha = getAlphaRamp(~, ramptime, alphamax, starttime)
+        function alpha = getAlphaRamp(this, ramptime, alphamax, starttime)
+            % Creates a linearly increasing scalar function starting at
+            % starttime milliseconds ranging from zero to alphamax over
+            % ramptime.
+            %
+            % Parameters:
+            % ramptime: The time over which to increase to alphamax. If
+            % less or equal to zero, an all zero function is returned.
+            % alphamax: The maximum value to achieve. @type double @default
+            % AModelConfig.ActivationRampMax
+            % starttime: The offset time (in milliseconds) to wait before
+            % increasing the signal. @type double 
+            % @default AModelConfig.ActivationRampOffset
+            if ramptime <= 0
+                alpha = @(t)0;
+                return;
+            end
             if nargin < 4
-                starttime = 0;
+                starttime = this.ActivationRampOffset;
                 if nargin < 3
-                    alphamax = 1;
+                    alphamax = this.ActivationRampMax;
                 end
             end
             alpha = @(t)(t >= starttime) .* (alphamax * (((t-starttime)<ramptime).*(t-starttime)/ramptime + (t>=ramptime+starttime)));

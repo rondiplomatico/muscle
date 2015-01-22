@@ -68,7 +68,7 @@ classdef MusclePlotter < handle
             end
 
             %% Loop over time
-            if ~isempty(mc.Pool) && r.Pool
+            if ~isempty(mc.Pool) && opts.Pool
                 hf = pm.nextPlot('force','Activation force','t [ms]','alpha');
                 axis(hf,[0 t(end) 0 1]);
                 hold(hf,'on');
@@ -91,7 +91,7 @@ classdef MusclePlotter < handle
                 end
                 this.plotGeometry(h, t(ts), pd.yfull(:,ts), ts, opts);
 
-                if ~isempty(mc.Pool) && r.Pool
+                if ~isempty(mc.Pool) && opts.Pool
                     dt = sys.Model.dt;
                     times = 0:dt:ts*dt;
                     alpha = mc.Pool.getActivation(times);
@@ -113,7 +113,7 @@ classdef MusclePlotter < handle
                 if ~isempty(opts.Vid) && ishandle(h)
                     vw.writeVideo(getframe(gcf));
                 else
-                    pause(.01);
+                    pause(opts.Pause);
                 end
             end
 
@@ -158,7 +158,7 @@ classdef MusclePlotter < handle
 
             % Velocities
             if opts.Velo
-                quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),'b', 'MarkerSize',14);
+                quiver3(h,u(1,:),u(2,:),u(3,:),v(1,:),v(2,:),v(3,:),0,'b', 'MarkerSize',14);
             end
 
             %% Dirichlet conditions
@@ -309,7 +309,7 @@ classdef MusclePlotter < handle
             end
         end
         
-        function opts = parsePlotArgs(~, args)
+        function opts = parsePlotArgs(this, args)
             i = inputParser;
             i.KeepUnmatched = true;
             i.addParamValue('Vid',[],@(v)~isempty(v));
@@ -323,6 +323,9 @@ classdef MusclePlotter < handle
             i.addParamValue('DF',[]);
             i.addParamValue('NF',[]);
             i.addParamValue('F',[]);
+            i.addParamValue('Pause',.01);
+            
+            args = [this.System.Model.PlotterDefaultArgs args];
             i.parse(args{:});
             opts = i.Results;
             if ~isempty(opts.NF)

@@ -168,7 +168,9 @@ classdef System < models.BaseDynSystem
             this.addParam('viscosity',[0 10],10);
             
             % The amount of milliseconds over which to activate the model
-            this.addParam('alpha_ramp',[10,300],10);
+            % Set this parameter to zero to deactivate (any maybe use a
+            % custom activation ramp)
+            this.addParam('alpha_ramp_time',[1,300],10);
             
             % The force of the faces exposed to neumann conditions
             this.addParam('neumann_force',[0 400],10);
@@ -179,6 +181,8 @@ classdef System < models.BaseDynSystem
             
             % anisotropic passive stiffness for muscle material
             % markert law b1
+            %
+            % #5
             this.addParam('muscle passive b1',[0 1],10);
             
             % anisotropic passive stiffness for muscle material
@@ -195,11 +199,13 @@ classdef System < models.BaseDynSystem
             
             % isotropic muscle material
             % mooney-rivlin law c10
-            this.addParam('muscle mooney-rivlin c10',[0 1e-2],10);
+            %
+            % #9
+            this.addParam('muscle mooney-rivlin c10',[0 50],10);
             
             % isotropic muscle material
             % mooney-rivlin law c01
-            this.addParam('muscle mooney-rivlin c01',[0 5],10);
+            this.addParam('muscle mooney-rivlin c01',[0 50],10);
             
             % isotropic tendon material
             % mooney-rivlin law c10

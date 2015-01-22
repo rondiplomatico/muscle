@@ -10,6 +10,9 @@ classdef Model < models.BaseFullModel
     
     properties
         MuscleDensity = 1.1e-6; % [kg/mm³] (1100kg/m³)
+        
+        % Any arguments to add to any model.plot command for convenience.
+        PlotterDefaultArgs = {};
     end
     
     properties(SetAccess=private)
@@ -45,7 +48,9 @@ classdef Model < models.BaseFullModel
             % This defines a default behaviour for all muscle models.
             % Override in AModelConfig.configureModel for dependent
             % behaviour.
-            this.DefaultMu = [1; 50; 0; 0
+            % Default is no activation ramp, no pressure and no input
+            % current.
+            this.DefaultMu = [1; 0; 0; 0
                 % Anisotropic parameters muscle+tendon (Markert)
                 2.756e-5; 43.373; 7.99; 16.6
                 % Isotropic parameters muscle+tendon (Moonley-Rivlin)
