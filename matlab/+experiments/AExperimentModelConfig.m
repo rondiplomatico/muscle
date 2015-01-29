@@ -26,8 +26,8 @@ classdef AExperimentModelConfig < muscle.AModelConfig
             % Override in subclasses and set NumConfigurations to the
             % number of possible experiment runs with different IC/BCs.
             if nargin < 1
-                %[pts, cubes] = geometry.Cube8Node.DemoGrid;
-                geo = geometry.Cube27Node;
+                [pts, cubes] = geometry.Cube27Node.DemoGrid(linspace(0,25,4),[0 7],[0 4]);
+                geo = geometry.Cube27Node(pts,cubes);
             end
             
             this = this@muscle.AModelConfig(geo);

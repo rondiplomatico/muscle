@@ -46,7 +46,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             m.dt = m.T / 300;
             
             f = m.System.f;
-            f.Pmax = 1250; % [kPa], in Paper 25N/cm², but kPa = 0.1N/cm² 
+            f.Pmax = 250; % [kPa], in Paper 25N/cm², but kPa = 0.1N/cm² 
             f.lambdafopt = 1.3; % [-]
             % Set to activation within 10ms
             m.DefaultMu(2) = 10;
@@ -73,7 +73,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             act_range = passive_pos + 1 : size(y,2);
             switch this.GeoNr
                 case 1
-                    idx = m.getVelocityDirichletBCFaceIdx(1,2);
+                    idx = m.getVelocityDirichletBCFaceIdx(3,2);
                     o(1) = max(abs(sum(df(idx,act_range),1)));
                     o(2) = abs(sum(df(idx,passive_pos)));
                     
@@ -105,7 +105,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             deltawidth = geo.Width*this.ExperimentalStretchPercents(this.CurrentConfigNr)/100;
             switch this.GeoNr
                 case 1
-                    velo_dir(1,geo.Elements(1,geo.MasterFaces(2,:))) = true;
+                    velo_dir(1,geo.Elements(3,geo.MasterFaces(2,:))) = true;
                     velo_dir_val(velo_dir) = deltawidth/this.PositioningTime;
                 case 2
             end
@@ -144,9 +144,9 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             legend('Active force','Passive force','Experiment','Experiment');
             pm.done;
             
-%             if ~loaded
-%                 save(fi,'m','o');
-%             end
+            if ~loaded
+                save(fi,'m','o');
+            end
         end
     end
     
