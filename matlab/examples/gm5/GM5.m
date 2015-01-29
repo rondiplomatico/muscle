@@ -75,8 +75,8 @@ classdef GM5 < muscle.AModelConfig
             
             % Get average velocity of loose end
             %facenode_idx = m.getFaceDofsGlobal(1:4,3);
-            idxy = m.getDirichletBCFaceIdx(1:4, 3, 2);
-            idxall = m.getDirichletBCFaceIdx(1:4, 3);
+            idxy = m.getPositionDirichletBCFaceIdx(1:4, 3, 2);
+            idxall = m.getPositionDirichletBCFaceIdx(1:4, 3);
             o(1,:) = sum(df(idxy,:),1);
             o(2,:) = sum(df(idxall,:),1);
         end

@@ -31,16 +31,19 @@ classdef Model < models.BaseFullModel
     end
     
     methods
-        function this = Model(conf)
-            if nargin < 1
-                conf = muscle.DebugConfig;
+        function this = Model(conf, basedir)
+            if nargin < 2
+                basedir = KerMor.App.DataDirectory;
+                if nargin < 1
+                    conf = muscle.DebugConfig;
+                end
             end
             % Creates a new muscle model
-            this = this@models.BaseFullModel;
-            this.Name = sprintf('FEM Muscle model %s',class(conf));
+            name = sprintf('FEM Muscle model %s',class(conf));
+            this = this@models.BaseFullModel(name);
             
             this.SaveTag = sprintf('musclemodel_%s',class(conf));
-            this.Data = data.ModelData(this);
+            this.Data = data.ModelData(this,basedir);
             %this.Data.useFileTrajectoryData;
             
             this.System = muscle.System(this);
@@ -277,7 +280,17 @@ classdef Model < models.BaseFullModel
             idx = find(idxXYZ(:));
         end
         
-        function idx = getDirichletBCFaceIdx(this, elem, face, dim)
+        function idx = getPositionDirichletBCFaceIdx(this, elem, face, dim)
+            % Returns the positions of dofs of a specified face 
+            % within the boundary conditions residual vector.
+            % Applies to dirichlet boundary conditions of POSITION (u)
+            %
+            % Parameters:
+            % elem: The element the face belongs to @type integer
+            % face: The face number of that element @type integer
+            % dim: Optionally, specify a requested dimension to get the
+            % indices for. Defaults to return all x,y,z components on every
+            % node on the face. @type rowvec<integer> @default 1:3
             if nargin < 4
                 dim = 1:3;
             end
@@ -286,6 +299,32 @@ classdef Model < models.BaseFullModel
             idx_face(dim,geo.Elements(elem,geo.MasterFaces(face,:))) = true;
             fidx = find(this.System.bool_u_bc_nodes & idx_face);
             [~, idx] = intersect(this.System.idx_u_bc_glob, fidx);
+        end
+        
+        function idx = getVelocityDirichletBCFaceIdx(this, elem, face, dim)
+            % Returns the positions of dofs of a specified face 
+            % within the boundary conditions residual vector.
+            % Applies to dirichlet boundary conditions of VELOCITY (v)
+            %
+            % Parameters:
+            % elem: The element the face belongs to @type integer
+            % face: The face number of that element @type integer
+            % dim: Optionally, specify a requested dimension to get the
+            % indices for. Defaults to return all x,y,z components on every
+            % node on the face. @type rowvec<integer> @default 1:3
+            if nargin < 4
+                dim = 1:3;
+            end
+            geo = this.Config.PosFE.Geometry;
+            idx_face = false(size(this.System.bool_u_bc_nodes));
+            idx_face(dim,geo.Elements(elem,geo.MasterFaces(face,:))) = true;
+            fidx = find(this.System.bool_v_bc_nodes & idx_face);
+            % Include the offset to the indices for velocity dofs
+            fidx = fidx + geo.NumNodes*3;
+            [~, idx] = intersect(this.System.idx_v_bc_glob, fidx);
+            % Also include the offset of velocity components within the
+            % dirichlet force vector
+            idx = idx + length(this.System.val_u_bc);
         end
         
         function setConfig(this, value)

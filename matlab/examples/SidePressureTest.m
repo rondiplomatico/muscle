@@ -95,19 +95,19 @@ classdef SidePressureTest < muscle.AModelConfig
 %             uvw = m.System.includeDirichletValues(t, uvw);
             switch this.GeoNr
                 case 1
-                    idx = m.getDirichletBCFaceIdx(1,1);
+                    idx = m.getPositionDirichletBCFaceIdx(1,1);
                     o(1,:) = mean(df(idx,:),1);
                 case 2
-                    xidx = m.getDirichletBCFaceIdx(1:4,3,1);
-                    yidx = m.getDirichletBCFaceIdx(1:4,3,2);
-                    zidx = m.getDirichletBCFaceIdx(1:4,3,3);
+                    xidx = m.getPositionDirichletBCFaceIdx(1:4,3,1);
+                    yidx = m.getPositionDirichletBCFaceIdx(1:4,3,2);
+                    zidx = m.getPositionDirichletBCFaceIdx(1:4,3,3);
                     vec = [mean(df(xidx,:),1); mean(df(yidx,:),1); mean(df(zidx,:),1)];
                     o(1,:) = Norm.L2(vec);
                     o(2:4,:) = vec;
                 case 3
-                    xidx = m.getDirichletBCFaceIdx(6,3,1);
-                    yidx = m.getDirichletBCFaceIdx(6,3,2);
-                    zidx = m.getDirichletBCFaceIdx(6,3,3);
+                    xidx = m.getPositionDirichletBCFaceIdx(6,3,1);
+                    yidx = m.getPositionDirichletBCFaceIdx(6,3,2);
+                    zidx = m.getPositionDirichletBCFaceIdx(6,3,3);
                     vec = [mean(df(xidx,:),1); mean(df(yidx,:),1); mean(df(zidx,:),1)];
                     o(1,:) = Norm.L2(vec);
                     o(2:4,:) = vec;

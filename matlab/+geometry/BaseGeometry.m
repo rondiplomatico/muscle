@@ -33,6 +33,15 @@ classdef BaseGeometry < handle
         NumNodes;
         NumFaces;
         NodesPerFace;
+        
+        % Returns the width of the geometry (x-range)
+        Width;
+        
+        % Returns the Depth of the geometry (y-range)
+        Depth;
+        
+        % Returns the Height of the geometry (z-range)
+        Height;
     end
     
     properties(SetAccess=private)
@@ -162,6 +171,69 @@ classdef BaseGeometry < handle
             invidx(elems) = 1:length(elems);
             sub.Faces(1,:) = invidx(sub.Faces(1,:));
             sub.faceComputations;
+        end
+        
+        function toCMGUI(this, folder, name)
+            if nargin < 3
+                name = 'musclegeom';
+                if nargin < 2
+                    folder = pwd;
+                end
+            end
+            % exnode file
+            exnode = fullfile(folder,[name '.exnode']);
+            f = fopen(exnode,'w+');
+            fprintf(f,'Group name : %s\n',name);
+            fprintf(f,'#Fields=0\n');
+            for n = 1:this.NumNodes
+                fprintf(f,'Node:\t%d\n',n);
+                fprintf(f,'%E\n',this.Nodes(:,n));
+            end
+            fclose(f);
+            
+            % exelem file
+            exelem = fullfile(folder,[name '.exelem']);
+            f = fopen(exelem,'w+');
+            fprintf(f,'Group name : %s\n',name);
+            %fprintf(f,'#Fields=0\n');
+            
+            % 1D elements - lines
+            fprintf(f,'Shape.  Dimension=1\n');
+            for e = 1:size(this.Edges,1)
+                fprintf(f,'Element: 0 0 %d\n',e);
+            end
+            
+            % 2D elements - faces
+            fprintf(f,'Shape.  Dimension=2\n');
+            for fa = 1:size(this.Faces,2)
+                fprintf(f,'Element: 0 %d 0\n',fa);
+                fprintf(f,'  Faces:\n');
+                elem = this.Faces(1,fa);
+                % PatchFacesIdx returns the node positions in an order you can
+                % derive lines from it, MasterFaces doesn't
+                facenodeidx = this.Elements(elem,this.PatchFacesIdx(this.Faces(2,fa),:));
+                % Insert last edge closing the face
+                facenodeidx = sort([facenodeidx; facenodeidx(2:end) facenodeidx(1)]);
+                edgenumbers = Utils.findVecInMatrix(this.Edges',facenodeidx);
+                fprintf(f,'    0 0 %d\n',edgenumbers);
+            end
+            
+            % 3D elements
+            fprintf(f,'Shape.  Dimension=3\n');
+            fprintf(f,'#Nodes=%d\n',size(this.Elements,2));
+            fprintf(f,'#Fields=0\n');
+            for m = 1:this.NumElements
+                fprintf(f,'Element: %d 0 0\n',m);
+                % See if this element has any faces
+                facesofelem = find(this.Faces(1,:) == m);
+                if ~isempty(facesofelem)
+                    fprintf(f,'  Faces:\n');
+                    fprintf(f,'    0 %d 0\n',facesofelem);
+                end
+                fprintf(f,'  Nodes: %s\n',sprintf('%d\t',this.Elements(m,:)));
+            end
+            
+            fclose(f);
         end
            
     end
@@ -294,6 +366,18 @@ classdef BaseGeometry < handle
         
         function npf = get.NodesPerFace(this)
             npf = size(this.MasterFaces,2);
+        end
+        
+        function w = get.Width(this)
+            w = max(this.Nodes(1,:))-min(this.Nodes(1,:));
+        end
+        
+        function w = get.Depth(this)
+            w = max(this.Nodes(2,:))-min(this.Nodes(2,:));
+        end
+        
+        function w = get.Height(this)
+            w = max(this.Nodes(3,:))-min(this.Nodes(3,:));
         end
     end
     
