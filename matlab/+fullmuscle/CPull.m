@@ -40,9 +40,8 @@ classdef CPull < fullmuscle.AModelConfig
                     m.dt = 1;
             end
             
-            m.DefaultMu = [1; 0; 1; 0];
-            
-            m.System.f.Pmax = 250;
+            m.DefaultMu(1:4) = [1; 0; 1; 0];
+            m.DefaultMu(13) = 250;
             m.EnableTrajectoryCaching = true;
         end
         

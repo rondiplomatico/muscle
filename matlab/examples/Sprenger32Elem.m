@@ -28,10 +28,9 @@ classdef Sprenger32Elem < muscle.AModelConfig
             m.DefaultMu(6) = 47.270456264135881; % [-]
             
             % sigma_max_calculation = 0.3 in MPa
-            f.Pmax = 300; % [kPa]
-            
+            m.DefaultMu(13) = 300; % [kPa]
             % lambda_ofl_calculation
-            f.lambdafopt = 1.4; % [-]
+            m.DefaultMu(14) = 1.4; % [-]
             
             f.ForceLengthFun = @(ratio)(ratio<=1).*exp(-((1-ratio)/.57).^4) + (ratio>1).*exp(-((ratio-1)/.14).^3);
             % The derivative of the force-length function as function handle

@@ -73,8 +73,8 @@ classdef SidePressureTest < muscle.AModelConfig
             f.b1cf = 53163.72204148964/10; % [kPa] = [N/mm²]
             f.d1cf = 0.014991843974911; % [-]
             
-            f.Pmax = 250; % [kPa]
-            f.lambdafopt = 1; % [-]
+            m.DefaultMu(13) = 250; % [kPa]
+            m.DefaultMu(14) = 1; % [-]
             
             os = m.ODESolver;
             switch this.GeoNr

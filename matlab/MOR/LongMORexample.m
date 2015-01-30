@@ -63,9 +63,8 @@ classdef LongMORexample < muscle.AModelConfig
             f.c01 = 3.627; % [kPa]
             model.DefaultMu(5) = 2.756e-5; % [kPa]
             model.DefaultMu(6) = 43.373; % [-]
-
-            f.Pmax = 73; % [kPa]
-            f.lambdafopt = 1.2; % [-]            
+            model.DefaultMu(13) = 73; % [kPa]
+            model.DefaultMu(14) = 1.2; % [-]
         end
         
         function prepareSimulation(this, mu, inputidx)

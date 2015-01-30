@@ -17,8 +17,8 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
     num_elements = geo.NumElements;
     
     % Cache variables instead of accessing them via "this." in loops
-    lfopt = this.lambdafopt;
-    Pmax = this.Pmax;
+    lfopt = this.mu(14);
+    Pmax = this.mu(13);
     c10 = sys.MuscleTendonParamc10;
     c01 = sys.MuscleTendonParamc01;
     

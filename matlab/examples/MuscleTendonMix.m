@@ -69,9 +69,6 @@ classdef MuscleTendonMix < muscle.AModelConfig
             m.T = 4;
             m.dt = .01;
             m.DefaultInput = 1;
-            f = m.System.f;
-            f.alpha = @(t)0;
-            f.Pmax = 250;
             
             os = m.ODESolver;
             os.RelTol = .0001;
@@ -107,6 +104,8 @@ classdef MuscleTendonMix < muscle.AModelConfig
                     mu(3) = 0;
             end
             m.DefaultMu = mu;
+            m.DefaultMu(13) = 250; % Pmax [kPa]
+            m.DefaultMu(14) = 1.2; % lamdaopt [-]
             
             % Ramp up the external pressure
             m.System.Inputs{1} = this.getAlphaRamp(1,1);

@@ -205,15 +205,27 @@ classdef System < models.BaseDynSystem
             
             % isotropic muscle material
             % mooney-rivlin law c01
+            % #10
             this.addParam('muscle mooney-rivlin c01',[0 50],10);
             
             % isotropic tendon material
             % mooney-rivlin law c10
+            % #11
             this.addParam('tendon mooney-rivlin c10',[0 1e-2],10);
             
             % isotropic tendon material
             % mooney-rivlin law c01
+            % #12
             this.addParam('tendon mooney-rivlin c01',[0 5],10);
+            
+            % muscle fibre maximal force [kPa]
+            % kPa = 0.1N/cm² 
+            % #13
+            this.addParam('P_max',[73 400],10);
+            
+            % muscle optimal length lambda_opt
+            % #14
+            this.addParam('lambda_opt',[1 1.5],10);
             
             %% Set system components
             % Core nonlinearity

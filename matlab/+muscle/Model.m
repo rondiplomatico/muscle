@@ -110,12 +110,15 @@ classdef Model < models.BaseFullModel
             [t, x, time, cache] = computeTrajectory@models.BaseFullModel(this, mu, inputidx);
         end
         
-        function t = getConfigTable(this)
+        function t = getConfigTable(this, mu)
+            if nargin < 2
+                mu = this.DefaultMu;
+            end
             f = this.System.f;
             t = PrintTable('Configuration of Model %s',this.Name);
             t.HasHeader = true;
             t.addRow('\rho_0', 'c_{10} [kPa]','c_{01} [kPa]','b_1 [kPa]','d_1 [-]','P_{max} [kPa]','\lambda_f^{opt}');
-            t.addRow(this.MuscleDensity, f.c10,f.c01,f.b1,f.d1,f.Pmax,f.lambdafopt);
+            t.addRow(this.MuscleDensity, mu(9),mu(10),mu(5),mu(6),mu(13),mu(14));
             t.Format = 'tex';
         end
         
@@ -135,7 +138,7 @@ classdef Model < models.BaseFullModel
             warning('Using muscle parameters only (ignoring tendon)');
             
             lambda = .5:.005:2;
-            fl = (f.Pmax / f.lambdafopt) * f.ForceLengthFun(lambda/f.lambdafopt);
+            fl = (mu(13)./lambda) * f.ForceLengthFun(lambda/mu(14));
             markertf = max(0,(b1./lambda.^2).*(lambda.^d1-1));
 %             markertf = (b1./lambda.^2).*(lambda.^d1-1);
             
@@ -151,7 +154,7 @@ classdef Model < models.BaseFullModel
 %             axis(h,[0 2 0 2]);
             legend(h,'Active','Passive','Total','Location','NorthWest');
             
-            dfl = (f.Pmax / f.lambdafopt) * f.ForceLengthFunDeriv(lambda/f.lambdafopt);
+            dfl = (mu(13)./lambda) .* f.ForceLengthFunDeriv(lambda/mu(14));
             dmarkertf = (lambda>=1).*(b1./lambda.^3).*((d1-2)*lambda.^d1 + 2);
             h = pm.nextPlot('force_length_deriv',sprintf('Derivative of Force-Length curve for model %s',this.Name),'\lambda','deriv [kPa/ms]');
             plot(h,lambda,dfl,'r',lambda,dmarkertf,'g',lambda,dfl + dmarkertf,'b');
@@ -189,14 +192,12 @@ classdef Model < models.BaseFullModel
             
             [lambda, alpha] = meshgrid(.02:.02:1.5,0:.01:1);
             
-            fl = f.ForceLengthFun(lambda/f.lambdafopt);
-            active = f.Pmax./lambda.*fl.*alpha;% + 1*max(0,(lambda-1)).*alpha;
+            fl = f.ForceLengthFun(lambda/mu(14));
+            active = mu(13)./lambda.*fl.*alpha;% + 1*max(0,(lambda-1)).*alpha;
             passive = max(0,(b1./lambda.^2).*(lambda.^d1-1));
             
             h = pm.nextPlot('aniso_pressure',sprintf('Pressure in fibre direction for model %s',this.Name),'Stretch \lambda','Activation \alpha');
             surf(h,lambda,alpha,active+passive,'EdgeColor','k','FaceColor','interp');
-            
-%             zlim(h,[0,f.Pmax*1.5]);
             
             pm.done;
         end

@@ -13,8 +13,8 @@ function duvw  = evaluate(this, uvwdof, t)
     num_v_glob = num_u_glob;
 
     % Cache variables instead of accessing them via this. in loops
-    lfopt = this.lambdafopt;
-    Pmax = this.Pmax;
+    lfopt = this.mu(14);
+    Pmax = this.mu(13);
     flfun = this.ForceLengthFun;
     havefibres = sys.HasFibres;
     havefibretypes = sys.HasFibreTypes;
@@ -54,6 +54,9 @@ function duvw  = evaluate(this, uvwdof, t)
     % Check if velocity bc's should still be applied
     if t > sys.ApplyVelocityBCUntil
         uvwcomplete(sys.idx_v_bc_glob) = 0;
+    elseif t > sys.ApplyVelocityBCUntil*.99
+        fact = 1-(t-sys.ApplyVelocityBCUntil*.99)/(sys.ApplyVelocityBCUntil*.01);
+        uvwcomplete(sys.idx_v_bc_glob) = fact*uvwcomplete(sys.idx_v_bc_glob);
     end
     
     dofsperelem_u = geo.DofsPerElement;
@@ -139,7 +142,7 @@ function duvw  = evaluate(this, uvwdof, t)
                 if lambdaf > .999
                     markert = (b1(gp,m)/lambdaf^2)*(lambdaf^d1(gp,m)-1);
                 end
-                gval = markert + (Pmax/lambdaf)*fl*alpha; %+ 1000*max(0,(lambdaf-1))*alpha;
+                gval = markert + (Pmax/lambdaf)*fl*alpha;
                 P = P + gval*F*sys.a0oa0(:,:,fibrenr);
                 
                 %% Cross-fibre stiffness part

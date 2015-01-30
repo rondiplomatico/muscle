@@ -87,9 +87,8 @@ classdef QuickRelease < muscle.AModelConfig
             m.DefaultMu(6) = 12.660539325481963; % d1 [-]
             m.DefaultMu(9) = 6.352e-10; % c10 [kPa]
             m.DefaultMu(10) = 3.627; % c01 [kPa]
-            f = m.System.f;
-            f.Pmax = 250; % [kPa], in Paper 25N/cm², but kPa = 0.1N/cm² 
-            f.lambdafopt = 1.2; % [-]
+            m.DefaultMu(13) = 250; % [kPa]
+            m.DefaultMu(14) = 1.2; % [-]
             
             if this.ICCompMode
                 % No activation needed for position/IC computing

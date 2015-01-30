@@ -49,8 +49,9 @@ classdef GM5 < muscle.AModelConfig
             f.c01 = 3.627; % [kPa]
             m.DefaultMu(5) = 0.00355439810963035; % [kPa]
             m.DefaultMu(6) = 12.660539325481963; % 14.5; % [-]
-            f.Pmax = 120; % [kPa]
-            f.lambdafopt = 1.2; % [-]
+            
+            m.DefaultMu(13) = 120; % [kPa]
+            m.DefaultMu(14) = 1.2; % [-]
             
             % FL-Fun nach Schmitt at al
             f.ForceLengthFun = @(ratio)(ratio<=1).*exp(-((1-ratio)/.57).^4) + (ratio>1).*exp(-((ratio-1)/.14).^3);

@@ -7,10 +7,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
        b1cf = 53163.72204148964; % [kPa] = [N/mm²]
        d1cf = 0.014991843974911; % [-]
        
-       Pmax = 73; % [kPa], in Paper 7.3N/cm², but kPa = 0.1N/cm² 
-       
-       lambdafopt = 1.2; % [-]
-       
        % The activation of the muscle at time t
        %
        % @type function_handle @default @(t)0
@@ -26,9 +22,9 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
        %
        % @type function_handle @default Quadratic like in @cite
        % Heidlauf2013
-       ForceLengthFun = @(ratio)(-6.25*ratio.*ratio + 12.5*ratio - 5.25) .* (ratio >= .6) .* (ratio <= 1.4);
+       %ForceLengthFun = @(ratio)(-6.25*ratio.*ratio + 12.5*ratio - 5.25) .* (ratio >= .6) .* (ratio <= 1.4);
        % Alternative
-       % ForceLengthFun = @(ratio)(ratio<=1).*exp(-((1-ratio)/.57).^4) + (ratio>1).*exp(-((ratio-1)/.14).^3);
+       ForceLengthFun = @(ratio)(ratio<=1).*exp(-((1-ratio)/.57).^4) + (ratio>1).*exp(-((ratio-1)/.14).^3);
        
        % The derivative of the force-length function as function handle
        %
@@ -40,10 +36,10 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
        %
        % @type function_handle @default Quadratic like in @cite
        % Heidlauf2013
-       ForceLengthFunDeriv = @(ratio)(12.5*ratio.*(1-ratio)) .* (ratio >= .6) .* (ratio <= 1.4);
+       %ForceLengthFunDeriv = @(ratio)(12.5*ratio.*(1-ratio)) .* (ratio >= .6) .* (ratio <= 1.4);
        % Alternative
-       % ForceLengthFunDeriv = @(ratio)(ratio<=1).*((1/.57)*(((1-ratio)/.57).^3).*exp(-((1-ratio)/.57).^4)) ...
-       % - (ratio > 1) .* ((1/.14) .* (((ratio-1)/.14).^2) .* exp(-((ratio-1)/.14).^3));
+        ForceLengthFunDeriv = @(ratio)(ratio<=1).*((1/.57)*(((1-ratio)/.57).^3).*exp(-((1-ratio)/.57).^4)) ...
+        - (ratio > 1) .* ((1/.14) .* (((ratio-1)/.14).^2) .* exp(-((ratio-1)/.14).^3));
        
        %% Unassembled stuff
        ComputeUnassembled = false;

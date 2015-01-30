@@ -20,9 +20,8 @@ classdef Config_FEDEIM < muscle.AModelConfig
         function configureModel(this, m)
             m.T = 100;
             m.dt = .01;
-            m.DefaultMu = [1; 20; 0; 0];
-            
-            m.System.f.Pmax = 200;
+            m.DefaultMu(1:4) = [1; 20; 0; 0];
+            m.DefaultMu(13) = 200;
         end
         
         function prepareSimulation(this, mu, ~)
