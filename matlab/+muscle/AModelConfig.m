@@ -63,6 +63,9 @@ classdef AModelConfig < handle
         %
         % @type double @default 0
         ActivationRampOffset = 0;
+        
+        % Velocity conditions application function
+        VelocityBCTimeFun;
     end
     
     methods

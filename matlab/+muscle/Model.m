@@ -57,8 +57,8 @@ classdef Model < models.BaseFullModel
                 % Anisotropic parameters muscle+tendon (Markert)
                 2.756e-5; 43.373; 7.99; 16.6
                 % Isotropic parameters muscle+tendon (Moonley-Rivlin)
-                35.6; 3.86; 2310; 1.15e-3]; % Micha
-                    % 6.352e-10; 3.627 [Kpa] thomas alt
+                35.6; 3.86; 2310; 1.15e-3 % Micha, % 6.352e-10; 3.627 [Kpa] thomas alt 
+                250; 1.2; .3]; 
             
             this.TrainingParams = [1 2];
             
@@ -81,7 +81,12 @@ classdef Model < models.BaseFullModel
             this.setConfig(conf);
             
             %% Health tests
-%             this.System.f.test_Jacobian;
+            % Propagate the current default param
+            this.System.prepareSimulation(this.DefaultMu, this.DefaultInput);
+            
+            fprintf('Running Jacobian health check..');
+            res = this.System.f.test_Jacobian;
+            fprintf('Done. Success=%d\n',res);
 %             chk = this.Config.PosFE.test_JacobiansDefaultGeo;
 % %             chk = chk && this.Config.PosFE.test_QuadraticBasisFun;
 %             chk = chk && this.Config.PressFE.test_JacobiansDefaultGeo;
@@ -124,53 +129,103 @@ classdef Model < models.BaseFullModel
         
         function plotForceLengthCurve(this, mu, pm)
             if nargin < 3
-                pm = PlotManager(false,1,2);
+                pm = PlotManager(false,2,2);
                 pm.LeaveOpen = true;
                 if nargin < 2
                     mu = this.DefaultMu;
                 end
             end
             f = this.System.f;
+            f.setForceLengthFun(mu);
             
-            % Simply use muscle parameter values
-            b1 = mu(1);
-            d1 = mu(2);
-            warning('Using muscle parameters only (ignoring tendon)');
+            markertfun = @(lam,b,d)max(0,(b./lam.^2).*(lam.^d-1));
             
-            lambda = .5:.005:2;
-            fl = (mu(13)./lambda) * f.ForceLengthFun(lambda/mu(14));
-            markertf = max(0,(b1./lambda.^2).*(lambda.^d1-1));
-%             markertf = (b1./lambda.^2).*(lambda.^d1-1);
+            lambda = .2:.005:2;
             
-            pos = find(markertf > max(fl)*1.4,1,'first');
+            %% Plain Force-length function
+            fl = f.ForceLengthFun(lambda/mu(14));
+            h = pm.nextPlot('force_length_plain','Direct force-length curve of muscle/sarcomere',...
+                sprintf('\\lambda/\\lambda_{opt} [-], \\lambda_{opt}=%g',mu(14)),...
+                'force-length relation [-]');
+            
+            plot(h,lambda/mu(14),fl,'r');
+            
+            %% Effective force-length function for muscle tissue
+            % effective signal from active part
+            fl_eff = (mu(13)./lambda) .* fl;
+            b1 = mu(5); d1 = mu(6);
+            % Passive markert law
+            markertf = markertfun(lambda,b1,d1);
+            
+            % Find a suitable position to stop plotting (otherwise the
+            % passive part will steal the show)
+            pos = find(markertf > max(fl_eff)*1.4,1,'first');
             if ~isempty(pos)
                 lambda = lambda(1:pos);
-                fl = fl(1:pos);
+                fl_eff = fl_eff(1:pos);
                 markertf = markertf(1:pos);
             end
             
-            h = pm.nextPlot('force_length',sprintf('Force-Length curve for model %s',this.Name),'\lambda [-]','pressure [kPa]');
-            plot(h,lambda,fl,'r',lambda,markertf,'g',lambda,fl+markertf,'b');
-%             axis(h,[0 2 0 2]);
+            h = pm.nextPlot('force_length_eff',...
+                'Effective force-length curve of muscle material',...
+                '\lambda [-]','pressure [kPa]');
+            plot(h,lambda,fl_eff,'r',lambda,markertf,'g',lambda,fl_eff+markertf,'b');
             legend(h,'Active','Passive','Total','Location','NorthWest');
             
-            dfl = (mu(13)./lambda) .* f.ForceLengthFunDeriv(lambda/mu(14));
-            dmarkertf = (lambda>=1).*(b1./lambda.^3).*((d1-2)*lambda.^d1 + 2);
-            h = pm.nextPlot('force_length_deriv',sprintf('Derivative of Force-Length curve for model %s',this.Name),'\lambda','deriv [kPa/ms]');
-            plot(h,lambda,dfl,'r',lambda,dmarkertf,'g',lambda,dfl + dmarkertf,'b');
-%             axis(h,[0 2 -7 9]);
+%             %% Effective force-length function derivative for muscle tissue
+%             dfl = (mu(13)./lambda) .* f.ForceLengthFunDeriv(lambda/mu(14));
+%             dmarkertf = (lambda>=1).*(b1./lambda.^3).*((d1-2)*lambda.^d1 + 2);
+%             h = pm.nextPlot('force_length_eff_deriv',...
+%                 'Effective force-length curve derivative of muscle material',...
+%                 '\lambda','deriv [kPa/ms]');
+%             plot(h,lambda,dfl,'r',lambda,dmarkertf,'g',lambda,dfl + dmarkertf,'b');
             
-            if this.System.UseCrossFibreStiffness
-                markertf = max(0,(f.b1cf./lambda.^2).*(lambda.^f.d1cf-1));
-                h = pm.nextPlot('force_length_xfibre',sprintf('Force-Length curve in cross-fibre direction for model %s',this.Name),'\lambda [-]','pressure [kPa]');
-                plot(h,lambda,markertf,'r');
-                axis(h,[0 2 0 150]);
-                legend(h,'Passive cross-fibre pressure','Location','NorthWest');
+%             %% Cross fibre stuff
+%             if this.System.UseCrossFibreStiffness
+%                 error('fixme');
+%                 markertf = max(0,(f.b1cf./lambda.^2).*(lambda.^f.d1cf-1));
+%                 h = pm.nextPlot('force_length_xfibre',sprintf('Force-Length curve in cross-fibre direction for model %s',this.Name),'\lambda [-]','pressure [kPa]');
+%                 plot(h,lambda,markertf,'r');
+%                 axis(h,[0 2 0 150]);
+%                 legend(h,'Passive cross-fibre pressure','Location','NorthWest');
+%                 
+%                 dmarkertf = (lambda >= 1).*(f.b1cf./lambda.^3).*((f.d1cf-2)*lambda.^f.d1cf + 2);
+%                 h = pm.nextPlot('force_length_xfibre_deriv',sprintf('Derivative of Force-Length curve in cross-fibre direction for model %s',this.Name),'\lambda [-]','pressure [kPa]');
+%                 plot(h,lambda,dmarkertf,'r');
+%             end
+            
+            %% Passive force-length function for 100% tendon tissue
+            % Passive markert law
+            markertf = markertfun(lambda,mu(7),mu(8));
+            h = pm.nextPlot('force_length_tendon',...
+                'Effective force-length curve of tendon material (=passive)',...
+                '\lambda [-]','pressure [kPa]');
+            plot(h,lambda,markertf,'g');
+            
+            %% Effective force-length surface for muscle-tendon tissue
+            pmap = this.System.MuscleTendonParamMapFun;
+            % Sampled ratios
+            tmr = 0:.03:1;
+            %% Passive part
+            % Resulting markert law params
+            b1 = pmap(tmr,mu(5),mu(7));
+            d1 = pmap(tmr,mu(6),mu(8));
+            [LAM,TMR] = meshgrid(lambda,tmr);
+            B = repmat(b1',1,length(lambda));
+            D = repmat(d1',1,length(lambda));
+            markertf = markertfun(LAM,B,D);
+            
+            %% Active part
+            FL = (1-tmr)'*fl_eff;
+            
+            %% Plot dat stuff!
+            h = pm.nextPlot('force_length_muscle_tendon',...
+                'Effective force-length curve between muscle/tendon material',...
+                '\lambda [-]','muscle/tendon ratio [m=0,t=1]');
+            surfc(LAM,TMR,markertf+FL,'Parent',h,'EdgeColor','interp');
+            zlabel('pressure [kPa]');
+            zlim([0, 3*max(fl_eff(:))]);
                 
-                dmarkertf = (lambda >= 1).*(f.b1cf./lambda.^3).*((f.d1cf-2)*lambda.^f.d1cf + 2);
-                h = pm.nextPlot('force_length_xfibre_deriv',sprintf('Derivative of Force-Length curve in cross-fibre direction for model %s',this.Name),'\lambda [-]','pressure [kPa]');
-                plot(h,lambda,dmarkertf,'r');
-            end
             if nargin < 2
                 pm.done;
             end

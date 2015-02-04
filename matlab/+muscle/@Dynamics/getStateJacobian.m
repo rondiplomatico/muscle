@@ -91,6 +91,11 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
     uvwcomplete = zeros(2*dofs_pos + pgeo.NumNodes,1);
     uvwcomplete(sys.idx_uv_dof_glob) = uvwdof(1:sys.num_uvp_dof);
     uvwcomplete(sys.idx_uv_bc_glob) = sys.val_uv_bc_glob;
+    % Check if velocity bc's should be applied time-dependent
+    if ~isempty(this.velo_bc_fun)
+        uvwcomplete(sys.idx_v_bc_glob) = ...
+            this.velo_bc_fun(t)*uvwcomplete(sys.idx_v_bc_glob);
+    end
     
     for m = 1:num_elements
         elemidx_u = globidx_pos(:,:,m);

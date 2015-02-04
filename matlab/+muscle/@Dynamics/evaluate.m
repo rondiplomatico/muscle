@@ -51,12 +51,10 @@ function duvw  = evaluate(this, uvwdof, t)
     uvwcomplete = zeros(2*num_u_glob + pgeo.NumNodes,1);
     uvwcomplete(sys.idx_uv_dof_glob) = uvwdof(1:sys.num_uvp_dof);
     uvwcomplete(sys.idx_uv_bc_glob) = sys.val_uv_bc_glob;
-    % Check if velocity bc's should still be applied
-    if t > sys.ApplyVelocityBCUntil
-        uvwcomplete(sys.idx_v_bc_glob) = 0;
-    elseif t > sys.ApplyVelocityBCUntil*.99
-        fact = 1-(t-sys.ApplyVelocityBCUntil*.99)/(sys.ApplyVelocityBCUntil*.01);
-        uvwcomplete(sys.idx_v_bc_glob) = fact*uvwcomplete(sys.idx_v_bc_glob);
+    % Check if velocity bc's should be applied time-dependent
+    if ~isempty(this.velo_bc_fun)
+        uvwcomplete(sys.idx_v_bc_glob) = ...
+            this.velo_bc_fun(t)*uvwcomplete(sys.idx_v_bc_glob);
     end
     
     dofsperelem_u = geo.DofsPerElement;

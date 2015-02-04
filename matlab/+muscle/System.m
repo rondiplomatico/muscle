@@ -14,15 +14,6 @@ classdef System < models.BaseDynSystem
        
        % The global index of node pressures within uvw.
        idx_p_glob_elems;
-       
-       % Set this to a double value to apply velocity dirichlet conditions
-       % only up to a certain time (zero after that)
-       %
-       % This can be used to generate initial conditions with a deformed
-       % state
-       %
-       % @type double @default Inf
-       ApplyVelocityBCUntil = Inf;
     end
     
     properties(SetAccess=private)
@@ -55,7 +46,7 @@ classdef System < models.BaseDynSystem
        idx_u_bc_glob;
        val_u_bc; % [mm]
        
-       % Same
+       % Same for velocity
        bool_v_bc_nodes;
        idx_v_bc_glob;
        val_v_bc; % [mm/ms]
@@ -70,7 +61,7 @@ classdef System < models.BaseDynSystem
        % Used to join dofs with dirichlet values
        idx_uv_dof_glob;
        
-       % The indices of velocity components in the effective dof vector
+       % The indices of u,v,p components in the effective dof vector
        idx_u_dof_glob;
        num_u_dof;
        idx_v_dof_glob;
@@ -100,6 +91,9 @@ classdef System < models.BaseDynSystem
        
        %% Tendon stuff
        HasTendons = false;
+       % The function used to map between muscle (mi) and tendon (ma) parameter over
+       % [0,1] (v)
+       MuscleTendonParamMapFun = @(v,mi,ma)10.^(log10(mi) + v.*(log10(ma)-log10(mi)));
        MuscleTendonRatioGP = [];
        MuscleTendonRatioNodes = [];
        
@@ -187,14 +181,17 @@ classdef System < models.BaseDynSystem
             
             % anisotropic passive stiffness for muscle material
             % markert law d1
+            % #6
             this.addParam('muscle passive d1',[1 100],10);
             
             % anisotropic passive stiffness for tendon material
             % markert law b1
+            % #7
             this.addParam('tendon passive b1',[0 1],10);
             
             % anisotropic passive stiffness for tendon material
             % markert law d1
+            % #8
             this.addParam('tendon passive d1',[1 100],10);
             
             % isotropic muscle material
@@ -226,6 +223,10 @@ classdef System < models.BaseDynSystem
             % muscle optimal length lambda_opt
             % #14
             this.addParam('lambda_opt',[1 1.5],10);
+            
+            % force-length curve width parameter / general parameter 1
+            % #15
+            this.addParam('force-length p1 (width)',[1 1.5],10);
             
             %% Set system components
             % Core nonlinearity
@@ -358,8 +359,11 @@ classdef System < models.BaseDynSystem
             uvwall(this.idx_uv_bc_glob,:) = repmat(this.val_uv_bc_glob,1,size(uvw,2));
             
             sys = this.Model.System;
-            zerovel = t > sys.ApplyVelocityBCUntil;
-            uvwall(sys.idx_v_bc_glob,zerovel) = 0;
+            mc = this.Model.Config;
+            if ~isempty(mc.VelocityBCTimeFun)
+                f = mc.VelocityBCTimeFun.getFunction;
+                uvwall(sys.idx_v_bc_glob,:) = bsxfun(@times, uvwall(sys.idx_v_bc_glob,:), f(t));
+            end
         end
         
     end
@@ -721,15 +725,15 @@ classdef System < models.BaseDynSystem
                 tmr(:) = mu(10);
                 this.MuscleTendonParamc01 = tmr;
             else
-                logfun = @(v,mi,ma)10.^(log10(mi) + v*(log10(ma)-log10(mi)));
+                f = this.MuscleTendonParamMapFun;
                 % Log-interpolated Markert parameter b1
-                this.MuscleTendonParamB1 = logfun(tmr,mu(5),mu(7));
+                this.MuscleTendonParamB1 = f(tmr,mu(5),mu(7));
                 % Log-interpolated Markert parameter d1
-                this.MuscleTendonParamD1 = logfun(tmr,mu(6),mu(8));
+                this.MuscleTendonParamD1 = f(tmr,mu(6),mu(8));
                 % Log-interpolated MR c10
-                this.MuscleTendonParamc10 = logfun(tmr,mu(9),mu(11));
+                this.MuscleTendonParamc10 = f(tmr,mu(9),mu(11));
                 % Log-interpolated MR c01
-                this.MuscleTendonParamc01 = logfun(tmr,mu(10),mu(12));
+                this.MuscleTendonParamc01 = f(tmr,mu(10),mu(12));
             end
         end
     end

@@ -25,7 +25,7 @@ classdef ExperimentRunner < handle
             this.Config = config;
         end
         
-        function out = runExperimentConfig(this, nr, mu)
+        function [out, y] = runExperimentConfig(this, nr, mu)
             % Runs a single experiment configuration.
             % Coded here for convenience only.
             m = this.Model;

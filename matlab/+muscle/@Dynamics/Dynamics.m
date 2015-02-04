@@ -2,53 +2,24 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     % This class implements the nonlinear continuum mechanics as described
     % in @cite Heidlauf2013 .
     
-    properties       
-       % Cross-fibre markert part
-       b1cf = 53163.72204148964; % [kPa] = [N/mm²]
-       d1cf = 0.014991843974911; % [-]
-       
-       % The activation of the muscle at time t
-       %
-       % @type function_handle @default @(t)0
-       alpha = @(t)0; % [-]
-       
-       % The force-length function as function handle
-       %
-       % This function describes the force-length relation for active
-       % force.
-       %
-       % The alternative function using gaussian-type shapes is from
-       % @cite Guenther2007
-       %
-       % @type function_handle @default Quadratic like in @cite
-       % Heidlauf2013
-       %ForceLengthFun = @(ratio)(-6.25*ratio.*ratio + 12.5*ratio - 5.25) .* (ratio >= .6) .* (ratio <= 1.4);
-       % Alternative
-       ForceLengthFun = @(ratio)(ratio<=1).*exp(-((1-ratio)/.57).^4) + (ratio>1).*exp(-((ratio-1)/.14).^3);
-       
-       % The derivative of the force-length function as function handle
-       %
-       % This function describes the derivative of the force-length
-       % relation for active force.
-       %
-       % The alternative function using gaussian-type shapes is from
-       % @cite Guenther2007
-       %
-       % @type function_handle @default Quadratic like in @cite
-       % Heidlauf2013
-       %ForceLengthFunDeriv = @(ratio)(12.5*ratio.*(1-ratio)) .* (ratio >= .6) .* (ratio <= 1.4);
-       % Alternative
-        ForceLengthFunDeriv = @(ratio)(ratio<=1).*((1/.57)*(((1-ratio)/.57).^3).*exp(-((1-ratio)/.57).^4)) ...
-        - (ratio > 1) .* ((1/.14) .* (((ratio-1)/.14).^2) .* exp(-((ratio-1)/.14).^3));
-       
-       %% Unassembled stuff
-       ComputeUnassembled = false;
-       % Sigma assembly matrix
-       Sigma;
-       % The indices of any dirichlet value in the unassembled vector duvw
-       idx_uv_bc_glob_unass;
-       num_uvp_dof_unass;
-       idx_vp_dof_unass_elems;
+    properties
+        % Cross-fibre markert part
+        b1cf = 53163.72204148964; % [kPa] = [N/mm²]
+        d1cf = 0.014991843974911; % [-]
+        
+        % The activation of the muscle at time t
+        %
+        % @type function_handle @default @(t)0
+        alpha = @(t)0; % [-]
+        
+        %% Unassembled stuff
+        ComputeUnassembled = false;
+        % Sigma assembly matrix
+        Sigma;
+        % The indices of any dirichlet value in the unassembled vector duvw
+        idx_uv_bc_glob_unass;
+        num_uvp_dof_unass;
+        idx_vp_dof_unass_elems;
     end
     
     properties(SetAccess=private)
@@ -61,11 +32,14 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         lambda_dot;
         
         nfibres;
+        
+        ForceLengthFun;
+        ForceLengthFunDeriv;
     end
     
     properties(Transient, SetAccess=private)
         % Prepared arguments for APExpansion
-%         muprep;
+        %         muprep;
         
         LastBCResiduals;
     end
@@ -85,6 +59,9 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         
         % Cached value for cross fibre computations (speed)
         crossfibres = false;
+        
+        % Cached velocity bc time-dependent function
+        velo_bc_fun = [];
     end
     
     methods
@@ -92,10 +69,10 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             this = this@dscomponents.ACompEvalCoreFun(sys);
             
             %% Load AP expansion
-%             d = fileparts(which('muscle.Dynamics'));
-%             s = load(fullfile(d,'AP'));
-%             s.kexp.Ma = s.kexp.Ma(1,:);
-%             this.APExp = s.kexp;
+            %             d = fileparts(which('muscle.Dynamics'));
+            %             s = load(fullfile(d,'AP'));
+            %             s.kexp.Ma = s.kexp.Ma(1,:);
+            %             this.APExp = s.kexp;
         end
         
         function configUpdated(this)
@@ -113,6 +90,40 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             end
         end
         
+        function setForceLengthFun(this, mu)
+            % Provided here only for convenient outside access
+            %
+            % The force-length function as function handle
+            %
+            % This function describes the force-length relation for active
+            % force. There are currently two possibilites, exponential from
+            % @cite Guenther2007 or quadratic like in @cite Heidlauf2013.
+            % We use the exponential form as it is continuous everywhere.
+            %
+            %
+            % Quadratic
+            % Fun @(ratio)(-6.25*ratio.*ratio + 12.5*ratio - 5.25) .* (ratio >= .6) .* (ratio <= 1.4);
+            % Deriv @(ratio)(12.5*ratio.*(1-ratio)) .* (ratio >= .6) .* (ratio <= 1.4);
+            %
+            % Exponential
+            % Set to have one parameter: Width. The ascending part of the
+            % force-length fun is assumed to be steeper (@cite Gordon1966
+            % ), so the width is set to a proportion of the parameter on
+            % that side.
+            lexpo = 4; % 4
+            rexpo = 3; % 3
+            lw = mu(15); % orig .57
+            rw = mu(15)*1.3; % orig .14
+            this.ForceLengthFun = @(ratio)(ratio<=1).*exp(-((1-ratio)/lw).^lexpo) ...
+                + (ratio>1).*exp(-((ratio-1)/rw).^rexpo);
+            this.ForceLengthFunDeriv = @(ratio)(ratio<=1).*((1/lw)*(((1-ratio)/lw).^(lexpo-1)).*exp(-((1-ratio)/lw).^lexpo)) ...
+                - (ratio > 1) .* ((1/rw) .* (((ratio-1)/rw).^(rexpo-1)) .* exp(-((ratio-1)/rw).^rexpo));
+%             p = [0.0589   -0.5838    2.4970   -6.0189    8.9398   -8.3694    4.8087   -1.5406    0.2093]*1e3;
+%             this.ForceLengthFun = @(ratio)polyval(p,ratio) .* (ratio > .61 & ratio < 1.55);
+%             dp = (8:-1:1) .* p(1:end-1);
+%             this.ForceLengthFunDeriv = @(ratio)polyval(dp,ratio).* (ratio > .61 & ratio < 1.55);
+        end
+        
         function prepareSimulation(this, mu)
             prepareSimulation@dscomponents.ACompEvalCoreFun(this, mu);
             sys = this.System;
@@ -122,6 +133,13 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             end
             % Returns an all zero function if mu(2) is less or equal to zero!
             this.alpha = mc.getAlphaRamp(mu(2));
+            
+            % Prepare force-length fun
+            this.setForceLengthFun(mu);
+            
+            if ~isempty(mc.VelocityBCTimeFun)
+                this.velo_bc_fun = mc.VelocityBCTimeFun.getFunction;
+            end
             
             % Cache stuff
             this.usemassinv = sys.UseDirectMassInversion;
@@ -148,7 +166,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             end
             fx = fx(this.PointSets{nr},:);
         end
-
+        
         function fx = evaluateComponentSetMulti(this, nr, x, t, mu)
             % Computes the full component functions of the given point set.
             %
@@ -208,7 +226,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             this.ComputeUnassembled = value;
         end
     end
- 
+    
     methods(Access=protected)
         function fx = evaluateComponents(this, pts, ends, ~, ~, x, ~)
             % This is the template method that actually evaluates the components at given points
@@ -291,7 +309,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             [i, ~] = find(mc.PosFE.Sigma);
             I = [3*(i'-1)+1; 3*(i'-1)+2; 3*(i'-1)+3];
             
-            % Pressure part   
+            % Pressure part
             pgeo = mc.PressFE.Geometry;
             [i, ~] = find(mc.PressFE.Sigma);
             I = [I(:); outsize+i];

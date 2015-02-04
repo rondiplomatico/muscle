@@ -56,6 +56,13 @@ classdef DebugConfig < muscle.AModelConfig
             geo = geometry.Cube8Node(pts, cubes);
             this = this@muscle.AModelConfig(geo.toCube27Node);
             this.Version = version;
+            
+            switch this.Version
+                case {4,5,6}
+                    this.VelocityBCTimeFun = tools.ConstantUntil(10);
+                case {7,8,9}
+                    this.VelocityBCTimeFun = tools.ConstantUntil(9.5);
+            end
         end
         
         function configureModel(this, m)
@@ -114,7 +121,6 @@ classdef DebugConfig < muscle.AModelConfig
                     - (ratio > 1) .* ((1/.14) .* (((ratio-1)/.14).^2) .* exp(-((ratio-1)/.14).^3));
                 m.T = 12;
                 m.dt = .2;
-                sys.ApplyVelocityBCUntil = 10;
             case {7,8,9}
                 %% Using the Material configuration of Heidlauf
                 m.DefaultMu(5) = 0.00355439810963035; % b1 [kPa]
@@ -124,7 +130,6 @@ classdef DebugConfig < muscle.AModelConfig
                 
                 m.T = 15;
                 m.dt = .1;
-                sys.ApplyVelocityBCUntil = 9.5;
             case 10
                 f.alpha = @(t)0;
                 m.ODESolver.RelTol = .001;

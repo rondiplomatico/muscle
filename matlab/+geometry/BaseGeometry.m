@@ -142,6 +142,13 @@ classdef BaseGeometry < handle
             error('not implemented');
         end
         
+        function copy = scale(this, factor)
+            mc = metaclass(this);
+            pts = this.Nodes * factor;
+            cubes = this.Elements;
+            eval(sprintf('copy = %s(pts,cubes);',mc.Name));
+        end
+        
         function reverseAxis(this, dim)
             this.reverseElementAxis(dim, 1:this.NumElements);
         end

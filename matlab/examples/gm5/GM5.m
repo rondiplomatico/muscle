@@ -34,6 +34,8 @@ classdef GM5 < muscle.AModelConfig
             
 %             this.a0CoordinateSystem = 'reference';
             this.a0CoordinateSystem = 'master';
+            
+            this.VelocityBCTimeFun = tools.ConstantUntil(20);
         end
         
         function configureModel(this, m)
@@ -57,8 +59,6 @@ classdef GM5 < muscle.AModelConfig
             f.ForceLengthFun = @(ratio)(ratio<=1).*exp(-((1-ratio)/.57).^4) + (ratio>1).*exp(-((ratio-1)/.14).^3);
             f.ForceLengthFunDeriv = @(ratio)(ratio<=1).*((1/.57)*(((1-ratio)/.57).^3).*exp(-((1-ratio)/.57).^4)) ...
                  - (ratio > 1) .* ((1/.14) .* (((ratio-1)/.14).^2) .* exp(-((ratio-1)/.14).^3));
-            
-            m.System.ApplyVelocityBCUntil = 20;
             
             m.T = 100;
             m.dt = 2;

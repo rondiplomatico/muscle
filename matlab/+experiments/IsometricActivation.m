@@ -49,6 +49,8 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                 2.1067	-0.061
                 10.3544	0.2547
                 1.065	-0.0568]*1000;
+            
+            this.VelocityBCTimeFun = tools.ConstantUntil(this.PositioningTime,.01);
         end
         
         function configureModel(this, m)
@@ -59,16 +61,14 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             m.T = this.PositioningTime + this.RelaxTime + this.ActivationTime;
             m.dt = m.T / 300;
             
-            m.DefaultMu(13) = 250; % [kPa]
-            m.DefaultMu(14) = 1.3; % lambda_opt
+            m.DefaultMu(13) = 300; % [kPa]
+            m.DefaultMu(14) = 1.1; % lambda_opt, educated guess from data
             
             % Set to activation within 10ms
             m.DefaultMu(2) = 10;
             % The f function calls getAlphaRamp with mu(2), this will set
             % the default offset time correctly
             this.ActivationRampOffset = this.PositioningTime + this.RelaxTime;
-            
-            m.System.ApplyVelocityBCUntil = this.PositioningTime;
 
             % IMPORTANT! Leave off, as the cache only recognized
             % parameter/input changes but not different BCs!
@@ -223,7 +223,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                 m = muscle.Model(c);
                 e = experiments.ExperimentRunner(m);
                 mus = repmat(m.DefaultMu,1,4);
-                mus(13,:) = 150:50:300;
+                mus(13,:) = 300:50:450;
                 o = e.runExperiments(mus);
                 save(fi,'m','o','c','mus');
             end

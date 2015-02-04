@@ -51,6 +51,10 @@ classdef QuickRelease < muscle.AModelConfig
             this = this@muscle.AModelConfig(geo);
             this.ICCompMode = iccomp;
             this.GeoNr = geonr;
+            
+            if this.ICCompMode
+                this.VelocityBCTimeFun = tools.ConstantUntil(this.icMovetime);
+            end
         end
         
         function configureModel(this, m)
@@ -96,7 +100,6 @@ classdef QuickRelease < muscle.AModelConfig
 %                 f.alpha = this.getAlphaRamp(this.icAlphaRampTime, alpha);
                 m.T = max(this.icMovetime, this.icAlphaRampTime) + this.icRelaxTime;
                 m.dt = m.T / 300;
-                m.System.ApplyVelocityBCUntil = this.icMovetime;
             else
                 m.T = 20;
                 m.dt = .1;
