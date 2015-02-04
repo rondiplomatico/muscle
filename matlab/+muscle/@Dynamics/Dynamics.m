@@ -116,8 +116,16 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             rw = mu(15)*1.3; % orig .14
             this.ForceLengthFun = @(ratio)(ratio<=1).*exp(-((1-ratio)/lw).^lexpo) ...
                 + (ratio>1).*exp(-((ratio-1)/rw).^rexpo);
-            this.ForceLengthFunDeriv = @(ratio)(ratio<=1).*((1/lw)*(((1-ratio)/lw).^(lexpo-1)).*exp(-((1-ratio)/lw).^lexpo)) ...
-                - (ratio > 1) .* ((1/rw) .* (((ratio-1)/rw).^(rexpo-1)) .* exp(-((ratio-1)/rw).^rexpo));
+            this.ForceLengthFunDeriv = @(ratio)(ratio<=1).*((lexpo*exp(-(-(ratio - 1)/lw)^lexpo)*(-(ratio - 1)/lw)^(lexpo - 1))/lw) ...
+                + (ratio > 1) .* (-(rexpo*exp(-((ratio - 1)/rw)^rexpo)*((ratio - 1)/rw)^(rexpo - 1))/rw);
+            
+            % Steps to produce derivative
+%             lw = sym('lw'); rw = sym('rw'); lexpo = sym('lexpo'); rexpo = sym('rexpo'); ratio = sym('ratio');
+%             f(ratio) = exp(-((1-ratio)/lw).^lexpo);
+%             df = diff(f)
+%             f2(ratio) = exp(-((ratio-1)/rw).^rexpo);
+%             df2 = diff(f2)
+            
 %             p = [0.0589   -0.5838    2.4970   -6.0189    8.9398   -8.3694    4.8087   -1.5406    0.2093]*1e3;
 %             this.ForceLengthFun = @(ratio)polyval(p,ratio) .* (ratio > .61 & ratio < 1.55);
 %             dp = (8:-1:1) .* p(1:end-1);

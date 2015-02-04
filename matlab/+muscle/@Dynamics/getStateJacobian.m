@@ -140,7 +140,9 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
 
                 ratio = lambdaf/lfopt;
                 fl = this.ForceLengthFun(ratio);
-                dfl = this.ForceLengthFunDeriv(ratio);
+                % Need to divide by lfopt as the derivative is w.r.t
+                % lambdaf
+                dfl = this.ForceLengthFunDeriv(ratio)/lfopt;
                 alpha = alphaconst;
                 if havefibretypes
                     alpha = ftwelem(gp);
