@@ -151,39 +151,8 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
     end
     
     methods(Static)
-        function runExperiments
-            fi = fullfile(experiments.IsometricActivation.OutputDir,'model.mat');
-            if exist(fi,'file') == 2
-                load(fi);
-            else
-                c = experiments.IsometricActivation;
-                m = muscle.Model(c);
-                e = experiments.ExperimentRunner(m);
-                o = e.runExperiment;
-                save(fi,'m','o','c');
-            end
-            
-            sp = experiments.IsometricActivation.ExperimentalStretchMillimeters;
-            [sp,idx] = sort(sp);
-            pm = PlotManager;
-            pm.LeaveOpen = true;
-            ax = pm.nextPlot('isomet_res','Isometric simulation results','stretch','forces [mN]');
-            plot(ax,sp,o(idx,1)-o(idx,2),'r',sp,o(idx,2),'b');
-            hold(ax,'on');
-            tv = c.TargetOutputValues(idx,:);
-            plot(ax,sp,tv(:,1)-tv(:,2),'rx',sp,tv(:,2),'bx');
-            legend('Active force','Passive force','Experiment','Experiment');
-            %% Set label
-            % compute percent
-            w = c.PosFE.Geometry.Width;
-            sp_perc = (((w+sp)./w)-1)*100;
-            lab = sprintf('%dmm (%g%%)|',reshape([sp; sp_perc],1,[]));
-            set(ax,'XTick',sp,'XTickLabel', lab(1:end-1));
-            
-            pm.done;
-        end
         
-        function runPMAXExperiments(version)
+        function runExperiments(version)
             % Runs the series of isometric tests for different Pmax values.
             % Several variants can be chosen:
             %
@@ -215,6 +184,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                     name = 'pmax_fixed_xzfibre';
                     cap = 'Fixed setup with xz-diagonal fibres';
             end
+            name = [name '_linflfun'];
             fi = fullfile(experiments.IsometricActivation.OutputDir,['model_' name '.mat']);
             if exist(fi,'file') == 2
                 load(fi);
@@ -222,10 +192,11 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                 c = experiments.IsometricActivation(1,version);
                 m = muscle.Model(c);
                 e = experiments.ExperimentRunner(m);
-                mus = repmat(m.DefaultMu,1,4);
-                mus(13,:) = 300:50:450;
-                o = e.runExperiments(mus);
-                save(fi,'m','o','c','mus');
+                e.RunParallel = true;
+                mus = repmat(m.DefaultMu,1,5);
+                mus(13,:) = 320:20:400;
+                [o, ct] = e.runExperiments(mus);
+                save(fi,'m','o','c','mus','ct');
             end
             
             sp = experiments.IsometricActivation.ExperimentalStretchMillimeters;
@@ -253,6 +224,8 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             disp(active);
             disp('Ratios:');
             disp(bsxfun(@rdivide,active,active(1,:)));
+            disp('Computation times [s]:');
+            disp(ct);
             
             pm.savePlots(experiments.IsometricActivation.ImgDir,'Format',{'eps','jpg'});
         end

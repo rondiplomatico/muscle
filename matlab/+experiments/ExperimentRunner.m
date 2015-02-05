@@ -25,7 +25,7 @@ classdef ExperimentRunner < handle
             this.Config = config;
         end
         
-        function [out, y] = runExperimentConfig(this, nr, mu)
+        function [out, y, ct] = runExperimentConfig(this, nr, mu)
             % Runs a single experiment configuration.
             % Coded here for convenience only.
             m = this.Model;
@@ -41,9 +41,11 @@ classdef ExperimentRunner < handle
             out = NaN(1,c.NumOutputs);
 %             if this.RunParallel
                 try
-                    [t,y] = m.simulate(mu);
+                    [t,y,ct] = m.simulate(mu);
                     % Get output of interest
+                    tic;
                     out = c.getOutputOfInterest(t,y);
+                    ct = ct + toc;
                 catch ME
                     % Set to NaN to notify there's something wrong
                     out(:) = NaN;
@@ -56,19 +58,20 @@ classdef ExperimentRunner < handle
 %             end
         end
         
-        function out = runExperiment(this, mu)
+        function [out, ct] = runExperiment(this, mu)
             % Runs the complete set of experiments for a given parameter mu
             if nargin < 2
                 mu = this.Model.DefaultMu;
             end
             c = this.Config;
             out = zeros(c.NumConfigurations,c.NumOutputs);
+            ct = zeros(c.NumConfigurations,1);
             % Run all the settings!
             if ~this.multipleexperiments
                 pi = ProcessIndicator('Running experiment configurations',c.NumConfigurations);
             end
             for nr = 1:c.NumConfigurations
-                out(nr,:) = this.runExperimentConfig(nr, mu);
+                [out(nr,:), ~, ct(nr)] = this.runExperimentConfig(nr, mu);
                 if ~this.multipleexperiments
                     pi.step;
                 end
@@ -78,11 +81,12 @@ classdef ExperimentRunner < handle
             end
         end
         
-        function allout = runExperiments(this, mus)
+        function [allout, allct] = runExperiments(this, mus)
             % Runs the experiments in parallel for all given mu values
             c = this.Config;
             nex = size(mus,2);
             allout = zeros(c.NumConfigurations,c.NumOutputs,nex);
+            allct = zeros(c.NumConfigurations,nex);
             this.multipleexperiments = true;
             
             if this.RunParallel
@@ -92,7 +96,7 @@ classdef ExperimentRunner < handle
                     closeafterrun = true;
                 end
                 parfor k=1:nex
-                    allout(:,:,k) = this.runExperiment(mus(:,k));%#ok
+                    [allout(:,:,k), allct(:,k)] = this.runExperiment(mus(:,k));%#ok
                 end
                 if closeafterrun
                     matlabpool close;
@@ -101,7 +105,7 @@ classdef ExperimentRunner < handle
                 pi = ProcessIndicator('Running experiment configurations (%d each) for %d parameters',...
                     nex,false,c.NumConfigurations,nex);
                 for k=1:nex
-                    allout(:,:,k) = this.runExperiment(mus(:,k));
+                    [allout(:,:,k), allct(:,k)] = this.runExperiment(mus(:,k));
                     pi.step;
                 end
                 pi.stop;

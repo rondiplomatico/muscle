@@ -225,18 +225,28 @@ classdef MusclePlotter < handle
             end
 
             %% a0 fibres
-            if sys.HasFibres && opts.Fibres
+            fibres = sys.HasFibres && opts.Fibres;
+            doI1 = any(opts.Invariants == 1);
+            if fibres || ~isempty(opts.Invariants)
                 for m = 1:geo.NumElements
                     u = y_dofs(1:pd.vstart-1);
                     u = u(sys.idx_u_glob_elems(:,:,m));
-
                     gps = u*pd.Ngp;
-                    anull = u*sys.dNa0(:,:,m);
-                    quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'.','Color','w');
+                    
+                    if fibres
+                        anull = u*sys.dNa0(:,:,m);
+                        quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'.','Color','w');
+                    end
                     
                     %% tendon ratio
                     if ~isempty(pd.gpcol)
                         scatter3(h,gps(1,:),gps(2,:),gps(3,:),1,pd.gpcol(:,:,m),'.','SizeData',30);
+                    end
+                    
+                    %% Invariants
+                    if doI1
+                        values = sprintfc('I_1=%3.3g',pd.I1(:,m,ts));
+                        text(gps(1,:),gps(2,:),gps(3,:),values,'Parent',h)
                     end
                 end
             end
@@ -305,6 +315,31 @@ classdef MusclePlotter < handle
         %                 light('Position',[1 1 1],'Style','infinite','Parent',h);
                 pd.musclecol = [0.854688, 0.201563, 0.217188];
             end
+            
+            %% Show invariants
+            if ~isempty(opts.Invariants)
+                nt = length(t);
+                doI1 = any(opts.Invariants == 1);
+                if doI1
+                    pd.I1 = zeros(dfem.GaussPointsPerElem,geo.NumElements,nt);
+                end
+                for m = 1:geo.NumElements
+                    for gp = 1:dfem.GaussPointsPerElem
+                        pos = 3*(gp-1)+1:3*gp;
+                        dtn = dfem.transgrad(:,pos,m);        
+                        elemidx_u = sys.idx_u_glob_elems(:,:,m); 
+                        for ts = 1:nt
+                            % Deformation gradient
+                            yts = pd.yfull(:,ts) ;
+                            F = yts(elemidx_u) * dtn;
+                            C = F'*F;
+                            if doI1
+                                pd.I1(gp,m,ts) = C(1,1)+C(2,2)+C(3,3);
+                            end
+                        end
+                    end
+                end
+            end
         end
         
         function opts = parsePlotArgs(this, args)
@@ -321,6 +356,7 @@ classdef MusclePlotter < handle
             i.addParamValue('DF',[]);
             i.addParamValue('NF',[]);
             i.addParamValue('F',[]);
+            i.addParamValue('Invariants',[]);
             i.addParamValue('Pause',.01);
             
             args = [this.System.Model.PlotterDefaultArgs args];
@@ -360,7 +396,7 @@ classdef MusclePlotter < handle
             pd.residuals = zeros(size(pd.residuals_pos));
 
             %% Fibres
-            if sys.HasFibres
+            if sys.HasFibres || ~isempty(opts.Invariants)
                 pd.Ngp = dfem.N(dfem.GaussPoints);
             end
             

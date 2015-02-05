@@ -17,8 +17,6 @@ classdef Cube2ForceBC < muscle.AModelConfig
             os = m.ODESolver;
             os.RelTol = .0001;
             os.AbsTol = .05;
-            % Ramp up the external pressure
-            m.System.Inputs{1} = this.getAlphaRamp(1,1);
         end
         
         function P = getBoundaryPressure(~, elemidx, faceidx)
@@ -35,6 +33,10 @@ classdef Cube2ForceBC < muscle.AModelConfig
             if elemidx == 1 && faceidx == 5
                 P = -.4;
             end
+        end
+        
+        function u = getInputs(this)
+            u = {this.getAlphaRamp(1,1)};
         end
     end
     
