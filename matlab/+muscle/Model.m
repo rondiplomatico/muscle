@@ -136,7 +136,8 @@ classdef Model < models.BaseFullModel
                 end
             end
             f = this.System.f;
-            f.setForceLengthFun(mu);
+            this.System.prepareSimulation(mu,this.DefaultInput);
+            this.Config.setForceLengthFun(f);
             
             markertfun = @(lam,b,d)max(0,(b./lam.^2).*(lam.^d-1));
             

@@ -2,8 +2,6 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
     % Implements the isometric contraction experiment
     
     properties(Constant)
-        OutputDir = fullfile(fileparts(which(mfilename('class'))),'isometricactivation');
-        ImgDir = fullfile(fileparts(which(mfilename('class'))),'isometricactivation','img');
         ExperimentalStretchMillimeters = [0 1 -1 2 -2 3 -4 4 -5 5 -6];
     end
     
@@ -23,17 +21,11 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
     end
     
     methods
-        function this = IsometricActivation(geonr, internalconfig)
-            Utils.ensureDir(experiments.IsometricActivation.OutputDir);
-            if nargin < 2
-                internalconfig = 1;
-                if nargin < 1
-                    geonr = 1;
-                end
-            end
-            this = this@experiments.AExperimentModelConfig;
-            this.GeoNr = geonr;
-            this.internalconfig = internalconfig;
+        function this = IsometricActivation(varargin)
+            this = this@experiments.AExperimentModelConfig(varargin{:});
+            this.addOption('BC',1);
+            this.init;
+            
             this.NumOutputs = 2;
             this.NumConfigurations = 11;
             % Data from GM5 muscle, originally in [N], here transferred to
@@ -102,11 +94,19 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
     
     methods(Access=protected)
         
+        function geo = getGeometry(this)
+            if this.Options.GeoNr == 1
+                [pts, cubes] = geometry.Cube27Node.DemoGrid(linspace(0,25,4),[0 7],[0 4]);
+                geo = geometry.Cube27Node(pts,cubes);
+            end
+        end
+        
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             geo = this.PosFE.Geometry;
-            switch this.GeoNr
+            o = this.Options;
+            switch o.GeoNr
                 case 1
-                    switch this.internalconfig
+                    switch o.BC
                         case 1
                             % Fix front in x direction, center point in all
                             % directions
@@ -127,7 +127,8 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             
             % Get difference in total width using the total stretch per configuration
             velo = this.ExperimentalStretchMillimeters(this.CurrentConfigNr)/this.PositioningTime;
-            switch this.GeoNr
+            o = this.Options;
+            switch o.GeoNr
                 case 1
                     velo_dir(1,geo.Elements(3,geo.MasterFaces(2,:))) = true;
                     velo_dir_val(velo_dir) = velo;
@@ -136,9 +137,10 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
         end
         
         function anull = seta0(this, anull)
-            switch this.GeoNr
+            o = this.Options;
+            switch o.GeoNr
                 case 1
-                    if this.internalconfig == 3
+                    if o.BC == 3
                         % Fibres in xz direction
                         anull([1 3],:,:) = 1;
                     else
@@ -152,63 +154,57 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
     
     methods(Static)
         
-        function runExperiments(version)
+        function runExperiments()
             % Runs the series of isometric tests for different Pmax values.
             % Several variants can be chosen:
             %
-            %% Geometry 1:
-            % Version=1: Straight fibres in x direction, "loose" ends that
+            
+            %% Mus 1 - Only PMAX
+%             range = 320:20:400;
+%             idx = 13;
+%             mustr = sprintf('-%d',range);
+%             prefix = 'pmax';
+            
+            %% Mus 1 - Only lambda_opt
+            range = .8:.1:1.3;
+            idx = 14;
+            mustr = sprintf('-%g',range);
+            prefix = 'lamopt';
+            
+            %% Geoconfig 1
+            % Straight fibres in x direction, "loose" ends that
             % allow the geometry to expand when compressed
-            % Version=2: Straight fibres in x direction, but completely
+%             c = experiments.IsometricActivation('Tag',prefix,'BC',1,'FL',1);
+%             cap = 'Movable setup with x-aligned fibres';
+            
+            %% Geoconfig 2
+            % Straight fibres in x direction, but completely
             % fixed ends to ensure comparability with version 3
-            % Version=3: Diagonal fibres in xz direction with completely
+            c = experiments.IsometricActivation('Tag',[prefix '_fixed'],'BC',2,'FL',1);
+            cap = 'Fixed setup with x-aligned fibres';
+             
+            %% Geoconfig 3
+            % Diagonal fibres in xz direction with completely
             % fixed ends
-            %
-            %% Geometry 2:
-            % -
-            if nargin < 1
-                version = 1;
-            end
+%             c = experiments.IsometricActivation('Tag',[prefix '_fixed_xzfibre'],'BC',3,'FL',1);
+%             cap = 'Fixed setup with xz-diagonal fibres';
             
-            switch version
-                case 1
-                    % "Normal" fibre direction only x
-                    name = 'pmax';
-                    cap = 'Movable setup with x-aligned fibres';
-                case 2
-                    % "Normal" fibre direction only x
-                    name = 'pmax_fixed';
-                    cap = 'Fixed setup with x-aligned fibres';
-                case 3
-                    % Requires the fibre direction to be xz
-                    name = 'pmax_fixed_xzfibre';
-                    cap = 'Fixed setup with xz-diagonal fibres';
-            end
-            name = [name '_linflfun'];
-            fi = fullfile(experiments.IsometricActivation.OutputDir,['model_' name '.mat']);
-            if exist(fi,'file') == 2
-                load(fi);
-            else
-                c = experiments.IsometricActivation(1,version);
-                m = muscle.Model(c);
-                e = experiments.ExperimentRunner(m);
-                e.RunParallel = true;
-                mus = repmat(m.DefaultMu,1,5);
-                mus(13,:) = 320:20:400;
-                [o, ct] = e.runExperiments(mus);
-                save(fi,'m','o','c','mus','ct');
-            end
+            m = muscle.Model(c);
+            e = experiments.ExperimentRunner(m);
+            mus = repmat(m.DefaultMu,1,size(range,2));
+            mus(idx,:) = range;
+            data = e.runExperimentsCached(mus);
             
-            sp = experiments.IsometricActivation.ExperimentalStretchMillimeters;
+            sp = c.ExperimentalStretchMillimeters;
             [sp,idx] = sort(sp);
-            passive = o(:,idx,2);
-            active = o(:,idx,1)-passive;
+            passive = data.o(:,idx,2);
+            active = data.o(:,idx,1)-passive;
             
             pm = PlotManager;
             pm.LeaveOpen = true;
             pm.UseFileTypeFolders = false;
-            ax = pm.nextPlot(['isomet_' name],...
-                ['Pmax' sprintf('-%d',mus(13,:)) ' experiment: ' cap],'stretch','forces [mN]');
+            ax = pm.nextPlot(['isomet_' c.Options.Tag],...
+                ['Pmax' mustr ' experiment: ' cap],'stretch','forces [mN]');
             plot(ax,sp,active','r',sp,passive','b');
             hold(ax,'on');
             tv = c.TargetOutputValues(idx,:);
@@ -225,9 +221,9 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             disp('Ratios:');
             disp(bsxfun(@rdivide,active,active(1,:)));
             disp('Computation times [s]:');
-            disp(ct);
+            disp(data.ct);
             
-            pm.savePlots(experiments.IsometricActivation.ImgDir,'Format',{'eps','jpg'});
+            pm.savePlots(c.ImgDir,'Format',{'eps','jpg'});
         end
     end
     

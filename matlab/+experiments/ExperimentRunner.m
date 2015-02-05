@@ -11,7 +11,7 @@ classdef ExperimentRunner < handle
         Model;
     end
     
-    properties(Access=private, Transient)
+    properties(Access=private)
         multipleexperiments = false;
     end
     
@@ -23,18 +23,22 @@ classdef ExperimentRunner < handle
                 error('"config" parameter must be a AExperimentModelConfig');
             end
             this.Config = config;
+            
+            % Do parallel if parallel toolbox is around!
+            this.RunParallel = exist('matlabpool','file') == 2;
         end
         
         function [out, y, ct] = runExperimentConfig(this, nr, mu)
             % Runs a single experiment configuration.
             % Coded here for convenience only.
+            
             m = this.Model;
             if nargin < 3
                 mu = m.DefaultMu;
             end
             c = this.Config;
             % Apply configuration set within ModelConfig
-            c.setConfiguration(nr);
+            c.CurrentConfigNr = nr;
             % Update the model (precomputations)
             m.setConfig(c);
             % Run simulation
@@ -67,17 +71,32 @@ classdef ExperimentRunner < handle
             out = zeros(c.NumConfigurations,c.NumOutputs);
             ct = zeros(c.NumConfigurations,1);
             % Run all the settings!
-            if ~this.multipleexperiments
-                pi = ProcessIndicator('Running experiment configurations',c.NumConfigurations);
-            end
-            for nr = 1:c.NumConfigurations
-                [out(nr,:), ~, ct(nr)] = this.runExperimentConfig(nr, mu);
-                if ~this.multipleexperiments
-                    pi.step;
+            if this.RunParallel && ~this.multipleexperiments
+                fprintf('Running %d experiment configurations in parallel...',c.NumConfigurations);
+                if matlabpool('size') == 0
+                    matlabpool open;
+                    closeafterrun = true;
                 end
-            end
-            if ~this.multipleexperiments
-                pi.stop;
+                parfor nr = 1:c.NumConfigurations
+                    [out(nr,:), ~, ct(nr)] = this.runExperimentConfig(nr, mu);%#ok
+                end
+                if closeafterrun
+                    matlabpool close;
+                end
+                fprintf('done');
+            else
+                if ~this.multipleexperiments
+                    pi = ProcessIndicator('Running experiment configurations',c.NumConfigurations);
+                end
+                for nr = 1:c.NumConfigurations
+                    [out(nr,:), ~, ct(nr)] = this.runExperimentConfig(nr, mu);
+                    if ~this.multipleexperiments
+                        pi.step;
+                    end
+                end
+                if ~this.multipleexperiments
+                    pi.stop;
+                end
             end
         end
         
@@ -95,9 +114,11 @@ classdef ExperimentRunner < handle
                     matlabpool open;
                     closeafterrun = true;
                 end
+                fprintf('Running %d experiments (%d configs each) in parallel...',nex,c.NumConfigurations);
                 parfor k=1:nex
                     [allout(:,:,k), allct(:,k)] = this.runExperiment(mus(:,k));%#ok
                 end
+                fprintf('done');
                 if closeafterrun
                     matlabpool close;
                 end
@@ -114,6 +135,22 @@ classdef ExperimentRunner < handle
             allout = permute(allout,[3 1 2]);
             
             this.multipleexperiments = false;
+        end
+        
+        function res = runExperimentsCached(this, mus)
+            c = this.Config;
+            fi = fullfile(c.OutputDir,[c.getOptionStr '.mat']);
+            if ~(exist(fi,'file') == 2)
+                m = this.Model;
+                if nargin < 2
+                    [o, ct] = this.runExperiment;%#ok
+                    save(fi,'m','o','c','ct');
+                else
+                    [o, ct] = this.runExperiments(mus);%#ok
+                    save(fi,'m','o','c','mus','ct');
+                end
+            end
+            res = load(fi);
         end
     end
     

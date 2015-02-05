@@ -2,8 +2,15 @@ classdef AExperimentModelConfig < muscle.AModelConfig
     %AEXPERIMENTMODELCONFIG Model configurations for a set of experiments
     
     properties
+        OutputDir = []; 
+        ImgDir;
+        
         % Flag that indicates
 %         ICCompMode;
+    end
+    
+    properties(Dependent)
+        CurrentConfigNr;
     end
     
     properties(SetAccess=protected)
@@ -17,28 +24,30 @@ classdef AExperimentModelConfig < muscle.AModelConfig
 %         HasICComputation = false;
     end
     
-    properties(SetAccess=private, GetAccess=protected)
-        CurrentConfigNr = 1;
+    properties(Access=private)
+        fCurConfNr = 1;
     end
     
     methods
-        function this = AExperimentModelConfig(geo)
+        function this = AExperimentModelConfig(varargin)
             % Override in subclasses and set NumConfigurations to the
             % number of possible experiment runs with different IC/BCs.
-            if nargin < 1
-                [pts, cubes] = geometry.Cube27Node.DemoGrid(linspace(0,25,4),[0 7],[0 4]);
-                geo = geometry.Cube27Node(pts,cubes);
-            end
-            
-            this = this@muscle.AModelConfig(geo);
+            this = this@muscle.AModelConfig(varargin{:});
         end
         
-        function setConfiguration(this, nr)
+        function set.CurrentConfigNr(this, nr)
             % Sets the configuration number.
             %
             % Use this in every overridden method to further specify
             % different behaviour
-            this.CurrentConfigNr = nr;
+            if nr < 1 || nr > this.NumConfigurations
+                error('Please choose one of the %d possible configurations.',this.NumConfigurations);
+            end
+            this.fCurConfNr = nr;
+        end
+        
+        function value = get.CurrentConfigNr(this)
+            value = this.fCurConfNr;
         end
         
 %         function x0 = getX0(this, x0)
@@ -47,6 +56,28 @@ classdef AExperimentModelConfig < muscle.AModelConfig
 %                 x0 = s.x0;
 %             end
 %         end
+    end
+    
+    methods(Access=protected)
+        function init(this)
+            init@muscle.AModelConfig(this);
+            
+            % Also init directories to reasonable defaults
+            if isempty(this.OutputDir)
+                mc = metaclass(this);
+                [p,n] = fileparts(which(mc.Name));
+                outdir = fullfile(p,n);
+                this.OutputDir = outdir;
+            end
+        end
+    end
+    
+    methods
+        function set.OutputDir(this, value)
+            Utils.ensureDir(value);
+            this.OutputDir = value;
+            this.ImgDir = fullfile(value,'img');%#ok
+        end
     end
     
     methods(Abstract)

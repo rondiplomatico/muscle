@@ -20,6 +20,9 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         idx_uv_bc_glob_unass;
         num_uvp_dof_unass;
         idx_vp_dof_unass_elems;
+        
+        ForceLengthFun;
+        ForceLengthFunDeriv;
     end
     
     properties(SetAccess=private)
@@ -32,9 +35,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         lambda_dot;
         
         nfibres;
-        
-        ForceLengthFun;
-        ForceLengthFunDeriv;
     end
     
     properties(Transient, SetAccess=private)
@@ -90,51 +90,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             end
         end
         
-        function setForceLengthFun(this, mu)
-            % Provided here only for convenient outside access
-            %
-            % The force-length function as function handle
-            %
-            % This function describes the force-length relation for active
-            % force. There are currently two possibilites, exponential from
-            % @cite Guenther2007 or quadratic like in @cite Heidlauf2013.
-            % We use the exponential form as it is continuous everywhere.
-            %
-            %
-            % Quadratic
-            % Fun @(ratio)(-6.25*ratio.*ratio + 12.5*ratio - 5.25) .* (ratio >= .6) .* (ratio <= 1.4);
-            % Deriv @(ratio)(12.5*ratio.*(1-ratio)) .* (ratio >= .6) .* (ratio <= 1.4);
-            %
-            % Exponential
-            % Set to have one parameter: Width. The ascending part of the
-            % force-length fun is assumed to be steeper (@cite Gordon1966
-            % ), so the width is set to a proportion of the parameter on
-            % that side.
-            lexpo = 4; % 4
-            rexpo = 3; % 3
-            lw = mu(15); % orig .57
-            rw = mu(15)*1.3; % orig .14
-%             this.ForceLengthFun = @(ratio)(ratio<=1).*exp(-((1-ratio)/lw).^lexpo) ...
-%                 + (ratio>1).*exp(-((ratio-1)/rw).^rexpo);
-%             this.ForceLengthFunDeriv = @(ratio)(ratio<=1).*((lexpo*exp(-(-(ratio - 1)/lw)^lexpo)*(-(ratio - 1)/lw)^(lexpo - 1))/lw) ...
-%                 + (ratio > 1) .* (-(rexpo*exp(-((ratio - 1)/rw)^rexpo)*((ratio - 1)/rw)^(rexpo - 1))/rw);
-            
-            this.ForceLengthFun =  @(t)(t>=0.609756&t<0.829268).*(3.86874*t+-2.35899)+(t>=0.829268&t<0.965854).*(0.884365*t+0.11586)+(t>=0.965854&t<1.12195).*(-0.0313624*t+1.00032)+(t>=1.12195&t<1.80488).*(-1.41323*t+2.5507);
-            this.ForceLengthFunDeriv = @(t)(t>=0.609756&t<0.829268).*3.86874+(t>=0.829268&t<0.965854).*0.884365+(t>=0.965854&t<1.12195).*-0.0313624+(t>=1.12195&t<1.80488).*-1.41323;
-            
-            % Steps to produce derivative
-%             lw = sym('lw'); rw = sym('rw'); lexpo = sym('lexpo'); rexpo = sym('rexpo'); ratio = sym('ratio');
-%             f(ratio) = exp(-((1-ratio)/lw).^lexpo);
-%             df = diff(f)
-%             f2(ratio) = exp(-((ratio-1)/rw).^rexpo);
-%             df2 = diff(f2)
-            
-%             p = [0.0589   -0.5838    2.4970   -6.0189    8.9398   -8.3694    4.8087   -1.5406    0.2093]*1e3;
-%             this.ForceLengthFun = @(ratio)polyval(p,ratio) .* (ratio > .61 & ratio < 1.55);
-%             dp = (8:-1:1) .* p(1:end-1);
-%             this.ForceLengthFunDeriv = @(ratio)polyval(dp,ratio).* (ratio > .61 & ratio < 1.55);
-        end
-        
         function prepareSimulation(this, mu)
             prepareSimulation@dscomponents.ACompEvalCoreFun(this, mu);
             sys = this.System;
@@ -146,7 +101,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             this.alpha = mc.getAlphaRamp(mu(2));
             
             % Prepare force-length fun
-            this.setForceLengthFun(mu);
+            mc.setForceLengthFun(this);
             
             if ~isempty(mc.VelocityBCTimeFun)
                 this.velo_bc_fun = mc.VelocityBCTimeFun.getFunction;

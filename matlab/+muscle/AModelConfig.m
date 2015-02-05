@@ -9,6 +9,8 @@ classdef AModelConfig < handle
         PosFE;
         
         PressFE;
+        
+        Options;
     end
     
     properties(SetAccess=protected)
@@ -68,32 +70,29 @@ classdef AModelConfig < handle
         VelocityBCTimeFun;
     end
     
+    properties(Access=private)
+        iP;
+        optArgs = {};
+    end
+    
     methods
-        function this = AModelConfig(geo)
-            if isa(geo,'geometry.Cube8Node')
-                pos_geo = geo.toCube27Node;
-                press_geo = geo;
-            elseif isa(geo,'geometry.Cube20Node') || isa(geo,'geometry.Cube27Node')
-                pos_geo = geo;
-                press_geo = geo.toCube8Node;
-            else
-                error('Scenario not yet implemented for geometry class "%s"', class(geo));
-            end
-            if isa(pos_geo,'geometry.Cube27Node')
-                this.PosFE = fem.HexahedronTriquadratic(pos_geo);
-            else
-                this.PosFE = fem.HexahedronSerendipity(pos_geo);
-            end
-            this.PressFE = fem.HexahedronTrilinear(press_geo);
-            %this.PressFE = fem.HexahedronSerendipity(press_geo.toCube20Node);
-            %this.PressFE = fem.HexahedronTriquadratic(press_geo.toCube27Node);
+        function this = AModelConfig(varargin)
+            this.optArgs = varargin;
+            
+            i = inputParser;
+            i.KeepUnmatched = true;
+            this.iP = i;
+            
+            this.addOption('GeoNr',1);
+            mc = metaclass(this);
+            this.addOption('Tag',mc.Name);
+            % Force-length function type
+            this.addOption('FL',1);
         end
         
         function configureModel(this, model)
             % Overload this method to set model-specific quantities like
             % simulation time etc
-            
-            % Do nothing
         end
         
         function prepareSimulation(this, mu, inputidx)
@@ -137,7 +136,59 @@ classdef AModelConfig < handle
         end
         
         function x0 = getX0(~, x0)
-            %% do nothing
+            % do nothing
+        end
+        
+         function setForceLengthFun(this, f)
+            % Provided here only for convenient outside access
+            %
+            % The force-length function as function handle
+            %
+            % This function describes the force-length relation for active
+            % force. There are currently three possibilites, exponential from
+            % @cite Guenther2007,quadratic like in @cite Heidlauf2013 or
+            % piecewise linear as in @cite Gordon1966 .
+            %
+            % Exponential
+            % Set to have one parameter: Width. The ascending part of the
+            % force-length fun is assumed to be steeper (@cite Gordon1966
+            % ), so the width is set to a proportion of the parameter on
+            % that side.
+            
+            % Steps to produce derivative of exponential version
+%             lw = sym('lw'); rw = sym('rw'); lexpo = sym('lexpo'); rexpo = sym('rexpo'); ratio = sym('ratio');
+%             f(ratio) = exp(-((1-ratio)/lw).^lexpo);
+%             df = diff(f)
+%             f2(ratio) = exp(-((ratio-1)/rw).^rexpo);
+%             df2 = diff(f2)
+            
+            switch this.Options.FL
+                % Linear (Gordon 66)
+                case 1
+                    fun = @(t)(t>=0.609756&t<0.829268).*(3.86874*t+-2.35899)+(t>=0.829268&t<0.965854).*(0.884365*t+0.11586)+(t>=0.965854&t<1.12195).*(-0.0313624*t+1.00032)+(t>=1.12195&t<1.80488).*(-1.41323*t+2.5507);
+                    dfun = @(t)(t>=0.609756&t<0.829268).*3.86874+(t>=0.829268&t<0.965854).*0.884365+(t>=0.965854&t<1.12195).*-0.0313624+(t>=1.12195&t<1.80488).*-1.41323;
+                % Exponential (Schmitt)
+                case 2
+                    lexpo = 4; % 4
+                    rexpo = 3; % 3
+                    lw = f.mu(15); % orig .57
+                    rw = f.mu(15)*1.3; % orig .14
+                    fun = @(ratio)(ratio<=1).*exp(-((1-ratio)/lw).^lexpo) ...
+                        + (ratio>1).*exp(-((ratio-1)/rw).^rexpo);
+                    dfun = @(ratio)(ratio<=1).*((lexpo*exp(-(-(ratio - 1)/lw)^lexpo)*(-(ratio - 1)/lw)^(lexpo - 1))/lw) ...
+                        + (ratio > 1) .* (-(rexpo*exp(-((ratio - 1)/rw)^rexpo)*((ratio - 1)/rw)^(rexpo - 1))/rw);
+                % Quadratic Polynomial (Heidlauf)    
+                case 3
+                    fun = @(ratio)(-6.25*ratio.*ratio + 12.5*ratio - 5.25) .* (ratio >= .6) .* (ratio <= 1.4);
+                    dfun = @(ratio)(12.5*ratio.*(1-ratio)) .* (ratio >= .6) .* (ratio <= 1.4);
+            end
+            f.ForceLengthFun = fun;
+            f.ForceLengthFunDeriv = dfun;
+            
+%             p = [0.0589   -0.5838    2.4970   -6.0189    8.9398   -8.3694    4.8087   -1.5406    0.2093]*1e3;
+%             fun = @(ratio)polyval(p,ratio) .* (ratio > .61 & ratio < 1.55);
+%             dp = (8:-1:1) .* p(1:end-1);
+%             dfun = @(ratio)polyval(dp,ratio).* (ratio > .61 & ratio < 1.55);
         end
         
         function alpha = getAlphaRamp(this, ramptime, alphamax, starttime)
@@ -181,9 +232,55 @@ classdef AModelConfig < handle
             % each of the n locations
             tmr = []; % zeros(1,size(x,2));
         end
+        
+        function str = getOptionStr(this, withtag)
+            if nargin < 2
+                withtag = true;
+            end
+            o = this.Options;
+            fieldnames = fields(o);
+            strs = {};
+            for k=1:length(fieldnames)
+                if (withtag || ~strcmp(fieldnames{k},'Tag')) && ~isempty(o.(fieldnames{k}))
+                    fmt = '%s-%g';
+                    if isa(o.(fieldnames{k}),'char')
+                        fmt = '%s-%s';
+                    end
+                    strs{end+1} = sprintf(fmt,fieldnames{k},o.(fieldnames{k}));%#ok
+                end
+            end
+            str = Utils.implode(strs,'_');
+        end
     end
     
     methods(Access=protected)
+       
+        function init(this)
+            %% Parse the options
+            this.iP.parse(this.optArgs{:});
+            this.Options = this.iP.Results;
+            
+            %% Get the geometry
+            geo = this.getGeometry;
+            if isa(geo,'geometry.Cube8Node')
+                pos_geo = geo.toCube27Node;
+                press_geo = geo;
+            elseif isa(geo,'geometry.Cube20Node') || isa(geo,'geometry.Cube27Node')
+                pos_geo = geo;
+                press_geo = geo.toCube8Node;
+            else
+                error('Scenario not yet implemented for geometry class "%s"', class(geo));
+            end
+            if isa(pos_geo,'geometry.Cube27Node')
+                this.PosFE = fem.HexahedronTriquadratic(pos_geo);
+            else
+                this.PosFE = fem.HexahedronSerendipity(pos_geo);
+            end
+            this.PressFE = fem.HexahedronTrilinear(press_geo);
+            %this.PressFE = fem.HexahedronSerendipity(press_geo.toCube20Node);
+            %this.PressFE = fem.HexahedronTriquadratic(press_geo.toCube27Node);
+        end
+        
         function anull = seta0(~, anull)
             % do nothing!
         end
@@ -208,8 +305,19 @@ classdef AModelConfig < handle
         end
     end
     
+    methods(Sealed, Access=protected)
+        function addOption(this, name, default, varargin)
+            this.iP.addParamValue(name, default, varargin{:});
+        end
+    end
+    
     methods(Abstract, Access=protected)
         displ_dir = setPositionDirichletBC(this, displ_dir);
+        
+        % Returns the intended geometry for this model config.
+        %
+        % The options will be set at call time, e.g. "GeoNr" is already set.
+        geo = getGeometry(this);
     end
     
     methods(Sealed)
