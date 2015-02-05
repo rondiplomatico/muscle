@@ -169,6 +169,8 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             mustr = [sprintf('-%g',400:10:460) '/' sprintf('-%g',1:.05:1.2)];
             prefix = 'pmax_lamopt';
             
+            %% -- EACH to be combinable with --
+            
             %% Geoconfig 1
             % Straight fibres in x direction, "loose" ends that
             % allow the geometry to expand when compressed
@@ -187,6 +189,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             c = experiments.IsometricActivation('Tag',[prefix '_fixed_xzfibre'],'BC',3,'FL',1);
             cap = 'Fixed setup with xz-diagonal fibres';
             
+            %% NOT CONFIGURABLE PART
             m = muscle.Model(c);
             e = experiments.ExperimentRunner(m);
             mus = repmat(m.DefaultMu,1,size(range,2));
@@ -207,7 +210,8 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             hold(ax,'on');
             tv = c.TargetOutputValues(idx,:);
             plot(ax,sp,tv(:,1)-tv(:,2),'rx',sp,tv(:,2),'bx');
-            %% Set label
+            
+            % Set label
             % compute percent
             w = c.PosFE.Geometry.Width;
             sp_perc = (((w+sp)./w)-1)*100;
