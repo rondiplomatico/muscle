@@ -11,15 +11,6 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
         RelaxTime = 10; %[ms]
     end
     
-    properties(SetAccess=private)
-        GeoNr = 1;
-    end
-    
-    properties(Access=private)
-        % Flag for different internal geo/bc configs
-        internalconfig;
-    end
-    
     methods
         function this = IsometricActivation(varargin)
             this = this@experiments.AExperimentModelConfig(varargin{:});
@@ -53,8 +44,8 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             m.T = this.PositioningTime + this.RelaxTime + this.ActivationTime;
             m.dt = m.T / 300;
             
-            m.DefaultMu(13) = 300; % [kPa]
-            m.DefaultMu(14) = 1.1; % lambda_opt, educated guess from data
+            m.DefaultMu(13) = 380; % [kPa]
+            m.DefaultMu(14) = 2.05; % lambda_opt, educated guess from data
             
             % Set to activation within 10ms
             m.DefaultMu(2) = 10;
@@ -77,7 +68,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             passive_pos = floor((this.PositioningTime + this.RelaxTime)/m.dt);
             % Get the range at which to determine the max forces
             act_range = passive_pos + 1 : size(y,2);
-            switch this.GeoNr
+            switch this.Options.GeoNr
                 case 1
                     idx = m.getVelocityDirichletBCFaceIdx(3,2);
                     o(1) = max(abs(sum(df(idx,act_range),1)));
@@ -142,7 +133,8 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                 case 1
                     if o.BC == 3
                         % Fibres in xz direction
-                        anull([1 3],:,:) = 1;
+                        anull(1,:,:) = 1;
+                        anull(3,:,:) = .3;
                     else
                         % Fibres in x direction
                         anull(1,:,:) = 1;
@@ -166,10 +158,16 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
 %             prefix = 'pmax';
             
             %% Mus 1 - Only lambda_opt
-            range = .8:.1:1.3;
-            idx = 14;
-            mustr = sprintf('-%g',range);
-            prefix = 'lamopt';
+%             range = 2:.1:2.2;
+%             idx = 14;
+%             mustr = sprintf('-%g',range);
+%             prefix = 'lamopt';
+            
+            %% Mus 3 - pmax/lamdaopt
+            range = Utils.createCombinations(400:10:460,2:.025:2.2);
+            idx = [13 14];
+            mustr = [sprintf('-%g',400:10:460) '/' sprintf('-%g',1:.05:1.2)];
+            prefix = 'pmax_lamopt';
             
             %% Geoconfig 1
             % Straight fibres in x direction, "loose" ends that
@@ -180,14 +178,14 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             %% Geoconfig 2
             % Straight fibres in x direction, but completely
             % fixed ends to ensure comparability with version 3
-            c = experiments.IsometricActivation('Tag',[prefix '_fixed'],'BC',2,'FL',1);
-            cap = 'Fixed setup with x-aligned fibres';
+%             c = experiments.IsometricActivation('Tag',[prefix '_fixed'],'BC',2,'FL',1);
+%             cap = 'Fixed setup with x-aligned fibres';
              
             %% Geoconfig 3
             % Diagonal fibres in xz direction with completely
             % fixed ends
-%             c = experiments.IsometricActivation('Tag',[prefix '_fixed_xzfibre'],'BC',3,'FL',1);
-%             cap = 'Fixed setup with xz-diagonal fibres';
+            c = experiments.IsometricActivation('Tag',[prefix '_fixed_xzfibre'],'BC',3,'FL',1);
+            cap = 'Fixed setup with xz-diagonal fibres';
             
             m = muscle.Model(c);
             e = experiments.ExperimentRunner(m);

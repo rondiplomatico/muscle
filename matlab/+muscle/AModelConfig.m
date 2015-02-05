@@ -139,7 +139,7 @@ classdef AModelConfig < handle
             % do nothing
         end
         
-         function setForceLengthFun(this, f)
+        function setForceLengthFun(this, f)
             % Provided here only for convenient outside access
             %
             % The force-length function as function handle
@@ -156,39 +156,35 @@ classdef AModelConfig < handle
             % that side.
             
             % Steps to produce derivative of exponential version
-%             lw = sym('lw'); rw = sym('rw'); lexpo = sym('lexpo'); rexpo = sym('rexpo'); ratio = sym('ratio');
-%             f(ratio) = exp(-((1-ratio)/lw).^lexpo);
-%             df = diff(f)
-%             f2(ratio) = exp(-((ratio-1)/rw).^rexpo);
-%             df2 = diff(f2)
+            %             lw = sym('lw'); rw = sym('rw'); lexpo = sym('lexpo'); rexpo = sym('rexpo'); ratio = sym('ratio');
+            %             f(ratio) = exp(-((1-ratio)/lw).^lexpo);
+            %             df = diff(f)
+            %             f2(ratio) = exp(-((ratio-1)/rw).^rexpo);
+            %             df2 = diff(f2)
             
             switch this.Options.FL
-                % Linear (Gordon 66)
                 case 1
-                    fun = @(t)(t>=0.609756&t<0.829268).*(3.86874*t+-2.35899)+(t>=0.829268&t<0.965854).*(0.884365*t+0.11586)+(t>=0.965854&t<1.12195).*(-0.0313624*t+1.00032)+(t>=1.12195&t<1.80488).*(-1.41323*t+2.5507);
-                    dfun = @(t)(t>=0.609756&t<0.829268).*3.86874+(t>=0.829268&t<0.965854).*0.884365+(t>=0.965854&t<1.12195).*-0.0313624+(t>=1.12195&t<1.80488).*-1.41323;
-                % Exponential (Schmitt)
+                    % Linear (Gordon 66)
+                    % Exported here to separate class for tidyness
+                    g = tools.Gordon66SarcoForceLength(f.mu(14));
+                    [fun, dfun] = g.getFunction;
                 case 2
+                    % Exponential (Schmitt)
                     lexpo = 4; % 4
                     rexpo = 3; % 3
-                    lw = f.mu(15); % orig .57
-                    rw = f.mu(15)*1.3; % orig .14
+                    lw = f.mu(14); % orig .57
+                    rw = f.mu(14)*1.3; % orig .14
                     fun = @(ratio)(ratio<=1).*exp(-((1-ratio)/lw).^lexpo) ...
                         + (ratio>1).*exp(-((ratio-1)/rw).^rexpo);
                     dfun = @(ratio)(ratio<=1).*((lexpo*exp(-(-(ratio - 1)/lw)^lexpo)*(-(ratio - 1)/lw)^(lexpo - 1))/lw) ...
                         + (ratio > 1) .* (-(rexpo*exp(-((ratio - 1)/rw)^rexpo)*((ratio - 1)/rw)^(rexpo - 1))/rw);
-                % Quadratic Polynomial (Heidlauf)    
                 case 3
+                    % Quadratic Polynomial (Heidlauf)
                     fun = @(ratio)(-6.25*ratio.*ratio + 12.5*ratio - 5.25) .* (ratio >= .6) .* (ratio <= 1.4);
                     dfun = @(ratio)(12.5*ratio.*(1-ratio)) .* (ratio >= .6) .* (ratio <= 1.4);
             end
             f.ForceLengthFun = fun;
             f.ForceLengthFunDeriv = dfun;
-            
-%             p = [0.0589   -0.5838    2.4970   -6.0189    8.9398   -8.3694    4.8087   -1.5406    0.2093]*1e3;
-%             fun = @(ratio)polyval(p,ratio) .* (ratio > .61 & ratio < 1.55);
-%             dp = (8:-1:1) .* p(1:end-1);
-%             dfun = @(ratio)polyval(dp,ratio).* (ratio > .61 & ratio < 1.55);
         end
         
         function alpha = getAlphaRamp(this, ramptime, alphamax, starttime)
@@ -204,17 +200,14 @@ classdef AModelConfig < handle
             % starttime: The offset time (in milliseconds) to wait before
             % increasing the signal. @type double 
             % @default AModelConfig.ActivationRampOffset
-            if ramptime <= 0
-                alpha = @(t)0;
-                return;
-            end
             if nargin < 4
                 starttime = this.ActivationRampOffset;
                 if nargin < 3
                     alphamax = this.ActivationRampMax;
                 end
             end
-            alpha = @(t)(t >= starttime) .* (alphamax * (((t-starttime)<ramptime).*(t-starttime)/ramptime + (t>=ramptime+starttime)));
+            ramp = tools.Ramp(ramptime, alphamax, starttime);
+            alpha = ramp.getFunction;
         end
         
         function tmr = getTendonMuscleRatio(~, ~)

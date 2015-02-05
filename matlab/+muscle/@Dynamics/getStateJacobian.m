@@ -17,7 +17,6 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
     num_elements = geo.NumElements;
     
     % Cache variables instead of accessing them via "this." in loops
-    lfopt = this.mu(14);
     Pmax = this.mu(13);
     c10 = sys.MuscleTendonParamc10;
     c01 = sys.MuscleTendonParamc01;
@@ -138,11 +137,8 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
                 Fa0 = F*fibres(:,1);
                 lambdaf = norm(Fa0);
 
-                ratio = lambdaf/lfopt;
-                fl = this.ForceLengthFun(ratio);
-                % Need to divide by lfopt as the derivative is w.r.t
-                % lambdaf
-                dfl = this.ForceLengthFunDeriv(ratio)/lfopt;
+                fl = this.ForceLengthFun(lambdaf);
+                dfl = this.ForceLengthFunDeriv(lambdaf);
                 alpha = alphaconst;
                 if havefibretypes
                     alpha = ftwelem(gp);

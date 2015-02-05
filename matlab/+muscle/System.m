@@ -220,13 +220,13 @@ classdef System < models.BaseDynSystem
             % #13
             this.addParam('P_max',[73 400],10);
             
-            % muscle optimal length lambda_opt
+            % parameter p1 for force-length curve customization.
+            %
+            % For linear curve from Gordon66 we set lambda_0 with this,
+            % i.e. the resting sarcomere length. According to literature,
+            % somewhere between 2 and 2.2 micrometer.
             % #14
-            this.addParam('lambda_opt',[1 1.5],10);
-            
-            % force-length curve width parameter / general parameter 1
-            % #15
-            this.addParam('force-length p1 (width)',[1 1.5],10);
+            this.addParam('force-length p1 (lam_0/width/...)',[1 1.5],10);
             
             %% Set system components
             % Core nonlinearity

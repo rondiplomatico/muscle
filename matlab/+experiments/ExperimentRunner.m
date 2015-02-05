@@ -1,6 +1,4 @@
-classdef ExperimentRunner < handle
-    %EXPERIMENTRUNNER Summary of this class goes here
-    %   Detailed explanation goes here
+classdef ExperimentRunner < handle    
     
     properties
         RunParallel;

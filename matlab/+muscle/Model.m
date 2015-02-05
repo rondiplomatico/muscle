@@ -58,7 +58,7 @@ classdef Model < models.BaseFullModel
                 2.756e-5; 43.373; 7.99; 16.6
                 % Isotropic parameters muscle+tendon (Moonley-Rivlin)
                 35.6; 3.86; 2310; 1.15e-3 % Micha, % 6.352e-10; 3.627 [Kpa] thomas alt 
-                250; 1.2; .3]; 
+                250; 2.05]; 
             
             this.TrainingParams = [1 2];
             
@@ -144,12 +144,11 @@ classdef Model < models.BaseFullModel
             lambda = .2:.005:2;
             
             %% Plain Force-length function
-            fl = f.ForceLengthFun(lambda/mu(14));
+            fl = f.ForceLengthFun(lambda);
             h = pm.nextPlot('force_length_plain','Direct force-length curve of muscle/sarcomere',...
-                sprintf('\\lambda/\\lambda_{opt} [-], \\lambda_{opt}=%g',mu(14)),...
+                sprintf('\\lambda [-], fl_p1=%g',mu(14)),...
                 'force-length relation [-]');
-            
-            plot(h,lambda/mu(14),fl,'r');
+            plot(h,lambda,fl,'r');
             
             %% Effective force-length function for muscle tissue
             % effective signal from active part
@@ -174,7 +173,7 @@ classdef Model < models.BaseFullModel
             legend(h,'Active','Passive','Total','Location','NorthWest');
             
 %             %% Effective force-length function derivative for muscle tissue
-%             dfl = (mu(13)./lambda) .* f.ForceLengthFunDeriv(lambda/mu(14));
+%             dfl = (mu(13)./lambda) .* f.ForceLengthFunDeriv(lambda);
 %             dmarkertf = (lambda>=1).*(b1./lambda.^3).*((d1-2)*lambda.^d1 + 2);
 %             h = pm.nextPlot('force_length_eff_deriv',...
 %                 'Effective force-length curve derivative of muscle material',...

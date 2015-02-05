@@ -13,7 +13,6 @@ function duvw  = evaluate(this, uvwdof, t)
     num_v_glob = num_u_glob;
 
     % Cache variables instead of accessing them via this. in loops
-    lfopt = this.mu(14);
     Pmax = this.mu(13);
     flfun = this.ForceLengthFun;
     havefibres = sys.HasFibres;
@@ -120,11 +119,6 @@ function duvw  = evaluate(this, uvwdof, t)
                 fibres = sys.a0Base(:,:,fibrenr);
                 lambdaf = norm(F*fibres(:,1));
                 
-                % Evaluate g function
-                % Using a subfunction is 20% slower!
-                % So: direct implementation here
-                fl = flfun(lambdaf/lfopt);
-                
                 if havefibretypes
                     alpha = ftwelem(gp);
                 else
@@ -140,6 +134,10 @@ function duvw  = evaluate(this, uvwdof, t)
                 if lambdaf > .999
                     markert = (b1(gp,m)/lambdaf^2)*(lambdaf^d1(gp,m)-1);
                 end
+                
+                % Using a class-subfunction is 20% slower!
+                % So: function handle
+                fl = flfun(lambdaf);
                 gval = markert + (Pmax/lambdaf)*fl*alpha;
                 P = P + gval*F*sys.a0oa0(:,:,fibrenr);
                 
