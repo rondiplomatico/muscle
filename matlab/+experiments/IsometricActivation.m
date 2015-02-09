@@ -166,7 +166,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             %% Mus 3 - pmax/lamdaopt
             range = Utils.createCombinations(400:10:460,2:.025:2.2);
             idx = [13 14];
-            mustr = [sprintf('-%g',400:10:460) '/' sprintf('-%g',1:.05:1.2)];
+            mustr = [sprintf('-%g',400:10:460) '/' sprintf('-%g',2:.025:2.2)];
             prefix = 'pmax_lamopt';
             
             %% -- EACH to be combinable with --

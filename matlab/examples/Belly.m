@@ -160,7 +160,7 @@ classdef Belly < muscle.AModelConfig
             geo27.swapYZ;
         end
         
-        function res = test_BellyGeometrieGeneration
+        function res = test_BellyGeometryGeneration
             g = Belly.getBelly;
             g = Belly.getBelly(4,35,1,.2,7);
             g = Belly.getBelly(4,35,1,[.2 .6],5);
@@ -168,6 +168,7 @@ classdef Belly < muscle.AModelConfig
             g = Belly.getBelly(4,35,1,[.2 .6],[10 20]);
             g = Belly.getBelly(4,35,[4 2],.5,[10 20]);
             g = Belly.getBelly(4,35,@(x)[sqrt(abs(x)); 1./(x-34).^2],.2);
+            g.plot;
             g = Belly.getBelly(4,35,@(x)sqrt(abs(x)));
             g.plot;
             g = Belly.getBelly(4,35,[4 2],.5,[10 20],-1.5);
