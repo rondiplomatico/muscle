@@ -6,9 +6,9 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
     end
     
     properties
-        ActivationTime = 100; %[ms]
+        ActivationTime = 50; %[ms]
         PositioningTime = 50; %[ms]
-        RelaxTime = 10; %[ms]
+        RelaxTime = 5; %[ms]
     end
     
     methods
@@ -44,10 +44,10 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             m.T = this.PositioningTime + this.RelaxTime + this.ActivationTime;
             m.dt = m.T / 300;
             
-            m.DefaultMu(5) = 1;
-            m.DefaultMu(6) = 20;
+            m.DefaultMu(5) = .001;
+            m.DefaultMu(6) = 40;
             m.DefaultMu(7) = 1;
-            m.DefaultMu(8) = 25;
+            m.DefaultMu(8) = 40;
             
             m.DefaultMu(13) = 380; % [kPa]
             m.DefaultMu(14) = 2.05; % lambda_opt, educated guess from data
@@ -90,7 +90,6 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             % Get the residual dirichlet forces
             df = m.getResidualForces(t,y);
             
-%             m.plot(t,y,'DF',df,'F',4);
             % Get the position at which to determine the passive forces
             passive_pos = floor((this.PositioningTime + this.RelaxTime)/m.dt);
             % Get the range at which to determine the max forces
@@ -103,9 +102,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                     idx = m.getVelocityDirichletBCFaceIdx(37:48,4);
             end
             o(1) = max(abs(sum(df(idx,act_range),1)));
-            o(2) = sum(df(idx,passive_pos));
-%             figure;
-%             plot(t,sum(df(idx,:)));
+            o(2) = sum(df(idx,passive_pos));            
         end
         
         function plotGeometryInfo(this, varargin)

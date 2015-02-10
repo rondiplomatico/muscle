@@ -4,6 +4,10 @@ classdef ExperimentRunner < handle
         RunParallel;
     end
     
+    properties(Dependent)
+        StoreExperimentData;
+    end
+    
     properties(SetAccess=private)
         Config;
         Model;
@@ -11,6 +15,8 @@ classdef ExperimentRunner < handle
     
     properties(Access=private)
         multipleexperiments = false;
+        cache;
+        cachedata;
     end
     
     methods
@@ -24,6 +30,7 @@ classdef ExperimentRunner < handle
             
             % Do parallel if parallel toolbox is around!
             this.RunParallel = exist('matlabpool','file') == 2;
+            this.StoreExperimentData = true;
         end
         
         function [out, y, ct] = runExperimentConfig(this, nr, mu)
@@ -41,23 +48,33 @@ classdef ExperimentRunner < handle
             m.setConfig(c);
             % Run simulation
             out = NaN(1,c.NumOutputs);
-%             if this.RunParallel
+            
+            % The cache key is param + config nr
+            key = [mu; nr];
+            if this.cachedata && this.cache.hasData(key);
+                data = this.cache.getData(key);
+                out = data.out;
+                y = data.y;
+                ct = data.ct;
+            else
                 try
                     [t,y,ct] = m.simulate(mu);
                     % Get output of interest
                     tic;
                     out = c.getOutputOfInterest(t,y);
                     ct = ct + toc;
+                    
+                    if this.cachedata
+                        data = struct('y',y,'t',t,'mu',mu,'nr',nr,'ct',ct,'out',out);
+                        this.cache.addData(key,data);
+                    end
                 catch ME
                     % Set to NaN to notify there's something wrong
                     out(:) = NaN;
                     ME.getReport
                 end
-%             else
-%                 [t,y] = m.simulate(mu);
-%                 % Get output of interest
-%                 out = c.getOutputOfInterest(t,y);
-%             end
+            end
+            
         end
         
         function [out, ct] = runExperiment(this, mu)
@@ -140,15 +157,30 @@ classdef ExperimentRunner < handle
             fi = fullfile(c.OutputDir,[c.getOptionStr '.mat']);
             if ~(exist(fi,'file') == 2)
                 m = this.Model;
+                e = this;
                 if nargin < 2
                     [o, ct] = this.runExperiment;%#ok
-                    save(fi,'m','o','c','ct');
+                    save(fi,'m','o','c','ct','e');
                 else
                     [o, ct] = this.runExperiments(mus);%#ok
-                    save(fi,'m','o','c','mus','ct');
+                    save(fi,'m','o','c','mus','ct','e');
                 end
             end
             res = load(fi);
+        end
+        
+        function set.StoreExperimentData(this, value)
+            if value && isempty(this.cache)
+                dir = fullfile(this.Config.OutputDir,'trajectories',this.Config.getOptionStr(false));
+                this.cache = data.FileDataCollection(dir);
+            elseif ~isempty(value) && ~value
+                this.cache = [];
+            end
+            this.cachedata = value;
+        end
+        
+        function value = get.StoreExperimentData(this)
+            value = this.cachedata;
         end
     end
     

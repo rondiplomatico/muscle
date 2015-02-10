@@ -73,7 +73,10 @@ classdef AExperimentModelConfig < muscle.AModelConfig
             % Also init directories to reasonable defaults
             if isempty(this.OutputDir)
                 mc = metaclass(this);
-                [p,n] = fileparts(which(mc.Name));
+                [~,n] = fileparts(which(mc.Name));
+                % Put relative to muscle.Model class - that wont change
+                % location!
+                p = fullfile(fileparts(which('muscle.Model')),'..','..','data');
                 outdir = fullfile(p,n);
                 this.OutputDir = outdir;
             end
