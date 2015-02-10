@@ -85,9 +85,11 @@ classdef AExperimentModelConfig < muscle.AModelConfig
     
     methods
         function set.OutputDir(this, value)
-            Utils.ensureDir(value);
-            this.OutputDir = value;
-            this.ImgDir = fullfile(value,'img');%#ok
+            if ~isempty(value)
+                Utils.ensureDir(value);
+                this.OutputDir = value;
+                this.ImgDir = fullfile(value,'img');%#ok
+            end
         end
     end
     
