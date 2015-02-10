@@ -1,16 +1,16 @@
 classdef AExperimentModelConfig < muscle.AModelConfig
-    %AEXPERIMENTMODELCONFIG Model configurations for a set of experiments
     
     properties
         OutputDir = []; 
         ImgDir;
         
         % Flag that indicates
-%         ICCompMode;
+        ICCompMode;
     end
     
     properties(Dependent)
         CurrentConfigNr;
+        ICComputationDone;
     end
     
     properties(SetAccess=protected)
@@ -21,7 +21,7 @@ classdef AExperimentModelConfig < muscle.AModelConfig
         % Must be a NumConfigurations x NumOutputs vector, if set.
         TargetOutputValues;
         
-%         HasICComputation = false;
+        HasICComputation = false;
     end
     
     properties(Access=private)
@@ -50,12 +50,20 @@ classdef AExperimentModelConfig < muscle.AModelConfig
             value = this.fCurConfNr;
         end
         
-%         function x0 = getX0(this, x0)
-%             if ~this.ICCompMode
-%                 s = load(fullfile(QuickRelease.OutputDir,sprintf('geo%d_ic.mat',this.GeoNr)));
-%                 x0 = s.x0;
-%             end
-%         end
+        function x0 = getX0(this, x0)
+            if ~this.ICCompMode
+                optstr = this.getOptionStr;
+                s = load(fullfile(this.OutputDir,sprintf('IC_%s.mat',optstr)));
+                % We assume to have an IC for each configuration (possibly)
+                x0 = s.x0(:,this.CurrentConfigNr);
+            end
+        end
+        
+        function value = get.ICComputationDone(this)
+            file = fullfile(this.OutputDir,sprintf('IC_%s.mat',optstr));
+            value = ~this.HasICComputation || exist(file,'file') == 2;
+        end
+        
     end
     
     methods(Access=protected)

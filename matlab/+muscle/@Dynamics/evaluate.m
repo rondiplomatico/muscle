@@ -134,6 +134,9 @@ function duvw  = evaluate(this, uvwdof, t)
                 if lambdaf > .999
                     markert = (b1(gp,m)/lambdaf^2)*(lambdaf^d1(gp,m)-1);
                 end
+                %if m == 1 && gp == 1
+                %    fprintf('markert=%g (lambda=%g)\n',markert,lambdaf);
+                %end
                 
                 % Using a class-subfunction is 20% slower!
                 % So: function handle

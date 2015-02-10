@@ -1,4 +1,4 @@
-classdef IsometricActivation < experiments.AExperimentModelConfig
+classdef IsotonicActivation < experiments.AExperimentModelConfig
     % Implements the isometric contraction experiment
     
     properties(Constant)
@@ -12,30 +12,17 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
     end
     
     methods
-        function this = IsometricActivation(varargin)
+        function this = IsotonicActivation(varargin)
             this = this@experiments.AExperimentModelConfig(varargin{:});
-            this.addOption('BC',1);
+            %this.addOption('BC',1);
             this.init;
-            % Dont need BC for "true" GM
-            if this.Options.GeoNr == 2
-                this.Options.BC = [];
-            end
+            
+            % We need computed initial conditions on this one
+            this.HasICComputation = true;
             
             this.NumOutputs = 2;
-            this.NumConfigurations = 11;
-            % Data from GM5 muscle, originally in [N], here transferred to
-            % [mN]
-            this.TargetOutputValues = [9.6441	0.0217
-                10.7124	0.0578
-                8.8006	-0.0112
-                11.1749	0.1151
-                7.1639	-0.0428
-                11.295	0.1533
-                3.5734	-0.0604
-                10.8832	0.1969
-                2.1067	-0.061
-                10.3544	0.2547
-                1.065	-0.0568]*1000;
+            this.NumConfigurations = 1;
+            this.TargetOutputValues = 1;
             
             this.VelocityBCTimeFun = tools.ConstantUntil(this.PositioningTime,.01);
         end
@@ -67,28 +54,6 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             m.EnableTrajectoryCaching = false;
         end
         
-        function tmr = getTendonMuscleRatio(this, points)
-            % Returns the [0,1] ratio between tendon and muscle at all
-            % specified points
-            %
-            % This method simply returns an all-zero ratio, meaning muscle only. 
-            tmr = zeros(1,size(points,2));
-            o = this.Options;
-            if o.GeoNr == 2
-                tmr = this.TMRFun(points(2,:),points(3,:));
-            end            
-        end
-        
-        function tmr = TMRFun(~, y, z)
-            tmr = zeros(size(y));
-            fr = @(x)1.2*sqrt(max(0,27-x))-2;
-            right = z > fr(y);
-            tmr(right) = 1;
-            fl = @(x)-1*sqrt(x)+1;
-            left = z < fl(y);
-            tmr(left) = 1;
-        end
-        
         function o = getOutputOfInterest(this, t, y)
             m = this.Model;
             % Get the residual dirichlet forces
@@ -104,26 +69,13 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                     idx = m.getVelocityDirichletBCFaceIdx(3,2);
                     o(1) = max(abs(sum(df(idx,act_range),1)));
                     o(2) = abs(sum(df(idx,passive_pos)));
-                case 2    
+                    
 %                     idx = m.getPositionDirichletBCFaceIdx(1,1);
 %                     o(3) = sum(df(idx,passive_pos));
 %                     o(4) = max(sum(df(idx,act_range),1));
             end
 %             figure;
 %             plot(t,sum(df(idx,:)));
-        end
-        
-        function plotGeometryInfo(this, varargin)
-            plotGeometryInfo@muscle.AModelConfig(this, varargin{:});
-            ax = gca;
-            view(ax, [90 0]);
-            x = 0:.5:35;
-            fr = @(x)1.2*sqrt(max(0,27-x))-2;
-            plot3(ax,zeros(size(x)),x,fr(x),'LineWidth',3);
-            hold(ax,'on');
-            fl = @(x)-1*sqrt(x)+1;
-            plot3(ax,zeros(size(x)),x,fl(x),'LineWidth',3);
-            axis(ax,[-4 4 -1 36 -3 3]);
         end
     end
     
@@ -133,12 +85,6 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             if this.Options.GeoNr == 1
                 [pts, cubes] = geometry.Cube27Node.DemoGrid(linspace(0,25,4),[0 7],[0 4]);
                 geo = geometry.Cube27Node(pts,cubes);
-            else
-                cent = 12;
-                k = kernels.GaussKernel(10);
-                k2 = kernels.GaussKernel(12);
-                rad = @(t)[k.evaluate(t,cent)*3.5 k2.evaluate(t,cent)*2]';
-                geo = Belly.getBelly(4,35,'Radius',rad,'Layers',[.8 1],'InnerRadius',.3);
             end
         end
         
@@ -160,8 +106,6 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                             displ_dir([2 3],geo.Elements(3,geo.MasterFaces(2,:))) = true;
                     end
                 case 2
-                    displ_dir(2,geo.Nodes(2,:) == 0) = true;
-                    displ_dir(:,1) = true;
             end
         end
         
@@ -174,10 +118,9 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             switch o.GeoNr
                 case 1
                     velo_dir(1,geo.Elements(3,geo.MasterFaces(2,:))) = true;
+                    velo_dir_val(velo_dir) = velo;
                 case 2
-                    velo_dir(2,geo.Nodes(2,:) > 33) = true;
             end
-            velo_dir_val(velo_dir) = velo;
         end
         
         function anull = seta0(this, anull)
@@ -193,8 +136,6 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                         anull(1,:,:) = 1;
                     end
                 case 2
-                    anull(2,:,:) = 1;
-                    anull(3,:,:) = 1;
             end
         end
     end
@@ -221,7 +162,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             %% Mus 3 - pmax/lamdaopt
             range = Utils.createCombinations(400:10:460,2:.025:2.2);
             idx = [13 14];
-            mustr = [sprintf('-%g',400:10:460) '/' sprintf('-%g',2:.025:2.2)];
+            mustr = [sprintf('-%g',400:10:460) '/' sprintf('-%g',1:.05:1.2)];
             prefix = 'pmax_lamopt';
             
             %% -- EACH to be combinable with --

@@ -17,6 +17,14 @@ classdef AFunGen < handle
             plot(ax,range,f(range));
             pm.done;
         end
+        
+        function sum = plus(this, other)
+            % Provides an override for the simple sum of two AFunGen
+            if ~isa(this,'tools.AFunGen') || ~isa(other,'tools.AFunGen')
+                error('Addition not defined for non-AFunGen classes.');
+            end
+            sum = tools.FuncSum(this, other);
+        end
     end
     
     methods(Abstract)

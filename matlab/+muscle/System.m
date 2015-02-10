@@ -716,9 +716,9 @@ classdef System < models.BaseDynSystem
             % All muscle - set without extra computations
             tmr = this.MuscleTendonRatioGP;
             if ~this.HasTendons
-                tmr(:) = mu(1);
+                tmr(:) = mu(5);
                 this.MuscleTendonParamB1 = tmr;
-                tmr(:) = mu(2);
+                tmr(:) = mu(6);
                 this.MuscleTendonParamD1 = tmr;
                 tmr(:) = mu(9);
                 this.MuscleTendonParamc10 = tmr;
