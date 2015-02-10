@@ -207,10 +207,10 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             %
             
             %% Mus 1 - Only PMAX
-%             range = 320:20:400;
-%             idx = 13;
-%             mustr = sprintf('-%d',range);
-%             prefix = 'pmax';
+            range = 320:20:400;
+            idx = 13;
+            mustr = sprintf('-%d',range);
+            prefix = 'pmax';
             
             %% Mus 1 - Only lambda_opt
 %             range = 2:.1:2.2;
@@ -219,18 +219,18 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
 %             prefix = 'lamopt';
             
             %% Mus 3 - pmax/lamdaopt
-            range = Utils.createCombinations(400:10:460,2:.025:2.2);
-            idx = [13 14];
-            mustr = [sprintf('-%g',400:10:460) '/' sprintf('-%g',2:.025:2.2)];
-            prefix = 'pmax_lamopt';
+%             range = Utils.createCombinations(400:10:460,2:.025:2.2);
+%             idx = [13 14];
+%             mustr = [sprintf('-%g',400:10:460) '/' sprintf('-%g',2:.025:2.2)];
+%             prefix = 'pmax_lamopt';
             
             %% -- EACH to be combinable with --
             
             %% Geoconfig 1
             % Straight fibres in x direction, "loose" ends that
             % allow the geometry to expand when compressed
-%             c = experiments.IsometricActivation('Tag',prefix,'BC',1,'FL',1);
-%             cap = 'Movable setup with x-aligned fibres';
+            c = experiments.IsometricActivation('Tag',prefix,'BC',1,'FL',1);
+            cap = 'Movable setup with x-aligned fibres';
             
             %% Geoconfig 2
             % Straight fibres in x direction, but completely
@@ -241,8 +241,8 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             %% Geoconfig 3
             % Diagonal fibres in xz direction with completely
             % fixed ends
-            c = experiments.IsometricActivation('Tag',[prefix '_fixed_xzfibre'],'BC',3,'FL',1);
-            cap = 'Fixed setup with xz-diagonal fibres';
+%             c = experiments.IsometricActivation('Tag',[prefix '_fixed_xzfibre'],'BC',3,'FL',1);
+%             cap = 'Fixed setup with xz-diagonal fibres';
             
             %% NOT CONFIGURABLE PART
             m = muscle.Model(c);
