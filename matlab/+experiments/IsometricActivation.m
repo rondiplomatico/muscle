@@ -238,7 +238,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             
             %% NOT CONFIGURABLE PART
             m = muscle.Model(c);
-            e = experiments.ExperimentRunner(m);
+            e = tools.ExperimentRunner(m);
             mus = repmat(m.DefaultMu,1,size(range,2));
             mus(idx,:) = range;
             data = e.runExperimentsCached(mus);
@@ -246,6 +246,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             sp = c.ExperimentalStretchMillimeters;
             [sp,idx] = sort(sp);
             passive = data.o(:,idx,2);
+            passive(:,1:5) = -passive(:,1:5);
             active = data.o(:,idx,1)-passive;
             
             pm = PlotManager;
