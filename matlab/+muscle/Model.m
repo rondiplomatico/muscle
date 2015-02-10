@@ -150,6 +150,7 @@ classdef Model < models.BaseFullModel
                 'force-length relation [-]');
             plot(h,lambda,fl,'r');
             
+            mu(5:8)
             %% Effective force-length function for muscle tissue
             % effective signal from active part
             fl_eff = (mu(13)./lambda) .* fl;

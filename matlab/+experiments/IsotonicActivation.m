@@ -1,4 +1,4 @@
-classdef IsometricActivation < experiments.AExperimentModelConfig
+classdef IsotonicActivation < experiments.AExperimentModelConfig
     % Implements the isometric contraction experiment
     
     properties(Constant)
@@ -12,26 +12,17 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
     end
     
     methods
-        function this = IsometricActivation(varargin)
+        function this = IsotonicActivation(varargin)
             this = this@experiments.AExperimentModelConfig(varargin{:});
-            this.addOption('BC',1);
+            %this.addOption('BC',1);
             this.init;
             
+            % We need computed initial conditions on this one
+            this.HasICComputation = true;
+            
             this.NumOutputs = 2;
-            this.NumConfigurations = 11;
-            % Data from GM5 muscle, originally in [N], here transferred to
-            % [mN]
-            this.TargetOutputValues = [9.6441	0.0217
-                10.7124	0.0578
-                8.8006	-0.0112
-                11.1749	0.1151
-                7.1639	-0.0428
-                11.295	0.1533
-                3.5734	-0.0604
-                10.8832	0.1969
-                2.1067	-0.061
-                10.3544	0.2547
-                1.065	-0.0568]*1000;
+            this.NumConfigurations = 1;
+            this.TargetOutputValues = 1;
             
             this.VelocityBCTimeFun = tools.ConstantUntil(this.PositioningTime,.01);
         end
