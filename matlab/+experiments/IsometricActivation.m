@@ -103,7 +103,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                     idx = m.getVelocityDirichletBCFaceIdx(37:48,4);
             end
             o(1) = max(abs(sum(df(idx,act_range),1)));
-            o(2) = abs(sum(df(idx,passive_pos)));
+            o(2) = sum(df(idx,passive_pos));
 %             figure;
 %             plot(t,sum(df(idx,:)));
         end
