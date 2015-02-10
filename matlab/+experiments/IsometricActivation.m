@@ -16,10 +16,6 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             this = this@experiments.AExperimentModelConfig(varargin{:});
             this.addOption('BC',1);
             this.init;
-            % Dont need BC for "true" GM
-            if this.Options.GeoNr == 2
-                this.Options.BC = [];
-            end
             
             this.NumOutputs = 2;
             this.NumConfigurations = 11;
@@ -101,14 +97,13 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             act_range = passive_pos + 1 : size(y,2);
             switch this.Options.GeoNr
                 case 1
-                    idx = m.getVelocityDirichletBCFaceIdx(3,2);
-                    o(1) = max(abs(sum(df(idx,act_range),1)));
-                    o(2) = abs(sum(df(idx,passive_pos)));
+                    idx = m.getVelocityDirichletBCFaceIdx(3,2);        
                 case 2    
-%                     idx = m.getPositionDirichletBCFaceIdx(1,1);
-%                     o(3) = sum(df(idx,passive_pos));
-%                     o(4) = max(sum(df(idx,act_range),1));
+                    %this.Geometry.Nodes(2,:) > 33 & m.System.bool_v_bc_nodes
+                    idx = m.getVelocityDirichletBCFaceIdx(37:48,4);
             end
+            o(1) = max(abs(sum(df(idx,act_range),1)));
+            o(2) = abs(sum(df(idx,passive_pos)));
 %             figure;
 %             plot(t,sum(df(idx,:)));
         end

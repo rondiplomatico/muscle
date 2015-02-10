@@ -10,6 +10,8 @@ classdef AModelConfig < handle
         
         PressFE;
         
+        Geometry;
+        
         Options;
     end
     
@@ -280,6 +282,7 @@ classdef AModelConfig < handle
             else
                 this.PosFE = fem.HexahedronSerendipity(pos_geo);
             end
+            this.Geometry = pos_geo;
             this.PressFE = fem.HexahedronTrilinear(press_geo);
             %this.PressFE = fem.HexahedronSerendipity(press_geo.toCube20Node);
             %this.PressFE = fem.HexahedronTriquadratic(press_geo.toCube27Node);
@@ -326,7 +329,7 @@ classdef AModelConfig < handle
     
     methods(Sealed)
         function [displ_dir, velo_dir, velo_dir_val] = getBC(this)
-            N = this.PosFE.Geometry.NumNodes;
+            N = this.Geometry.NumNodes;
             displ_dir = false(3,N);
             displ_dir = this.setPositionDirichletBC(displ_dir);
             velo_dir = false(3,N);
@@ -340,7 +343,7 @@ classdef AModelConfig < handle
         
         function anull = geta0(this)
             fe = this.PosFE;
-            g = fe.Geometry;
+            g = this.Geometry;
             anull = zeros(3,fe.GaussPointsPerElem,g.NumElements);
             anull = this.seta0(anull);
             % Normalize anull vectors
