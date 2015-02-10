@@ -84,9 +84,9 @@ classdef Model < models.BaseFullModel
             % Propagate the current default param
             this.System.prepareSimulation(this.DefaultMu, this.DefaultInput);
             
-            fprintf('Running Jacobian health check..');
-            res = this.System.f.test_Jacobian;
-            fprintf('Done. Success=%d\n',res);
+%             fprintf('Running Jacobian health check..');
+%             res = this.System.f.test_Jacobian;
+%             fprintf('Done. Success=%d\n',res);
 %             chk = this.Config.PosFE.test_JacobiansDefaultGeo;
 % %             chk = chk && this.Config.PosFE.test_QuadraticBasisFun;
 %             chk = chk && this.Config.PressFE.test_JacobiansDefaultGeo;
@@ -282,15 +282,8 @@ classdef Model < models.BaseFullModel
             [varargout{1:nargout}] = this.System.plot(0,x0,varargin{:});
         end
         
-        function plotGeometryInfo(this, allnode, elemnr)
-            if nargin < 3
-                elemnr = 1;
-                if nargin < 2
-                    allnode = false;
-                end
-            end
-            g = this.Config.PosFE.Geometry;
-            g.plot(allnode,elemnr);
+        function plotGeometryInfo(this, varargin)
+            this.Config.plotGeometryInfo(varargin{:});
         end
         
         function [residuals_dirichlet, residuals_neumann] = getResidualForces(this, t, uvw)

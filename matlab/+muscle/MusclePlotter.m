@@ -396,9 +396,9 @@ classdef MusclePlotter < handle
             pd.residuals = zeros(size(pd.residuals_pos));
 
             %% Fibres
-            if sys.HasFibres || ~isempty(opts.Invariants)
+            %if sys.HasFibres || ~isempty(opts.Invariants)
                 pd.Ngp = dfem.N(dfem.GaussPoints);
-            end
+            %end
             
             % Set muscle color either way
             pd.musclecol = [0.854688, 0.201563, 0.217188];

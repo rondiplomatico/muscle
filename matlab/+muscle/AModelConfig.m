@@ -244,6 +244,17 @@ classdef AModelConfig < handle
             end
             str = Utils.implode(strs,'_');
         end
+        
+        function plotGeometryInfo(this, allnode, elemnr)
+            if nargin < 3
+                elemnr = 1;
+                if nargin < 2
+                    allnode = false;
+                end
+            end
+            g = this.PosFE.Geometry;
+            g.plot(allnode,elemnr);
+        end
     end
     
     methods(Access=protected)
