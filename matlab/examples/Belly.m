@@ -178,13 +178,14 @@ classdef Belly < muscle.AModelConfig
             % is larger than the intermediate node position of the side
             % faces, the muscle geometry will appear "dented".
             if ~isempty(opt.MinZ)
+                error('Fixme');
                 hlp_g27 = geometry.Cube27Node;
                 centerline_facenodeidx = hlp_g27.MasterFaces(3,:);
                 for elem = [3:4:4*parts 4:4:4*parts]
                     centerline_nodes = elems(elem,centerline_facenodeidx);
-                    toScale = nodes(2,centerline_nodes) < minz;
-                    factor = minz./nodes(2,centerline_nodes(toScale));
-                    nodes(2,centerline_nodes(toScale)) = minz;
+                    toScale = nodes(2,centerline_nodes) < opt.MinZ;
+                    factor = opt.MinZ./nodes(2,centerline_nodes(toScale));
+                    nodes(2,centerline_nodes(toScale)) = opt.MinZ;
                     % Also scale inner node positions
                     inner_nodes = elems(elem,[4:6 13:15 22:24]);
                     nodes(2,inner_nodes(toScale)) = nodes(2,inner_nodes(toScale)).*factor;
@@ -273,17 +274,19 @@ classdef Belly < muscle.AModelConfig
         end
         
         function res = test_BellyGeometryGeneration
-            g = Belly.getBelly;
-            g = Belly.getBelly(4,35,1,.2,7);
-            g = Belly.getBelly(4,35,1,[.2 .6],5);
-            g = Belly.getBelly(4,35,1,.2,[10 20]);
-            g = Belly.getBelly(4,35,1,[.2 .6],[10 20]);
-            g = Belly.getBelly(4,35,[4 2],.5,[10 20]);
-            g = Belly.getBelly(4,35,@(x)[sqrt(abs(x)); 1./(x-34).^2],.2);
+            g = Belly.getBelly(4,35,'InnerRadius',.2,'Gamma',7);
+            g = Belly.getBelly(4,35,'InnerRadius',[.2 .6],'Gamma',5);
+            g = Belly.getBelly(4,35,'InnerRadius',.2,'Gamma',[10 20]);
+            g = Belly.getBelly(4,35,'InnerRadius',[.2 .6],'Gamma',[10 20]);
+            g = Belly.getBelly(4,35,'Radius',[4 2],'InnerRadius',.5,'Gamma',[10 20]);
+            g = Belly.getBelly(4,35,'Radius',@(x)[sqrt(abs(x)); 1./(x-34).^2],'InnerRadius',.2);
             g.plot;
-            g = Belly.getBelly(4,35,@(x)sqrt(abs(x)));
+            g = Belly.getBelly(4,35,'Radius',@(x)sqrt(abs(x)));
             g.plot;
-            g = Belly.getBelly(4,35,[4 2],.5,[10 20],-1.5);
+%             g = Belly.getBelly(4,35,'Radius',[4 2],'InnerRadius',.5,...
+%                 'Gamma',[10 20],'MinZ',-1.5);
+%             g.plot;
+            g = Belly.getBelly(4,35,'Radius',@(x)sqrt(abs(x)),'Layers',[.4 .7 1]);
             g.plot;
             res = 1;
         end
