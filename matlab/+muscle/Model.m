@@ -47,18 +47,8 @@ classdef Model < models.BaseFullModel
             %this.Data.useFileTrajectoryData;
             
             this.System = muscle.System(this);
-            
-            % This defines a default behaviour for all muscle models.
-            % Override in AModelConfig.configureModel for dependent
-            % behaviour.
-            % Default is no activation ramp, no pressure and no input
-            % current.
-            this.DefaultMu = [1; 0; 0; 0
-                % Anisotropic parameters muscle+tendon (Markert)
-                2.756e-5; 43.373; 7.99; 16.6
-                % Isotropic parameters muscle+tendon (Moonley-Rivlin)
-                35.6; 3.86; 2310; 1.15e-3 % Micha, % 6.352e-10; 3.627 [Kpa] thomas alt 
-                250; 2.05]; 
+            % Sets DefaultMu
+            this.initDefaultParameter;
             
             this.TrainingParams = [1 2];
             

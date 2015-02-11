@@ -79,7 +79,7 @@ classdef DebugConfig < muscle.AModelConfig
                 this.Pool = p;
                 m.ODESolver.RelTol = .01;
                 m.ODESolver.AbsTol = .1;
-                m.PlotterDefaultArgs = {'Pool',true};
+                m.Plotter.DefaultArgs = {'Pool',true};
                 m.DefaultMu(4) = 4;
             case {4,5,6}
                 %% Material configuration from CMISS/3Elem_sprenger.xml                
