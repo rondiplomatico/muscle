@@ -18,6 +18,7 @@ classdef Config_FEDEIM < muscle.AModelConfig
         end
         
         function configureModel(this, m)
+            configureModel@muscle.AModelConfig(this, m);
             m.T = 100;
             m.dt = .01;
             m.DefaultMu(1:4) = [1; 20; 0; 0];

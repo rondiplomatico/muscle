@@ -12,6 +12,7 @@ classdef Shaker < muscle.AModelConfig
         end
         
         function configureModel(this, m)
+            configureModel@muscle.AModelConfig(this, m);
             m.T = 40;
             m.dt = .05;
             

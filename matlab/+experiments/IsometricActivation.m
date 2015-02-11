@@ -37,17 +37,13 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
         end
         
         function configureModel(this, m)
+            configureModel@muscle.AModelConfig(this, m);
             os = m.ODESolver;
             os.RelTol = 1e-4;
             os.AbsTol = .001;
             
             m.T = this.PositioningTime + this.RelaxTime + this.ActivationTime;
             m.dt = m.T / 300;
-            
-            m.DefaultMu(5) = .001;
-            m.DefaultMu(6) = 40;
-            m.DefaultMu(7) = 1;
-            m.DefaultMu(8) = 40;
             
             m.DefaultMu(13) = 380; % [kPa]
             m.DefaultMu(14) = 2.05; % lambda_opt, educated guess from data
@@ -61,6 +57,13 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             % IMPORTANT! Leave off, as the cache only recognized
             % parameter/input changes but not different BCs!
             m.EnableTrajectoryCaching = false;
+        end
+        
+        function configureModelFinal(this)
+            if this.Options.GeoNr == 2
+                m = this.Model;
+                m.Plotter.DefaultArgs = {'Fibres',false};
+            end
         end
         
         function tmr = getTendonMuscleRatio(this, points)

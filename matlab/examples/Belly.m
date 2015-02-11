@@ -25,7 +25,8 @@ classdef Belly < muscle.AModelConfig
             this.Pool = p;
         end
         
-        function configureModel(~, m)
+        function configureModel(this, m)
+            configureModel@muscle.AModelConfig(this, m);
             m.T = 150;
             m.dt = .1;
             m.DefaultMu(4) = 6;

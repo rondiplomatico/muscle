@@ -9,7 +9,8 @@ classdef Long < muscle.AModelConfig
             this.init;
         end
         
-        function configureModel(~, m)
+        function configureModel(this, m)
+            configureModel@muscle.AModelConfig(this, m);
             m.T = 50;
             m.dt = 1;
             m.DefaultMu(1) = .1;

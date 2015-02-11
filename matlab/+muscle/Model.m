@@ -63,7 +63,6 @@ classdef Model < models.BaseFullModel
             this.System.MaxTimestep = []; %model.dt;
             
             % Call the config-specific model configuration
-            conf.Model = this;
             conf.configureModel(this);
             
             % Set the config to the model, triggering geometry related
@@ -270,7 +269,7 @@ classdef Model < models.BaseFullModel
             if ~isempty(nf)
                 varargin(end+1:end+2) = {'NF',nf};
             end
-            [varargout{1:nargout}] = this.System.plot(0,x0,varargin{:});
+            [varargout{1:nargout}] = this.plot(0,x0,varargin{:});
         end
         
         function plotGeometryInfo(this, varargin)
@@ -373,9 +372,8 @@ classdef Model < models.BaseFullModel
             end
             this.Config = value;
             this.System.configUpdated;
-            
-            %% Compile information for plotting
             this.Plotter = muscle.MusclePlotter(this.System);
+            value.configureModelFinal;
         end
         
         function setGaussIntegrationRule(this, value)

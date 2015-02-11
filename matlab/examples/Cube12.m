@@ -6,7 +6,8 @@ classdef Cube12 < muscle.AModelConfig
             this.init;
         end
         
-        function configureModel(~, m)
+        function configureModel(this, m)
+            configureModel@muscle.AModelConfig(this, m);
             m.T = 40;
             m.dt = .05;
             % Activate over 20ms

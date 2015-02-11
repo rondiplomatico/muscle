@@ -42,12 +42,14 @@ classdef DebugConfig < muscle.AModelConfig
             switch this.Options.Version
                 case {4,5,6}
                     this.VelocityBCTimeFun = tools.ConstantUntil(10);
+                    this.Options.FL = 2;
                 case {7,8,9}
                     this.VelocityBCTimeFun = tools.ConstantUntil(9.5);
             end
         end
         
         function configureModel(this, m)
+            configureModel@muscle.AModelConfig(this, m);
             sys = m.System;
             f = sys.f;
             m.T = 1;
@@ -97,10 +99,6 @@ classdef DebugConfig < muscle.AModelConfig
                 m.DefaultMu(13) = 300; % [kPa]
                 % lambda_ofl_calculation
                 m.DefaultMu(14) = 1.4; % [-]
-                f.ForceLengthFun = @(ratio)(ratio<=1).*exp(-((1-ratio)/.57).^4) + (ratio>1).*exp(-((ratio-1)/.14).^3);
-                % The derivative of the force-length function as function handle
-                f.ForceLengthFunDeriv = @(ratio)(ratio<=1).*((1/.57)*(((1-ratio)/.57).^3).*exp(-((1-ratio)/.57).^4)) ...
-                    - (ratio > 1) .* ((1/.14) .* (((ratio-1)/.14).^2) .* exp(-((ratio-1)/.14).^3));
                 m.T = 12;
                 m.dt = .2;
             case {7,8,9}

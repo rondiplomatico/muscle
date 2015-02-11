@@ -24,6 +24,7 @@ classdef EntireTA < muscle.AModelConfig
         end
         
         function configureModel(this, m)
+            configureModel@muscle.AModelConfig(this, m);
             % Overload this method to set model-specific quantities like
             % simulation time etc
             m.T = 200;

@@ -32,7 +32,7 @@ classdef SidePressureTest < experiments.AExperimentModelConfig
         end
         
         function configureModel(this, m)
-            
+            configureModel@muscle.AModelConfig(this, m);
             m.T = this.ActivationTime+this.RelaxTime+this.LoadRampTime+10;
             m.dt = m.T/200;
             m.DefaultInput = 1;

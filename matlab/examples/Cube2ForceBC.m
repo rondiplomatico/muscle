@@ -8,6 +8,7 @@ classdef Cube2ForceBC < muscle.AModelConfig
         end
         
         function configureModel(this, m)
+            configureModel@muscle.AModelConfig(this, m);
             m.T = 4;
             m.dt = .01;
             m.DefaultMu(1) = .1;

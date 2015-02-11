@@ -27,6 +27,7 @@ classdef QuickRelease < experiments.AExperimentModelConfig
         end
         
         function configureModel(this, m)
+            configureModel@muscle.AModelConfig(this, m);
             os = m.ODESolver;
             switch this.GeoNr
                 case 1

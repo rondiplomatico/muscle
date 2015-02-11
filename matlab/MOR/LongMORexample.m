@@ -34,7 +34,7 @@ classdef LongMORexample < muscle.AModelConfig
         end
         
         function configureModel(this, model)
-            %
+            configureModel@muscle.AModelConfig(this, m);
             model.T = 100;
             model.dt = 1;
             model.EnableTrajectoryCaching = true;

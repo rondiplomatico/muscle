@@ -10,7 +10,8 @@ classdef LongForceBC < muscle.AModelConfig
             this.ActivationRampMax = .4;
         end
         
-        function configureModel(~, m)
+        function configureModel(this, m)
+            configureModel@muscle.AModelConfig(this, m);
             m.T = 40;
             m.dt = .2;
             m.DefaultMu(1) = .1;

@@ -30,6 +30,7 @@ classdef IsotonicActivation < experiments.AExperimentModelConfig
         end
         
         function configureModel(this, m)
+            configureModel@muscle.AModelConfig(this, m);
             os = m.ODESolver;
             os.RelTol = 1e-4;
             os.AbsTol = .001;
