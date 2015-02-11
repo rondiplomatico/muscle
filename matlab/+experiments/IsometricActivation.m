@@ -18,7 +18,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             this.init;
             
             this.NumOutputs = 2;
-            this.NumConfigurations = 11;
+            this.NumConfigurations = length(this.ExperimentalStretchMillimeters);
             % Data from GM5 muscle, originally in [N], here transferred to
             % [mN]
             this.TargetOutputValues = [9.6441	0.0217
@@ -246,7 +246,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             sp = c.ExperimentalStretchMillimeters;
             [sp,idx] = sort(sp);
             passive = data.o(:,idx,2);
-            passive(:,1:5) = -passive(:,1:5);
+            passive(:,sp < 0) = -passive(:,sp < 0);
             active = data.o(:,idx,1)-passive;
             
             pm = PlotManager;

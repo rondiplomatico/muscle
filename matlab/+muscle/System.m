@@ -311,9 +311,6 @@ classdef System < models.BaseDynSystem
                 
                 %% Initial value
                 this.x0 = dscomponents.ConstInitialValue(this.assembleX0);
-                
-                %% Compile information for plotting
-                this.Plotter = muscle.MusclePlotter(this);
             end
         end
         
@@ -337,10 +334,6 @@ classdef System < models.BaseDynSystem
                 -4*this.MuscleTendonParamc01;
             
             prepareSimulation@models.BaseDynSystem(this, mu, inputidx);
-        end
-        
-        function plot(this, t, y, varargin)
-            this.Plotter.plot(t, y, varargin{:});
         end
         
         function pm = plotDiff(this, t, uvw1, uvw2, fac, varargin)

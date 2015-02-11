@@ -92,6 +92,11 @@ classdef AModelConfig < handle
             this.addOption('FL',1);
         end
         
+        function m = createModel(this)
+            % Convenience method
+            m = muscle.Model(this);
+        end
+        
         function configureModel(this, model)
             % Overload this method to set model-specific quantities like
             % simulation time etc

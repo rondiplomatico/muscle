@@ -9,6 +9,8 @@ classdef IsotonicActivation < experiments.AExperimentModelConfig
         ActivationTime = 100; %[ms]
         PositioningTime = 50; %[ms]
         RelaxTime = 10; %[ms]
+        
+        PreStretchLength = 10; %[mm]
     end
     
     methods
@@ -18,7 +20,7 @@ classdef IsotonicActivation < experiments.AExperimentModelConfig
             this.init;
             
             % We need computed initial conditions on this one
-            this.HasICComputation = true;
+            this.RequiresComputedInitialConditions = true;
             
             this.NumOutputs = 2;
             this.NumConfigurations = 1;

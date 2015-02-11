@@ -9,6 +9,7 @@ classdef MusclePlotter < handle
     
     properties
         GeoView = [46 30];
+        DefaultArgs = {};
     end
 
     properties(SetAccess=private)
@@ -359,7 +360,7 @@ classdef MusclePlotter < handle
             i.addParamValue('Invariants',[]);
             i.addParamValue('Pause',.01);
             
-            args = [this.System.Model.PlotterDefaultArgs args];
+            args = [this.DefaultArgs args];
             i.parse(args{:});
             opts = i.Results;
             if ~isempty(opts.NF)

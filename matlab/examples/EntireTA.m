@@ -1,10 +1,10 @@
 classdef EntireTA < muscle.AModelConfig
     
     methods
-        function this = EntireTA
+        function this = EntireTA(varargin)
             % Single cube with same config as reference element
-            s = load(fullfile(fileparts(which(mfilename)),'..','CMISS','EntireTA.mat'));
-            this = this@muscle.AModelConfig(s.geo27);
+            this = this@muscle.AModelConfig(varargin{:});
+            this.init;
 
             %% Muscle fibre weights
 %             geo = s.geo27;
@@ -38,6 +38,12 @@ classdef EntireTA < muscle.AModelConfig
     end
     
     methods(Access=protected)
+        
+        function geo = getGeometry(this)
+            s = load(fullfile(fileparts(which(mfilename)),'..','CMISS','EntireTA.mat'));
+            geo = s.geo27;
+        end
+        
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             %% Dirichlet conditions: Position (fix one side)
             geo = this.PosFE.Geometry;
@@ -51,6 +57,13 @@ classdef EntireTA < muscle.AModelConfig
         function anull = seta0(~, anull)
             % The elements are aligned so that the fibres go in x-direction
             anull(1,:,:) = 1;
+        end
+    end
+    
+    methods(Static)
+        function test_EntireTA
+            m = muscle.Model(EntireTA);
+            m.simulateAndPlot;
         end
     end
     

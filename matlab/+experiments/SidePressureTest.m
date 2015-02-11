@@ -1,4 +1,4 @@
-classdef SidePressureTest < muscle.AModelConfig
+classdef SidePressureTest < experiments.AExperimentModelConfig
 % Tests to investigate the difference between quasi-static and dynamic
 % simulations.
 %
@@ -8,8 +8,6 @@ classdef SidePressureTest < muscle.AModelConfig
 %
 
     properties(Constant)
-        OutputDir = fullfile(fileparts(which(mfilename)),'sidepressure');
-        
         % The time over which the muscle is activated
         ActivationTime = .5; % [ms]
         
@@ -20,33 +18,15 @@ classdef SidePressureTest < muscle.AModelConfig
         LoadRampTime = 4; % [ms]
     end
 
-    properties
-        GeoNr;
-    end
-    
     properties(SetAccess=private)
         Loads;
         Pressures;
     end
 
     methods
-        function this = SidePressureTest(geonr)
-            if nargin < 1
-                geonr = 1;
-            end
-            Utils.ensureDir(SidePressureTest.OutputDir);
-            switch geonr
-                case 1
-                    [pts, cubes] = geometry.Cube8Node.DemoGrid(0:20:60,[0 20],[0 20]);
-                    geo = geometry.Cube8Node(pts, cubes);
-                case 2
-                    geo = Belly.getBelly(5, 50, 3.5, 2.5, 15);
-                case 3
-                    s = load(fullfile(fileparts(which(mfilename)),'..','CMISS','EntireTA.mat'));
-                    geo = s.geo27;
-            end
-            this = this@muscle.AModelConfig(geo);
-            this.GeoNr = geonr;
+        function this = SidePressureTest(varargin)
+            this = this@experiments.AExperimentModelConfig(varargin{:});
+            this.init;
             this.NeumannCoordinateSystem = 'global';
             this.ActivationRampMax = .5;
         end
@@ -77,7 +57,7 @@ classdef SidePressureTest < muscle.AModelConfig
             m.DefaultMu(14) = 1; % [-]
             
             os = m.ODESolver;
-            switch this.GeoNr
+            switch this.Options.GeoNr
                 case 1
                     os.RelTol = .01;
                     os.AbsTol = .1;%.05;
@@ -93,7 +73,7 @@ classdef SidePressureTest < muscle.AModelConfig
 %             geo = m.Geo;
             df = m.getResidualForces(t, uvw);
 %             uvw = m.System.includeDirichletValues(t, uvw);
-            switch this.GeoNr
+            switch this.Options.GeoNr
                 case 1
                     idx = m.getPositionDirichletBCFaceIdx(1,1);
                     o(1,:) = mean(df(idx,:),1);
@@ -121,7 +101,7 @@ classdef SidePressureTest < muscle.AModelConfig
             %
             % See also: NeumannCoordinateSystem
             P = [];
-            switch this.GeoNr
+            switch this.Options.GeoNr
                 case 1
                     if elemidx == 2 && faceidx == 6
                         P = -1;
@@ -147,7 +127,7 @@ classdef SidePressureTest < muscle.AModelConfig
             % [kg]*[m/s²] = [N]
             % [N]*1000 = [mN]
             % [mN]/[mm²] = [kPa]
-            switch this.GeoNr
+            switch this.Options.GeoNr
                 case 1
                     a = this.PosFE.getFaceArea(2,6);
                 case 2
@@ -170,12 +150,25 @@ classdef SidePressureTest < muscle.AModelConfig
     
     methods(Access=protected)
         
+        function geo = this.getGeometry(this)
+            switch this.Options.GeoNr
+                case 1
+                    [pts, cubes] = geometry.Cube8Node.DemoGrid(0:20:60,[0 20],[0 20]);
+                    geo = geometry.Cube8Node(pts, cubes);
+                case 2
+                    geo = Belly.getBelly(5, 50, 'Radius', 3.5, 'InnerRadius', 2.5, 'Gamma', 15);
+                case 3
+                    s = load(fullfile(fileparts(which(mfilename)),'..','CMISS','EntireTA.mat'));
+                    geo = s.geo27;
+            end
+        end
+        
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             
             geo = this.PosFE.Geometry;
             %% Dirichlet conditions: Position (fix one side)
             % This is done for each test case.
-            switch this.GeoNr
+            switch this.Options.GeoNr
                 case 1
                     % Fix front
                     displ_dir(:,geo.Elements(1,geo.MasterFaces(1,:))) = true;
@@ -205,7 +198,7 @@ classdef SidePressureTest < muscle.AModelConfig
         end
         
         function anull = seta0(this, anull)
-            switch this.GeoNr
+            switch this.Options.GeoNr
                 case {1, 3}
                     % Fibres in x direction
                     anull(1,:,:) = 1;

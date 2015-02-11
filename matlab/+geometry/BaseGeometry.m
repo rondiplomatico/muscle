@@ -187,18 +187,22 @@ classdef BaseGeometry < handle
                     folder = pwd;
                 end
             end
-            % exnode file
+            %% exnode file
             exnode = fullfile(folder,[name '.exnode']);
             f = fopen(exnode,'w+');
             fprintf(f,'Group name : %s\n',name);
-            fprintf(f,'#Fields=0\n');
+            fprintf(f,'#Fields=1\n');
+            fprintf(f,'1) coordinates, coordinate, rectangular cartesian, #Components=3\n');
+            fprintf(f,'x.  Value index= 1, #Derivatives= 0\n');
+            fprintf(f,'y.  Value index= 2, #Derivatives= 0\n');
+            fprintf(f,'z.  Value index= 3, #Derivatives= 0\n');
             for n = 1:this.NumNodes
                 fprintf(f,'Node:\t%d\n',n);
                 fprintf(f,'%E\n',this.Nodes(:,n));
             end
             fclose(f);
             
-            % exelem file
+            %% exelem file
             exelem = fullfile(folder,[name '.exelem']);
             f = fopen(exelem,'w+');
             fprintf(f,'Group name : %s\n',name);
@@ -227,8 +231,14 @@ classdef BaseGeometry < handle
             
             % 3D elements
             fprintf(f,'Shape.  Dimension=3\n');
-            fprintf(f,'#Nodes=%d\n',size(this.Elements,2));
+            fprintf(f,'#Scale factor sets=0\n');
+            fprintf(f,'#Nodes=0\n');
+%             fprintf(f,'#Nodes=%d\n',size(this.Elements,2));
             fprintf(f,'#Fields=0\n');
+%             fprintf(f,'1) coordinates, coordinate, rectangular cartesian, #Components=3\n');
+%             fprintf(f,'x.  l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.\n');
+%             fprintf(f,'y.  l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.\n');
+%             fprintf(f,'z.  l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.\n');
             for m = 1:this.NumElements
                 fprintf(f,'Element: %d 0 0\n',m);
                 % See if this element has any faces

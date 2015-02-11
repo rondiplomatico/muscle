@@ -11,8 +11,8 @@ classdef Model < models.BaseFullModel
     properties
         MuscleDensity = 1.1e-6; % [kg/mm³] (1100kg/m³)
         
-        % Any arguments to add to any model.plot command for convenience.
-        PlotterDefaultArgs = {};
+        % The plotter class for visualization
+        Plotter;
     end
     
     properties(SetAccess=private)
@@ -383,6 +383,9 @@ classdef Model < models.BaseFullModel
             end
             this.Config = value;
             this.System.configUpdated;
+            
+            %% Compile information for plotting
+            this.Plotter = muscle.MusclePlotter(this.System);
         end
         
         function setGaussIntegrationRule(this, value)
@@ -397,35 +400,16 @@ classdef Model < models.BaseFullModel
         end
         
         function varargout = plot(this, varargin)
-            % plots some interesting states of the model
-            %
-            % See also: musclefibres.MuscleFibreSystem
-            [varargout{1:nargout}] = this.System.plot(varargin{:});
+            [varargout{1:nargout}] = this.Plotter.plot(varargin{:});
         end
         
         function value = get.Geo(this)
-            value = this.Config.PosFE.Geometry;
+            value = this.Config.Geometry;
         end
     end
     
-%     methods(Access=protected)
-%         function value = getSimCacheExtra(this)
-%             % Return values:
-%             % value: A column vector with additional values to distinguish
-%             % the simulation from others (internal configurations) @type
-%             % colvec<double>
-%             value = this.System.f.RampTime;
-%         end
-%     end
-    
     methods(Static)
         function test_ModelVersions
-            % @TODO
-            %
-            % deformed reference geom
-            % dirichlet nodes with not all 3 directions fixed, plotting
-            
-            
             m = muscle.Model(muscle.DebugConfig);
             mu = m.getRandomParam;
             [t,y] = m.simulate(mu);

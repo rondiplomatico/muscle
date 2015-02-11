@@ -3,14 +3,10 @@ classdef Long < muscle.AModelConfig
 % complex fibre structure
 
     methods
-        function this = Long(devi)
-            if nargin < 1
-                devi = 2;
-            end
-            % Single cube with same config as reference element
-            [pts, cubes] = geometry.Cube20Node.DemoGrid(-10:10:10,-40:10:40, [0 10], devi);
-            geo = geometry.Cube20Node(pts, cubes);
-            this = this@muscle.AModelConfig(geo);
+        function this = Long(varargin)
+            this = this@muscle.AModelConfig(varargin{:});
+            this.addOption('Devi',1);
+            this.init;
         end
         
         function configureModel(~, m)
@@ -22,6 +18,12 @@ classdef Long < muscle.AModelConfig
     end
     
     methods(Access=protected)
+        
+        function geo = getGeometry(this)
+            % Single cube with same config as reference element
+            [pts, cubes] = geometry.Cube20Node.DemoGrid(-10:10:10,-40:10:40, [0 10], this.Options.Devi);
+            geo = geometry.Cube20Node(pts, cubes);
+        end
         
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             %% Dirichlet conditions: Position (fix one side)
@@ -52,6 +54,13 @@ classdef Long < muscle.AModelConfig
                 anull(2,mid,[m m+8]) = basea0(1,off+2);
                 anull(2,back,[m m+8]) = basea0(1,off+3);
             end
+        end
+    end
+    
+    methods(Static)
+        function test_Long
+            m = muscle.Model(Long);
+            m.simulateAndPlot;
         end
     end
     

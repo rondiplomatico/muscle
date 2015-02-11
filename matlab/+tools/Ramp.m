@@ -24,7 +24,7 @@ classdef Ramp < tools.AFunGen
         
         function fhandle = getFunction(this)
             rt = this.ramptime;
-            if rt < 0
+            if rt <= 0
                 fhandle = @(t)0;
             else
                 maxval = this.max;

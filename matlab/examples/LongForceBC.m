@@ -3,11 +3,10 @@ classdef LongForceBC < muscle.AModelConfig
     % boundary face forces in opposing directions.
     
     methods
-        function this = LongForceBC
-            % Single cube with same config as reference element
-            [pts, cubes] = geometry.Cube8Node.DemoGrid([0 20],-40:10:40,[0 15],.1);
-            geo = geometry.Cube8Node(pts, cubes);
-            this = this@muscle.AModelConfig(geo.toCube20Node);
+        function this = LongForceBC(varargin)
+            this = this@muscle.AModelConfig(varargin{:});
+            this.init;
+
             this.ActivationRampMax = .4;
         end
         
@@ -64,6 +63,13 @@ classdef LongForceBC < muscle.AModelConfig
     
     methods(Access=protected)
         
+        function geo = getGeometry(this)
+            % Single cube with same config as reference element
+            [pts, cubes] = geometry.Cube8Node.DemoGrid([0 20],-40:10:40,[0 15],.1);
+            geo = geometry.Cube8Node(pts, cubes);
+            geo = geo.toCube20Node;
+        end
+        
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             %% Dirichlet conditions: Position (fix one side)
             geo = this.PosFE.Geometry;
@@ -73,6 +79,13 @@ classdef LongForceBC < muscle.AModelConfig
         function anull = seta0(~, anull)
            % Direction is xz
            anull([1 3],:,:) = 1;
+        end
+    end
+    
+    methods(Static)
+        function test_LongForceBC
+            m = muscle.Model(LongForceBC);
+            m.simulateAndPlot;
         end
     end
     

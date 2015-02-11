@@ -24,7 +24,7 @@ classdef MuscleTendonMix < muscle.AModelConfig
     % setup. No pulling force is applied but the muscle activated over 4s
     % to 1
     %
-    % Variant 6: A belly-shaped 
+    % Variant 6/7: A belly-shaped setup is used.
     
     properties
         Variant;
@@ -35,33 +35,11 @@ classdef MuscleTendonMix < muscle.AModelConfig
     end
     
     methods
-        function this = MuscleTendonMix(variantnr)
-            if nargin < 1
-                variantnr = 1;
-            end
-            switch variantnr
-                case 1
-                    % Four cubes in a row
-                    [pts, cubes] = geometry.Cube8Node.DemoGrid(0:1,0:4,0:1);
-                case {2 5}
-                    % Single cube with same config as reference element
-                    [pts, cubes] = geometry.Cube8Node.DemoGrid(0:1,0:1,0:1);
-                case {3 4}
-                    % 2x4x2 geometry
-                    [pts, cubes] = geometry.Cube8Node.DemoGrid(0:2,0:2:6,0:2);
-            end
-            if any(variantnr == [6 7])
-                yl = 10;
-                geo = Belly.getBelly(6,yl,1,.2,2);
-            else
-                geo = geometry.Cube8Node(pts, cubes);
-                geo = geo.toCube27Node;
-            end
-            this = this@muscle.AModelConfig(geo);
-            this.Variant = variantnr;
-            if any(variantnr == [6 7])
-                this.ylen = yl;
-            end
+        function this = MuscleTendonMix(varargin)
+            this = this@muscle.AModelConfig(varargin{:});
+            this.addOption('Variant',1);
+            this.init;
+            
             %this.NeumannCoordinateSystem = 'global';
         end
         
@@ -74,13 +52,14 @@ classdef MuscleTendonMix < muscle.AModelConfig
             os.RelTol = .0001;
             os.AbsTol = .05;
             
-            mu = [1; 0; 0; 0
+            mu = m.DefaultMu;
+            mu(1:12) = [1; 0; 0; 0
                     %% Anisotropic parameters muscle+tendon (Markert)
                     4.02; 38.5; 7990; 16.6
                     %% Isotropic parameters muscle+tendon (Moonley-Rivlin)
                     35.6; 3.86; 2310; 1.15e-3]; % Micha
                     % 6.352e-10; 3.627 [Kpa] thomas alt
-            switch this.Variant
+            switch this.Options.Variant
                 case {1 2}
                     mu(3) = 4000;
                 case 3
@@ -103,12 +82,14 @@ classdef MuscleTendonMix < muscle.AModelConfig
                     mu(2) = m.T*2/3; % activate 2/3rds of the time
                     mu(3) = 0;
             end
-            m.DefaultMu = mu;
-            m.DefaultMu(13) = 250; % Pmax [kPa]
-            m.DefaultMu(14) = 1.2; % lamdaopt [-]
+            mu(13) = 250; % Pmax [kPa]
             
+            m.DefaultMu = mu;
+        end
+        
+        function u = getInputs(this)
             % Ramp up the external pressure
-            m.System.Inputs{1} = this.getAlphaRamp(1,1);
+            u{1} = this.getAlphaRamp(1,1);
         end
         
         function tmr = getTendonMuscleRatio(this, points)
@@ -117,7 +98,7 @@ classdef MuscleTendonMix < muscle.AModelConfig
             %
             % This method simply returns an all-zero ratio, meaning muscle only. 
             tmr = zeros(1,size(points,2));
-            switch this.Variant
+            switch this.Options.Variant
                 case 1
                     ratios = linspace(0,1,4);
                     for k=1:4
@@ -143,7 +124,7 @@ classdef MuscleTendonMix < muscle.AModelConfig
             end
             % Use max .2 tendon - works but needs to be checked for higher
             % tendon parts (and current default parameter mu!!!!)
-            if this.Variant == 4
+            if this.Options.Variant == 4
                 tmr = 2*tmr/5;
             end
         end
@@ -171,7 +152,7 @@ classdef MuscleTendonMix < muscle.AModelConfig
             % In the default implementation there are no force boundary
             % conditions.
             P = [];
-            switch this.Variant
+            switch this.Options.Variant
                 % Pull on front face
                 case {1 2 3}
                     if any(elemidx == [1 2 7 8]) && faceidx == 3
@@ -187,11 +168,33 @@ classdef MuscleTendonMix < muscle.AModelConfig
     
     methods(Access=protected)
         
+        function geo = getGeometry(this)
+            switch this.Options.Variant
+                case 1
+                    % Four cubes in a row
+                    [pts, cubes] = geometry.Cube8Node.DemoGrid(0:1,0:4,0:1);
+                case {2 5}
+                    % Single cube with same config as reference element
+                    [pts, cubes] = geometry.Cube8Node.DemoGrid(0:1,0:1,0:1);
+                case {3 4}
+                    % 2x4x2 geometry
+                    [pts, cubes] = geometry.Cube8Node.DemoGrid(0:2,0:2:6,0:2);
+            end
+            if any(this.Options.Variant == [6 7])
+                yl = 10;
+                this.ylen = yl;
+                geo = Belly.getBelly(6,yl,'Radius',1,'InnerRadius',.2,'Gamma',2);
+            else
+                geo = geometry.Cube8Node(pts, cubes);
+                geo = geo.toCube27Node;
+            end
+        end
+        
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             %% Dirichlet conditions: Position (fix one side)
             geo = this.PosFE.Geometry;
             
-            switch this.Variant
+            switch this.Options.Variant
                 case {1 2 5}
                     % Fix all on left and only the y,z directions of the back right
                     % nodes
@@ -214,13 +217,26 @@ classdef MuscleTendonMix < muscle.AModelConfig
         end
         
         function anull = seta0(this, anull)
-            switch this.Variant
+            switch this.Options.Variant
                 case {1 2 5 6 7}
                     % Direction is y
                     anull(2,:,:) = 1;
                 case {3 4}
                     %anull(2,:,:) = 1;
                     anull([2 3],:,:) = -1;
+            end
+        end
+    end
+    
+    methods(Static)
+        function test_MuscleTendonMix(variant)
+            if nargin < 1
+                variant = 1:7;
+            end
+            for k = variant
+                fprintf('Testing MuscleTendonMix Variant %d\n',k);
+                m = muscle.Model(MuscleTendonMix('Variant',k));
+                m.simulateAndPlot;
             end
         end
     end
