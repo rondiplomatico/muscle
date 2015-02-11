@@ -5,11 +5,9 @@ classdef Belly < muscle.AModelConfig
     end
     
     methods
-        function this = Belly
-            np = 4;
-            belly = Belly.getBelly(np,10,1,.5,2);
-            this = this@muscle.AModelConfig(belly);
-            this.NumParts = np;
+        function this = Belly(varargin)
+            this = this@muscle.AModelConfig(varargin{:});
+            this.init;
             
             %% Muscle fibre weights
             types = [0 .2 .4 .6 .8 1];
@@ -27,14 +25,22 @@ classdef Belly < muscle.AModelConfig
             this.Pool = p;
         end
         
-        function configureModel(~, m)
+        function configureModel(this, m)
+            configureModel@muscle.AModelConfig(this, m);
             m.T = 150;
             m.dt = .1;
             m.DefaultMu(4) = 6;
+            m.Plotter.DefaultArgs = {'Pool',true};
         end
     end
     
     methods(Access=protected)
+        
+        function geo = getGeometry(this)
+            np = 4;
+            geo = Belly.getBelly(np,10,'Radius',1,'InnerRadius',.5,'Gamma',2);
+            this.NumParts = np;
+        end
         
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             %% Dirichlet conditions: Position (fix one side)
@@ -46,15 +52,6 @@ classdef Belly < muscle.AModelConfig
                 displ_dir(:,geo.Elements(k,geo.MasterFaces(3,:))) = true;
             end
         end
-        
-%         function [velo_dir, velo_dir_val] = setVelocityDirichletBC(this, velo_dir, velo_dir_val)
-%             %% Dirichlet conditions: Position (fix one side)
-%             geo = this.PosFE.Geometry;
-%             for k = [1 2 7 8]  
-%                 velo_dir(1,geo.Elements(k,[1:3 9 10 13:15])) = true;
-%             end
-%             velo_dir_val(velo_dir) = -.1;
-%         end
         
         function anull = seta0(~, anull)
             anull(2,:,:) = 1;
@@ -68,7 +65,7 @@ classdef Belly < muscle.AModelConfig
             i.addParamValue('Radius',1);
             i.addParamValue('InnerRadius',.5);
             i.addParamValue('Gamma',2);
-            i.addParamValue('Layers',2);
+            i.addParamValue('Layers',1);
             i.addParamValue('MinZ',[]);
             i.parse(varargin{:});
             opt = i.Results;
@@ -289,6 +286,11 @@ classdef Belly < muscle.AModelConfig
             g = Belly.getBelly(4,35,'Radius',@(x)sqrt(abs(x)),'Layers',[.4 .7 1]);
             g.plot;
             res = 1;
+        end
+        
+        function test_BellyModel
+            m = muscle.Model(Belly);
+            m.simulateAndPlot;
         end
     end
     

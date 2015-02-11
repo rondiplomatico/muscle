@@ -27,56 +27,40 @@ classdef DebugConfig < muscle.AModelConfig
     % Version 12: A cube with fibres and additional cross-fibre direction
     % markert pressure. (only activation used)
     
-    properties(SetAccess=private)
-        Version;
-    end
-    
     methods
-        function this = DebugConfig(version)
+        function this = DebugConfig(varargin)
+            % Quick fix for old-style DebugConfig call passing in the
+            % version number directly
+            if nargin == 1 && isscalar(varargin{1})
+                varargin = {'Version',varargin{1}};
+            end
             % Creates a Debug simple muscle model configuration.
-            %
-            if nargin < 1
-                version = 3;
-            end
-            % Single cube with same config as reference element
-            [pts, cubes] = geometry.Cube8Node.DemoGrid([0 1],[0 1],[0 1]);
-            if version == 11 || version == 12
-                [pts, cubes] = geometry.Cube8Node.DemoGrid([-1 1],[-1 1],[-1 1]);
-                pts(1,[6 8]) = 2;
-                theta = .3;
-                R = [cos(theta) -sin(theta) 0
-                     sin(theta) cos(theta)  0
-                     0          0           1];
-%                 R = [cos(theta) -sin(theta) 0
-%                        0 1 0
-%                      sin(theta) 0 cos(theta)];
-
-                pts = circshift(R,[1 1])*R*pts;
-            end
-            geo = geometry.Cube8Node(pts, cubes);
-            this = this@muscle.AModelConfig(geo.toCube27Node);
-            this.Version = version;
+            this = this@muscle.AModelConfig(varargin{:});
+            this.addOption('Version',3);
+            this.init;
             
-            switch this.Version
+            switch this.Options.Version
                 case {4,5,6}
                     this.VelocityBCTimeFun = tools.ConstantUntil(10);
+                    this.Options.FL = 2;
                 case {7,8,9}
                     this.VelocityBCTimeFun = tools.ConstantUntil(9.5);
             end
         end
         
         function configureModel(this, m)
+            configureModel@muscle.AModelConfig(this, m);
             sys = m.System;
             f = sys.f;
             m.T = 1;
             m.dt = .01;
             m.ODESolver.RelTol = .00001;
             m.ODESolver.AbsTol = .002;
-            switch this.Version
+            switch this.Options.Version
             case 1
                 m.DefaultMu(2) = -1;
             case 2
-                m.DefaultMu(1:2) = [.01; .06];
+                m.DefaultMu(1:2) = [.1; .5];
             case 3
                 m.T = 400;
                 m.dt = 1;
@@ -97,7 +81,7 @@ classdef DebugConfig < muscle.AModelConfig
                 this.Pool = p;
                 m.ODESolver.RelTol = .01;
                 m.ODESolver.AbsTol = .1;
-                m.PlotterDefaultArgs = {'Pool',true};
+                m.Plotter.DefaultArgs = {'Pool',true};
                 m.DefaultMu(4) = 4;
             case {4,5,6}
                 %% Material configuration from CMISS/3Elem_sprenger.xml                
@@ -115,10 +99,6 @@ classdef DebugConfig < muscle.AModelConfig
                 m.DefaultMu(13) = 300; % [kPa]
                 % lambda_ofl_calculation
                 m.DefaultMu(14) = 1.4; % [-]
-                f.ForceLengthFun = @(ratio)(ratio<=1).*exp(-((1-ratio)/.57).^4) + (ratio>1).*exp(-((ratio-1)/.14).^3);
-                % The derivative of the force-length function as function handle
-                f.ForceLengthFunDeriv = @(ratio)(ratio<=1).*((1/.57)*(((1-ratio)/.57).^3).*exp(-((1-ratio)/.57).^4)) ...
-                    - (ratio > 1) .* ((1/.14) .* (((ratio-1)/.14).^2) .* exp(-((ratio-1)/.14).^3));
                 m.T = 12;
                 m.dt = .2;
             case {7,8,9}
@@ -157,7 +137,7 @@ classdef DebugConfig < muscle.AModelConfig
             % In the default implementation there are no force boundary
             % conditions.
             P = [];
-            if this.Version == 10
+            if this.Options.Version == 10
 %                 if any(elemidx - (9:16) == 0) && faceidx == 2
                 if elemidx == 1 && faceidx == 2
                    P = 2;
@@ -167,17 +147,38 @@ classdef DebugConfig < muscle.AModelConfig
         
         function u = getInputs(this)
             u = {};
-            if this.Version == 10
+            if this.Options.Version == 10
                 u = {this.getAlphaRamp(this.Model.T/2,1)};
             end
         end
     end
     
     methods(Access=protected)
+        
+        function geo = getGeometry(this)
+            % Single cube with same config as reference element
+            [pts, cubes] = geometry.Cube8Node.DemoGrid([0 1],[0 1],[0 1]);
+            if this.Options.Version == 11 || this.Options.Version == 12
+                [pts, cubes] = geometry.Cube8Node.DemoGrid([-1 1],[-1 1],[-1 1]);
+                pts(1,[6 8]) = 2;
+                theta = .3;
+                R = [cos(theta) -sin(theta) 0
+                     sin(theta) cos(theta)  0
+                     0          0           1];
+%                 R = [cos(theta) -sin(theta) 0
+%                        0 1 0
+%                      sin(theta) 0 cos(theta)];
+
+                pts = circshift(R,[1 1])*R*pts;
+            end
+            geo = geometry.Cube8Node(pts, cubes);
+            geo = geo.toCube27Node;
+        end
+        
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             geo = this.PosFE.Geometry;
             % Always fix back side
-            if this.Version == 10
+            if this.Options.Version == 10
                 displ_dir(1,geo.Elements(1,geo.MasterFaces(1,:))) = true;
             else
                 displ_dir(:,geo.Elements(1,geo.MasterFaces(1,:))) = true;
@@ -189,7 +190,7 @@ classdef DebugConfig < muscle.AModelConfig
             %
             % The unit for the applied quantities is [mm/ms] = [m/s]
             geo = this.PosFE.Geometry;
-            switch this.Version
+            switch this.Options.Version
             
             case {4,5,6}
                 % Move the whole front
@@ -208,7 +209,7 @@ classdef DebugConfig < muscle.AModelConfig
         end
         
         function anull = seta0(this, anull)
-            switch this.Version
+            switch this.Options.Version
             case {2,3,12}
                 anull(1,:,:) = 1;
             case {4,7}
@@ -261,6 +262,19 @@ classdef DebugConfig < muscle.AModelConfig
             fprintf('Force at T=%g, x-position (center node) %g: %gmN\n',t(end),xpos,force_on_moved_side(end));
             
             m.plot(t,y,'DF',pdf,'Velo',true,'Pause',.02);
+        end
+        
+        function test_DebugConfigs(versions)
+            if nargin < 1
+                versions = [1 2 3 10 11];
+            end
+            for k = versions
+                fprintf('Testing DebugConfig Version %d\n',k);
+                m = muscle.Model(muscle.DebugConfig(k));
+                [t,y] = m.simulate;
+                df = m.getResidualForces(t,y);
+                m.plot(t,y,'DF',df,'Velo',true);
+            end
         end
     end
     

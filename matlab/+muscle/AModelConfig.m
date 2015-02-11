@@ -1,10 +1,6 @@
 classdef AModelConfig < handle
     %AModelConfig
     
-    properties
-        Model;
-    end
-    
     properties(SetAccess=private)
         PosFE;
         
@@ -12,7 +8,7 @@ classdef AModelConfig < handle
         
         Geometry;
         
-        Options;
+        Model;
     end
     
     properties(SetAccess=protected)
@@ -45,6 +41,8 @@ classdef AModelConfig < handle
         %
         % @type char @default 'master'
         a0CoordinateSystem = 'master';
+        
+        Options;
     end
     
     properties
@@ -92,9 +90,19 @@ classdef AModelConfig < handle
             this.addOption('FL',1);
         end
         
+        function m = createModel(this)
+            % Convenience method
+            m = muscle.Model(this);
+        end
+        
         function configureModel(this, model)
             % Overload this method to set model-specific quantities like
             % simulation time etc
+            this.Model = model;
+        end
+        
+        function configureModelFinal(this)
+            %
         end
         
         function prepareSimulation(this, mu, inputidx)

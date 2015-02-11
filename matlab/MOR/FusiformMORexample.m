@@ -30,6 +30,7 @@ classdef FusiformMORexample < muscle.AModelConfig
         end
         
         function configureModel(this, model)
+            configureModel@muscle.AModelConfig(this, m);
             model.T = 350;
             model.dt = 0.1;
             model.EnableTrajectoryCaching = true;

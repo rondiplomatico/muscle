@@ -5,23 +5,20 @@ classdef Shaker < muscle.AModelConfig
     end
     
     methods
-        function this = Shaker
-            % Single cube with same config as reference element
-            np = 4;
-            belly = Belly.getBelly(np,10,1,.1,2);
-            this = this@muscle.AModelConfig(belly.scale(10));
-            %this.NumParts = np;
-            this.VelocityBCTimeFun = tools.Sinus(50); % 100Hz
-            this.ylen = 100;
+        function this = Shaker(varargin)
+            this = this@muscle.AModelConfig(varargin{:});
+            this.init;
+            this.VelocityBCTimeFun = tools.Sinus(50); % 50Hz
         end
         
         function configureModel(this, m)
+            configureModel@muscle.AModelConfig(this, m);
             m.T = 40;
             m.dt = .05;
             
             mu = m.DefaultMu;
             % Small viscosity
-            mu(1) = 1e-3;
+            mu(1) = 1e-5;
             m.DefaultMu = mu;
         end
         
@@ -49,6 +46,12 @@ classdef Shaker < muscle.AModelConfig
     
     methods(Access=protected)
         
+        function geo = getGeometry(this)
+            belly = Belly.getBelly(4,10,'Radius',1,'InnerRadius',.1,'Gamma',2);
+            geo = belly.scale(10);
+            this.ylen = 100;
+        end
+        
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             %% Dirichlet conditions: Position (fix one side)
             geo = this.PosFE.Geometry;
@@ -74,6 +77,13 @@ classdef Shaker < muscle.AModelConfig
         function anull = seta0(~, anull)
             % Direction is y
             anull(2,:,:) = 1;
+        end
+    end
+    
+    methods(Static)
+        function test_Shaker
+            m = muscle.Model(Shaker);
+            m.simulateAndPlot;
         end
     end
     

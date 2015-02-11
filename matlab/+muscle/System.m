@@ -159,66 +159,65 @@ classdef System < models.BaseDynSystem
             this = this@models.BaseDynSystem(model);
             
             % The muscle viscosity. [mN * mm/ms]
-            this.addParam('viscosity',[0 10],10);
+            this.addParam('viscosity',1);
             
             % The amount of milliseconds over which to activate the model
             % Set this parameter to zero to deactivate (any maybe use a
             % custom activation ramp)
-            this.addParam('alpha_ramp_time',[1,300],10);
+            this.addParam('alpha_ramp_time',0);
             
             % The force of the faces exposed to neumann conditions
-            this.addParam('neumann_force',[0 400],10);
+            this.addParam('neumann_force',0);
             
             % For some variants, we have the mean input current for the
             % motoneuron pool (generating activation)
-            this.addParam('mean input current',[0 1],10);
+            this.addParam('mean input current',0);
             
             % anisotropic passive stiffness for muscle material
             % markert law b1
-            %
             % #5
-            this.addParam('muscle passive b1',[0 1],10);
+            this.addParam('muscle passive b1',2.756e-5);
             
             % anisotropic passive stiffness for muscle material
             % markert law d1
             % #6
-            this.addParam('muscle passive d1',[1 100],10);
+            this.addParam('muscle passive d1',43.373);
             
             % anisotropic passive stiffness for tendon material
             % markert law b1
             % #7
-            this.addParam('tendon passive b1',[0 1],10);
+            this.addParam('tendon passive b1',7.99);
             
             % anisotropic passive stiffness for tendon material
             % markert law d1
             % #8
-            this.addParam('tendon passive d1',[1 100],10);
+            this.addParam('tendon passive d1',16.6);
             
             % isotropic muscle material
             % mooney-rivlin law c10
             %
             % #9
-            this.addParam('muscle mooney-rivlin c10',[0 50],10);
+            this.addParam('muscle mooney-rivlin c10',35.6);
             
             % isotropic muscle material
             % mooney-rivlin law c01
             % #10
-            this.addParam('muscle mooney-rivlin c01',[0 50],10);
+            this.addParam('muscle mooney-rivlin c01',3.86);
             
             % isotropic tendon material
             % mooney-rivlin law c10
             % #11
-            this.addParam('tendon mooney-rivlin c10',[0 1e-2],10);
+            this.addParam('tendon mooney-rivlin c10',2310);
             
             % isotropic tendon material
             % mooney-rivlin law c01
             % #12
-            this.addParam('tendon mooney-rivlin c01',[0 5],10);
+            this.addParam('tendon mooney-rivlin c01',1.15e-3);
             
             % muscle fibre maximal force [kPa]
             % kPa = 0.1N/cm² 
             % #13
-            this.addParam('P_max',[73 400],10);
+            this.addParam('P_max',300);
             
             % parameter p1 for force-length curve customization.
             %
@@ -226,7 +225,7 @@ classdef System < models.BaseDynSystem
             % i.e. the resting sarcomere length. According to literature,
             % somewhere between 2 and 2.2 micrometer.
             % #14
-            this.addParam('force-length p1 (lam_0/width/...)',[1 1.5],10);
+            this.addParam('force-length p1 (lam_0/width/...)',2.05);
             
             %% Set system components
             % Core nonlinearity
@@ -311,9 +310,6 @@ classdef System < models.BaseDynSystem
                 
                 %% Initial value
                 this.x0 = dscomponents.ConstInitialValue(this.assembleX0);
-                
-                %% Compile information for plotting
-                this.Plotter = muscle.MusclePlotter(this);
             end
         end
         
@@ -337,10 +333,6 @@ classdef System < models.BaseDynSystem
                 -4*this.MuscleTendonParamc01;
             
             prepareSimulation@models.BaseDynSystem(this, mu, inputidx);
-        end
-        
-        function plot(this, t, y, varargin)
-            this.Plotter.plot(t, y, varargin{:});
         end
         
         function pm = plotDiff(this, t, uvw1, uvw2, fac, varargin)

@@ -1,14 +1,14 @@
 classdef Cube2ForceBC < muscle.AModelConfig
     
     methods
-        function this = Cube2ForceBC
+        function this = Cube2ForceBC(varargin)
             % Single cube with same config as reference element
-            [pts, cubes] = geometry.Cube8Node.DemoGrid(0:1,-1:2,0:1);
-            geo = geometry.Cube8Node(pts, cubes);
-            this = this@muscle.AModelConfig(geo.toCube20Node);
+            this = this@muscle.AModelConfig(varargin{:});
+            this.init;
         end
         
         function configureModel(this, m)
+            configureModel@muscle.AModelConfig(this, m);
             m.T = 4;
             m.dt = .01;
             m.DefaultMu(1) = .1;
@@ -42,6 +42,12 @@ classdef Cube2ForceBC < muscle.AModelConfig
     
     methods(Access=protected)
         
+        function geo = getGeometry(this)
+            [pts, cubes] = geometry.Cube8Node.DemoGrid(0:1,-1:2,0:1);
+            geo = geometry.Cube8Node(pts, cubes);
+            geo = geo.toCube20Node;
+        end
+        
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             %% Dirichlet conditions: Position (fix one side)
             geo = this.PosFE.Geometry;
@@ -55,6 +61,13 @@ classdef Cube2ForceBC < muscle.AModelConfig
         function anull = seta0(~, anull)
            % Direction is xz
            anull([1 3],:,:) = 1;
+        end
+    end
+    
+    methods(Static)
+        function test_Cube2ForceBC
+            m = muscle.Model(Cube2ForceBC);
+            m.simulateAndPlot;
         end
     end
     
