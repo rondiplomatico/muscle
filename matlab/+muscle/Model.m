@@ -139,7 +139,6 @@ classdef Model < models.BaseFullModel
                 'force-length relation [-]');
             plot(h,lambda,fl,'r');
             
-            mu(5:8)
             %% Effective force-length function for muscle tissue
             % effective signal from active part
             fl_eff = (mu(13)./lambda) .* fl;
@@ -186,7 +185,7 @@ classdef Model < models.BaseFullModel
             
             %% Passive force-length function for 100% tendon tissue
             % Passive markert law
-            markertf = markertfun(lambda,mu(7),mu(8));
+            markertf = markertfun(lambda,mu(7),mu(8))
             h = pm.nextPlot('force_length_tendon',...
                 'Effective force-length curve of tendon material (=passive)',...
                 '\lambda [-]','pressure [kPa]');

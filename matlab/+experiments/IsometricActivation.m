@@ -157,6 +157,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                 case 2
                     displ_dir(2,geo.Nodes(2,:) == 0) = true;
                     displ_dir(:,1) = true;
+                    displ_dir([1 3],geo.Nodes(2,:) > 33) = true;
             end
         end
         

@@ -186,7 +186,7 @@ classdef System < models.BaseDynSystem
             % anisotropic passive stiffness for tendon material
             % markert law b1
             % #7
-            this.addParam('tendon passive b1',7.99);
+            this.addParam('tendon passive b1',7990); % [kPa]
             
             % anisotropic passive stiffness for tendon material
             % markert law d1
