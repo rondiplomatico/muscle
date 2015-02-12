@@ -216,7 +216,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
 %             prefix = 'lamopt';
             
             %% Mus 3 - pmax/lamdaopt
-            pmaxr = 300:30:600;
+            pmaxr = 250:50:400;
             lamr = 1.8:.05:2.2;
             range = Utils.createCombinations(pmaxr,lamr);
             idx = [13 14];
