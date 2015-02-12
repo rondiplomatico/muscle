@@ -1,18 +1,9 @@
-classdef QuickRelease < muscle.AModelConfig
+classdef QuickRelease < experiments.AExperimentModelConfig
 % Provides a model config and test scripts for a quick release test.
 %
 % The material parameters used are suggested by Thomas Heidlauf, see his
 % thesis.
-
-    properties(Constant)
-        OutputDir = fullfile(fileparts(which(mfilename)),'quickrelease');
-    end
-
-    properties
-        GeoNr;
-        ICCompMode;
-    end
-    
+  
     properties(SetAccess=private)
         % The time the velocity BCs are applied in order to reach the
         % initial condition
@@ -30,34 +21,13 @@ classdef QuickRelease < muscle.AModelConfig
     end
 
     methods
-        function this = QuickRelease(geonr, iccomp)
-            Utils.ensureDir(QuickRelease.OutputDir);
-            if nargin < 2
-                iccomp = false;
-                if nargin < 1
-                    geonr = 2;
-                end
-            end
-            switch geonr
-                case 1
-                    [pts, cubes] = geometry.Cube8Node.DemoGrid(0:20:40,[0 20],[0 20]);
-                    geo = geometry.Cube8Node(pts, cubes);
-                case 2
-                    geo = Belly.getBelly(3, 50, 4.5, 1.5, 15);
-                case 3
-                    s = load(fullfile(fileparts(which(mfilename)),'..','CMISS','EntireTA.mat'));
-                    geo = s.geo27;
-            end
-            this = this@muscle.AModelConfig(geo);
-            this.ICCompMode = iccomp;
-            this.GeoNr = geonr;
-            
-            if this.ICCompMode
-                this.VelocityBCTimeFun = tools.ConstantUntil(this.icMovetime);
-            end
+        function this = QuickRelease(varargin)
+            this = this@experiments.AExperimentModelConfig(varargin{:});
+            this.init;
         end
         
         function configureModel(this, m)
+            configureModel@muscle.AModelConfig(this, m);
             os = m.ODESolver;
             switch this.GeoNr
                 case 1
@@ -100,6 +70,7 @@ classdef QuickRelease < muscle.AModelConfig
 %                 f.alpha = this.getAlphaRamp(this.icAlphaRampTime, alpha);
                 m.T = max(this.icMovetime, this.icAlphaRampTime) + this.icRelaxTime;
                 m.dt = m.T / 300;
+                this.VelocityBCTimeFun = tools.ConstantUntil(this.icMovetime);
             else
                 m.T = 20;
                 m.dt = .1;
@@ -214,6 +185,19 @@ classdef QuickRelease < muscle.AModelConfig
     end
     
     methods(Access=protected)
+        
+        function geo = getGeometry(this)
+            switch this.Options.GeoNr
+                case 1
+                    [pts, cubes] = geometry.Cube8Node.DemoGrid(0:20:40,[0 20],[0 20]);
+                    geo = geometry.Cube8Node(pts, cubes);
+                case 2
+                    geo = Belly.getBelly(3, 50, 'Radius', 4.5, 'InnerRadius', 1.5, 'Gamma', 15);
+                case 3
+                    s = load(fullfile(fileparts(which(mfilename)),'..','CMISS','EntireTA.mat'));
+                    geo = s.geo27;
+            end
+        end
         
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             

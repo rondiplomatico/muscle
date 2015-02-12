@@ -1,12 +1,8 @@
 classdef AExperimentModelConfig < muscle.AModelConfig
-    %AEXPERIMENTMODELCONFIG Model configurations for a set of experiments
     
     properties
         OutputDir = []; 
         ImgDir;
-        
-        % Flag that indicates
-%         ICCompMode;
     end
     
     properties(Dependent)
@@ -20,8 +16,6 @@ classdef AExperimentModelConfig < muscle.AModelConfig
         % The experimentally determined output values.
         % Must be a NumConfigurations x NumOutputs vector, if set.
         TargetOutputValues;
-        
-%         HasICComputation = false;
     end
     
     properties(Access=private)
@@ -49,13 +43,6 @@ classdef AExperimentModelConfig < muscle.AModelConfig
         function value = get.CurrentConfigNr(this)
             value = this.fCurConfNr;
         end
-        
-%         function x0 = getX0(this, x0)
-%             if ~this.ICCompMode
-%                 s = load(fullfile(QuickRelease.OutputDir,sprintf('geo%d_ic.mat',this.GeoNr)));
-%                 x0 = s.x0;
-%             end
-%         end
     end
     
     methods(Access=protected)
@@ -65,7 +52,10 @@ classdef AExperimentModelConfig < muscle.AModelConfig
             % Also init directories to reasonable defaults
             if isempty(this.OutputDir)
                 mc = metaclass(this);
-                [p,n] = fileparts(which(mc.Name));
+                [~,n] = fileparts(which(mc.Name));
+                % Put relative to muscle.Model class - that wont change
+                % location!
+                p = fullfile(fileparts(which('muscle.Model')),'..','..','data');
                 outdir = fullfile(p,n);
                 this.OutputDir = outdir;
             end
@@ -74,14 +64,45 @@ classdef AExperimentModelConfig < muscle.AModelConfig
     
     methods
         function set.OutputDir(this, value)
-            Utils.ensureDir(value);
-            this.OutputDir = value;
-            this.ImgDir = fullfile(value,'img');%#ok
+            if ~isempty(value)
+                Utils.ensureDir(value);
+                this.OutputDir = value;
+                this.ImgDir = fullfile(value,'img');%#ok
+            end
         end
     end
     
     methods(Abstract)
         o = getOutputOfInterest(this, t, y);
+    end
+    
+    %% IC comp stuff
+    properties(SetAccess=protected)
+        RequiresComputedInitialConditions = false;
+    end
+    
+    properties
+        ICCompMode;
+    end
+    
+    methods
+        function x0 = getX0(this, x0)
+            if ~this.ICCompMode
+                optstr = this.getOptionStr;
+                s = load(fullfile(this.OutputDir,sprintf('IC_%s.mat',optstr)));
+                % We assume to have an IC for each configuration (possibly)
+                x0 = s.x0(:,this.CurrentConfigNr);
+            end
+        end
+        
+        function computeInitialConditions(this)
+            if this.RequiresComputedInitialConditions
+                this.ICCompMode = true;
+                m = this.Model;
+                file = fullfile(this.OutputDir,sprintf('IC_%s.mat',optstr));
+                value = ~this.HasICComputation || exist(file,'file') == 2;
+            end
+        end
     end
     
 end

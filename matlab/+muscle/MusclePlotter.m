@@ -9,6 +9,7 @@ classdef MusclePlotter < handle
     
     properties
         GeoView = [46 30];
+        DefaultArgs = {};
     end
 
     properties(SetAccess=private)
@@ -359,7 +360,7 @@ classdef MusclePlotter < handle
             i.addParamValue('Invariants',[]);
             i.addParamValue('Pause',.01);
             
-            args = [this.System.Model.PlotterDefaultArgs args];
+            args = [this.DefaultArgs args];
             i.parse(args{:});
             opts = i.Results;
             if ~isempty(opts.NF)
@@ -396,9 +397,9 @@ classdef MusclePlotter < handle
             pd.residuals = zeros(size(pd.residuals_pos));
 
             %% Fibres
-            if sys.HasFibres || ~isempty(opts.Invariants)
+            %if sys.HasFibres || ~isempty(opts.Invariants)
                 pd.Ngp = dfem.N(dfem.GaussPoints);
-            end
+            %end
             
             % Set muscle color either way
             pd.musclecol = [0.854688, 0.201563, 0.217188];

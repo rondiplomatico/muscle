@@ -26,6 +26,9 @@ classdef FusiformMORexample < muscle.AModelConfig
         end
         
         function configureModel(this, model)
+        
+            configureModel@muscle.AModelConfig(this, m);
+                    
             % change default tolerances (necessary for convergence!!)
             model.ODESolver.RelTol = 1e-3;
             model.ODESolver.AbsTol = 1e-3;

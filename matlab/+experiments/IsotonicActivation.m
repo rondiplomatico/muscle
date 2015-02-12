@@ -1,4 +1,4 @@
-classdef IsometricActivation < experiments.AExperimentModelConfig
+classdef IsotonicActivation < experiments.AExperimentModelConfig
     % Implements the isometric contraction experiment
     
     properties(Constant)
@@ -6,32 +6,25 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
     end
     
     properties
-        ActivationTime = 50; %[ms]
+        ActivationTime = 100; %[ms]
         PositioningTime = 50; %[ms]
-        RelaxTime = 5; %[ms]
+        RelaxTime = 10; %[ms]
+        
+        PreStretchLength = 10; %[mm]
     end
     
     methods
-        function this = IsometricActivation(varargin)
+        function this = IsotonicActivation(varargin)
             this = this@experiments.AExperimentModelConfig(varargin{:});
-            this.addOption('BC',1);
+            %this.addOption('BC',1);
             this.init;
             
+            % We need computed initial conditions on this one
+            this.RequiresComputedInitialConditions = true;
+            
             this.NumOutputs = 2;
-            this.NumConfigurations = length(this.ExperimentalStretchMillimeters);
-            % Data from GM5 muscle, originally in [N], here transferred to
-            % [mN]
-            this.TargetOutputValues = [9.6441	0.0217
-                10.7124	0.0578
-                8.8006	-0.0112
-                11.1749	0.1151
-                7.1639	-0.0428
-                11.295	0.1533
-                3.5734	-0.0604
-                10.8832	0.1969
-                2.1067	-0.061
-                10.3544	0.2547
-                1.065	-0.0568]*1000;
+            this.NumConfigurations = 1;
+            this.TargetOutputValues = 1;
             
             this.VelocityBCTimeFun = tools.ConstantUntil(this.PositioningTime,.01);
         end
@@ -44,6 +37,11 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             
             m.T = this.PositioningTime + this.RelaxTime + this.ActivationTime;
             m.dt = m.T / 300;
+            
+            m.DefaultMu(5) = 1;
+            m.DefaultMu(6) = 20;
+            m.DefaultMu(7) = 1;
+            m.DefaultMu(8) = 25;
             
             m.DefaultMu(13) = 380; % [kPa]
             m.DefaultMu(14) = 2.05; % lambda_opt, educated guess from data
@@ -59,66 +57,28 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             m.EnableTrajectoryCaching = false;
         end
         
-        function configureModelFinal(this)
-            if this.Options.GeoNr == 2
-                m = this.Model;
-                m.Plotter.DefaultArgs = {'Fibres',false};
-            end
-        end
-        
-        function tmr = getTendonMuscleRatio(this, points)
-            % Returns the [0,1] ratio between tendon and muscle at all
-            % specified points
-            %
-            % This method simply returns an all-zero ratio, meaning muscle only. 
-            tmr = zeros(1,size(points,2));
-            o = this.Options;
-            if o.GeoNr == 2
-                tmr = this.TMRFun(points(2,:),points(3,:));
-            end            
-        end
-        
-        function tmr = TMRFun(~, y, z)
-            tmr = zeros(size(y));
-            fr = @(x)1.2*sqrt(max(0,27-x))-2;
-            right = z > fr(y);
-            tmr(right) = 1;
-            fl = @(x)-1*sqrt(x)+1;
-            left = z < fl(y);
-            tmr(left) = 1;
-        end
-        
         function o = getOutputOfInterest(this, t, y)
             m = this.Model;
             % Get the residual dirichlet forces
             df = m.getResidualForces(t,y);
             
+%             m.plot(t,y,'DF',df,'F',4);
             % Get the position at which to determine the passive forces
             passive_pos = floor((this.PositioningTime + this.RelaxTime)/m.dt);
             % Get the range at which to determine the max forces
             act_range = passive_pos + 1 : size(y,2);
             switch this.Options.GeoNr
                 case 1
-                    idx = m.getVelocityDirichletBCFaceIdx(3,2);        
-                case 2    
-                    %this.Geometry.Nodes(2,:) > 33 & m.System.bool_v_bc_nodes
-                    idx = m.getVelocityDirichletBCFaceIdx(37:48,4);
+                    idx = m.getVelocityDirichletBCFaceIdx(3,2);
+                    o(1) = max(abs(sum(df(idx,act_range),1)));
+                    o(2) = abs(sum(df(idx,passive_pos)));
+                    
+%                     idx = m.getPositionDirichletBCFaceIdx(1,1);
+%                     o(3) = sum(df(idx,passive_pos));
+%                     o(4) = max(sum(df(idx,act_range),1));
             end
-            o(1) = max(abs(sum(df(idx,act_range),1)));
-            o(2) = sum(df(idx,passive_pos));            
-        end
-        
-        function plotGeometryInfo(this, varargin)
-            plotGeometryInfo@muscle.AModelConfig(this, varargin{:});
-            ax = gca;
-            view(ax, [90 0]);
-            x = 0:.5:35;
-            fr = @(x)1.2*sqrt(max(0,27-x))-2;
-            plot3(ax,zeros(size(x)),x,fr(x),'LineWidth',3);
-            hold(ax,'on');
-            fl = @(x)-1*sqrt(x)+1;
-            plot3(ax,zeros(size(x)),x,fl(x),'LineWidth',3);
-            axis(ax,[-4 4 -1 36 -3 3]);
+%             figure;
+%             plot(t,sum(df(idx,:)));
         end
     end
     
@@ -128,12 +88,6 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             if this.Options.GeoNr == 1
                 [pts, cubes] = geometry.Cube27Node.DemoGrid(linspace(0,25,4),[0 7],[0 4]);
                 geo = geometry.Cube27Node(pts,cubes);
-            else
-                cent = 12;
-                k = kernels.GaussKernel(10);
-                k2 = kernels.GaussKernel(12);
-                rad = @(t)[k.evaluate(t,cent)*3.5 k2.evaluate(t,cent)*2]';
-                geo = Belly.getBelly(4,35,'Radius',rad,'Layers',[.8 1],'InnerRadius',.3);
             end
         end
         
@@ -155,9 +109,6 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                             displ_dir([2 3],geo.Elements(3,geo.MasterFaces(2,:))) = true;
                     end
                 case 2
-                    displ_dir(2,geo.Nodes(2,:) == 0) = true;
-                    displ_dir(:,1) = true;
-                    displ_dir([1 3],geo.Nodes(2,:) > 33) = true;
             end
         end
         
@@ -170,10 +121,9 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             switch o.GeoNr
                 case 1
                     velo_dir(1,geo.Elements(3,geo.MasterFaces(2,:))) = true;
+                    velo_dir_val(velo_dir) = velo;
                 case 2
-                    velo_dir(2,geo.Nodes(2,:) > 33) = true;
             end
-            velo_dir_val(velo_dir) = velo;
         end
         
         function anull = seta0(this, anull)
@@ -189,8 +139,6 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                         anull(1,:,:) = 1;
                     end
                 case 2
-                    anull(2,:,:) = 1;
-                    anull(3,:,:) = 1;
             end
         end
     end
@@ -201,10 +149,9 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             % Runs the series of isometric tests for different Pmax values.
             % Several variants can be chosen:
             %
-            Geo = 2;
             
             %% Mus 1 - Only PMAX
-%             range = linspace(300,440,12);
+%             range = 320:20:400;
 %             idx = 13;
 %             mustr = sprintf('-%d',range);
 %             prefix = 'pmax';
@@ -216,11 +163,9 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
 %             prefix = 'lamopt';
             
             %% Mus 3 - pmax/lamdaopt
-            pmaxr = 250:50:400;
-            lamr = 1.8:.05:2.2;
-            range = Utils.createCombinations(pmaxr,lamr);
+            range = Utils.createCombinations(400:10:460,2:.025:2.2);
             idx = [13 14];
-            mustr = [sprintf('-%g',pmaxr) '/' sprintf('-%g',lamr)];
+            mustr = [sprintf('-%g',400:10:460) '/' sprintf('-%g',1:.05:1.2)];
             prefix = 'pmax_lamopt';
             
             %% -- EACH to be combinable with --
@@ -228,24 +173,24 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             %% Geoconfig 1
             % Straight fibres in x direction, "loose" ends that
             % allow the geometry to expand when compressed
-            c = experiments.IsometricActivation('Tag',prefix,'BC',1,'FL',1,'GeoNr',Geo);
-            cap = 'Movable setup with x-aligned fibres';
+%             c = experiments.IsometricActivation('Tag',prefix,'BC',1,'FL',1);
+%             cap = 'Movable setup with x-aligned fibres';
             
             %% Geoconfig 2
             % Straight fibres in x direction, but completely
             % fixed ends to ensure comparability with version 3
-%             c = experiments.IsometricActivation('Tag',[prefix '_fixed'],'BC',2,'FL',1,'GeoNr',Geo);
+%             c = experiments.IsometricActivation('Tag',[prefix '_fixed'],'BC',2,'FL',1);
 %             cap = 'Fixed setup with x-aligned fibres';
              
             %% Geoconfig 3
             % Diagonal fibres in xz direction with completely
             % fixed ends
-%             c = experiments.IsometricActivation('Tag',[prefix '_fixed_xzfibre'],'BC',3,'FL',1,'GeoNr',Geo);
-%             cap = 'Fixed setup with xz-diagonal fibres';
+            c = experiments.IsometricActivation('Tag',[prefix '_fixed_xzfibre'],'BC',3,'FL',1);
+            cap = 'Fixed setup with xz-diagonal fibres';
             
             %% NOT CONFIGURABLE PART
             m = muscle.Model(c);
-            e = tools.ExperimentRunner(m);
+            e = experiments.ExperimentRunner(m);
             mus = repmat(m.DefaultMu,1,size(range,2));
             mus(idx,:) = range;
             data = e.runExperimentsCached(mus);
@@ -253,7 +198,6 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             sp = c.ExperimentalStretchMillimeters;
             [sp,idx] = sort(sp);
             passive = data.o(:,idx,2);
-            passive(:,sp < 0) = -passive(:,sp < 0);
             active = data.o(:,idx,1)-passive;
             
             pm = PlotManager;

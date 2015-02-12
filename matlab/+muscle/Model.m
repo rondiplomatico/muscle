@@ -11,8 +11,8 @@ classdef Model < models.BaseFullModel
     properties
         MuscleDensity = 1.1e-6; % [kg/mm³] (1100kg/m³)
         
-        % Any arguments to add to any model.plot command for convenience.
-        PlotterDefaultArgs = {};
+        % The plotter class for visualization
+        Plotter;
     end
     
     properties(SetAccess=private)
@@ -47,18 +47,8 @@ classdef Model < models.BaseFullModel
             %this.Data.useFileTrajectoryData;
             
             this.System = muscle.System(this);
-            
-            % This defines a default behaviour for all muscle models.
-            % Override in AModelConfig.configureModel for dependent
-            % behaviour.
-            % Default is no activation ramp, no pressure and no input
-            % current.
-            this.DefaultMu = [1; 0; 0; 0
-                % Anisotropic parameters muscle+tendon (Markert)
-                2.756e-5; 43.373; 7.99; 16.6
-                % Isotropic parameters muscle+tendon (Moonley-Rivlin)
-                35.6; 3.86; 2310; 1.15e-3 % Micha, % 6.352e-10; 3.627 [Kpa] thomas alt 
-                250; 2.05]; 
+            % Sets DefaultMu
+            this.initDefaultParameter;
             
             this.TrainingParams = [1 2];
             
@@ -73,7 +63,6 @@ classdef Model < models.BaseFullModel
             this.System.MaxTimestep = []; %model.dt;
             
             % Call the config-specific model configuration
-            conf.Model = this;
             conf.configureModel(this);
             
             % Set the config to the model, triggering geometry related
@@ -84,9 +73,9 @@ classdef Model < models.BaseFullModel
             % Propagate the current default param
             this.System.prepareSimulation(this.DefaultMu, this.DefaultInput);
             
-            fprintf('Running Jacobian health check..');
-            res = this.System.f.test_Jacobian;
-            fprintf('Done. Success=%d\n',res);
+%             fprintf('Running Jacobian health check..');
+%             res = this.System.f.test_Jacobian;
+%             fprintf('Done. Success=%d\n',res);
 %             chk = this.Config.PosFE.test_JacobiansDefaultGeo;
 % %             chk = chk && this.Config.PosFE.test_QuadraticBasisFun;
 %             chk = chk && this.Config.PressFE.test_JacobiansDefaultGeo;
@@ -196,7 +185,7 @@ classdef Model < models.BaseFullModel
             
             %% Passive force-length function for 100% tendon tissue
             % Passive markert law
-            markertf = markertfun(lambda,mu(7),mu(8));
+            markertf = markertfun(lambda,mu(7),mu(8))
             h = pm.nextPlot('force_length_tendon',...
                 'Effective force-length curve of tendon material (=passive)',...
                 '\lambda [-]','pressure [kPa]');
@@ -279,18 +268,11 @@ classdef Model < models.BaseFullModel
             if ~isempty(nf)
                 varargin(end+1:end+2) = {'NF',nf};
             end
-            [varargout{1:nargout}] = this.System.plot(0,x0,varargin{:});
+            [varargout{1:nargout}] = this.plot(0,x0,varargin{:});
         end
         
-        function plotGeometryInfo(this, allnode, elemnr)
-            if nargin < 3
-                elemnr = 1;
-                if nargin < 2
-                    allnode = false;
-                end
-            end
-            g = this.Config.PosFE.Geometry;
-            g.plot(allnode,elemnr);
+        function plotGeometryInfo(this, varargin)
+            this.Config.plotGeometryInfo(varargin{:});
         end
         
         function [residuals_dirichlet, residuals_neumann] = getResidualForces(this, t, uvw)
@@ -389,6 +371,8 @@ classdef Model < models.BaseFullModel
             end
             this.Config = value;
             this.System.configUpdated;
+            this.Plotter = muscle.MusclePlotter(this.System);
+            value.configureModelFinal;
         end
         
         function setGaussIntegrationRule(this, value)
@@ -403,35 +387,16 @@ classdef Model < models.BaseFullModel
         end
         
         function varargout = plot(this, varargin)
-            % plots some interesting states of the model
-            %
-            % See also: musclefibres.MuscleFibreSystem
-            [varargout{1:nargout}] = this.System.plot(varargin{:});
+            [varargout{1:nargout}] = this.Plotter.plot(varargin{:});
         end
         
         function value = get.Geo(this)
-            value = this.Config.PosFE.Geometry;
+            value = this.Config.Geometry;
         end
     end
     
-%     methods(Access=protected)
-%         function value = getSimCacheExtra(this)
-%             % Return values:
-%             % value: A column vector with additional values to distinguish
-%             % the simulation from others (internal configurations) @type
-%             % colvec<double>
-%             value = this.System.f.RampTime;
-%         end
-%     end
-    
     methods(Static)
         function test_ModelVersions
-            % @TODO
-            %
-            % deformed reference geom
-            % dirichlet nodes with not all 3 directions fixed, plotting
-            
-            
             m = muscle.Model(muscle.DebugConfig);
             mu = m.getRandomParam;
             [t,y] = m.simulate(mu);
