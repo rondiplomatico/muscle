@@ -29,6 +29,7 @@ classdef FusiformMORexample < muscle.AModelConfig
             % change default tolerances (necessary for convergence!!)
             model.ODESolver.RelTol = 1e-3;
             model.ODESolver.AbsTol = 1e-3;
+            
             % simulation time and step size
             model.T = 350;
             model.dt = 0.1;

@@ -25,6 +25,10 @@ classdef LongMORexample < muscle.AModelConfig
         end
         
         function configureModel(this, model)
+            % vary tolerances
+            model.ODESolver.RelTol = 1e-3;
+            model.ODESolver.AbsTol = 1e-3;
+            
             % simulation time and step size
             model.T = 100;
             model.dt = 1;
