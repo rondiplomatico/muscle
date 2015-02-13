@@ -27,10 +27,10 @@ classdef FusiformMORexample < muscle.AModelConfig
         
         function configureModel(this, model)
         
-            configureModel@muscle.AModelConfig(this, m);
+            configureModel@muscle.AModelConfig(this, model);
                     
             % change default tolerances (necessary for convergence!!)
-            model.ODESolver.RelTol = 1e-3;
+            model.ODESolver.RelTol = 1e-5;
             model.ODESolver.AbsTol = 1e-3;
             
             % simulation time and step size
@@ -47,9 +47,6 @@ classdef FusiformMORexample < muscle.AModelConfig
             model.DefaultMu(1) = 1;             % viscosity
             model.DefaultMu(2) = 50;            % activation duration
             model.DefaultMu(3) = 10;            % NeumannBC (max force)
-            model.DefaultMu(9) = 6.352e-10;     % Mooney-Rivlin c10
-            model.DefaultMu(10) = 3.627;        % Mooney-Rivlin c01
-            model.DefaultMu(13) = 73;           % muscle fibre maximal force
             
             % default input index
             model.DefaultInput = 1;             % index for u (is a cell)
@@ -94,10 +91,11 @@ classdef FusiformMORexample < muscle.AModelConfig
             % The unit for the applied quantities is kiloPascal [kPa]
             %
             % See also: NeumannCoordinateSystem
+            % positive values = traction, negative = pressure
             geo = this.PosFE.Geometry;
             P = [];
             if any(elemidx == [geo.NumElements-3:geo.NumElements]) && faceidx == 4
-                P = -1;
+                P = 1;
             end
         end
         
@@ -133,7 +131,7 @@ classdef FusiformMORexample < muscle.AModelConfig
         function geo = getGeometry(this)
             % geometry for model configuration
             np = 12;
-            geo = Belly.getBelly(np,50,3,.5,15); 
+            geo = Belly.getBelly(np,50,'Radius',3,'InnerRadius',.5,'Gamma',15);
             this.NumParts = np;            
         end
         
@@ -148,12 +146,42 @@ classdef FusiformMORexample < muscle.AModelConfig
     % Testscript
     methods(Static)
         
-        function runTest
+        function runTest_FusiformMOR
+            JacobianHealthTest = false;
+            fprintf('Creating the model..');
+            % create geometry
             modconf = FusiformMORexample;
             geo = modconf.PosFE.Geometry;
+            geo.plot;
+            % create model
             model = muscle.Model(modconf);
-            [t,y] = model.simulate;
-            model.plot(t,y);
+            model.plotGeometrySetup;
+            model.plotForceLengthCurve;
+            % check jacobian
+            if JacobianHealthTest == true
+                fprintf('Running Jacobian health check..');
+                res = model.System.f.test_Jacobian;
+                fprintf('Done. Success = %d\n', res);
+            end
+            % perform simulation
+            fprintf('Running the simulation..');
+            mu = model.DefaultMu;
+            mu(1) = 1;
+            mu(2) = 50;
+            mu(3) = 10;
+            % 1)
+            [t,y,time] = model.simulate(mu);
+            model.plot(t(1:10:end),y(:,1:10:end));
+            % or 2)
+            %model.simulateAndPlot(mu);
+            %
+            % check output of interest
+            fprintf('Checking the output of interest..');
+            o = modconf.getOutputOfInterest(model,t,y);
+            figure()
+            plot(t,o);
+            xlabel('time [ms]');
+            ylabel('mean position of nodes at right end in y-direction');
         end
 
     end

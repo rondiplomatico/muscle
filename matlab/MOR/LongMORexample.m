@@ -20,16 +20,17 @@ classdef LongMORexample < muscle.AModelConfig
         function this = LongMORexample(varargin)
             % specify as a subclass of AModelConfig
             this = this@muscle.AModelConfig(varargin{:});
+            this.addOption('Devi',.2);
             % initialise -- calls getGeometry()
             this.init;
         end
         
         function configureModel(this, model)
 
-            configureModel@muscle.AModelConfig(this, m);
+            configureModel@muscle.AModelConfig(this, model);
             
             % vary tolerances
-            model.ODESolver.RelTol = 1e-3;
+            model.ODESolver.RelTol = 1e-4;
             model.ODESolver.AbsTol = 1e-3;
             
             % simulation time and step size
@@ -43,12 +44,9 @@ classdef LongMORexample < muscle.AModelConfig
             model.ComputeTrajectoryFxiData = true;
             
             % change default model parameters mu
-            model.DefaultMu(1) = 1;             % viscosity
+            model.DefaultMu(1) = 0.5;           % viscosity
             model.DefaultMu(2) = 50;            % activation duration
             model.DefaultMu(3) = 0;             % NeumannBC (max force) = default
-            model.DefaultMu(9) = 6.352e-10;     % Mooney-Rivlin c10
-            model.DefaultMu(10) = 3.627;        % Mooney-Rivlin c01
-            model.DefaultMu(13) = 73;           % muscle fibre maximal force
             
             % specify model parameters (mu = [viscosity; activation duration])
             sys = model.System;
@@ -115,9 +113,8 @@ classdef LongMORexample < muscle.AModelConfig
             px = -10:2.5:10;
             py = -40:2.5:40;
             pz = 0:2.5:10;
-            devi = .2;
             % Single cube with same config as reference element
-            [pts, cubes] = geometry.Cube20Node.DemoGrid(px, py, pz, devi);
+            [pts, cubes] = geometry.Cube20Node.DemoGrid(px, py, pz, this.Options.Devi);
             geo = geometry.Cube20Node(pts, cubes);
             
             this.Partsx = px;
@@ -146,6 +143,41 @@ classdef LongMORexample < muscle.AModelConfig
                 end
             end
             
+        end
+        
+    end
+    %
+    %%
+    % Testscript
+    methods(Static)
+        
+        function runTest_LongMOR
+            JacobianHealthTest = false;
+            % create geometry
+            modconf = LongMORexample;
+            geo = modconf.PosFE.Geometry;
+            geo.plot;
+            % create model
+            model = muscle.Model(modconf);
+            model.plotGeometrySetup;
+            model.plotForceLengthCurve;
+            % check jacobian
+            % TODO: fix 'Inner matrix dimensions must agree.'
+            % (dscomponents.ACoreFun/getStateJacobianFD (line 343))
+            if JacobianHealthTest == true
+                fprintf('Running Jacobian health check..');
+                res = model.System.f.test_Jacobian;
+                fprintf('Done. Success = %d\n', res);
+            end
+            % perform simulation
+            mu = model.DefaultMu;
+            mu(1) = 0.5;
+            mu(2) = 50;
+            % 1)
+            [t,y,time] = model.simulate(mu);
+            model.plot(t,y);
+            % or 2)
+            %model.simulateAndPlot(mu);
         end
         
     end
