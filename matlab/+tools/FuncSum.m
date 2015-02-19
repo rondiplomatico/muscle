@@ -12,7 +12,7 @@ classdef FuncSum < tools.AFunGen
             this.fungens = varargin;
         end
         
-        function fhandle = getFunction(this)%#ok
+        function [fhandle, dfhandle] = getFunction(this)%#ok
             f = this.fungens;
             names = cell(1,length(f));
             for k = 1:length(f)
@@ -27,6 +27,7 @@ classdef FuncSum < tools.AFunGen
             sumstr = Utils.implode(names,' + ');
             % Eval to readable handle
             eval(sprintf('fhandle = @(t)%s;',sumstr));
+            dfhandle = [];
         end
         
         function str = getConfigStr(this)

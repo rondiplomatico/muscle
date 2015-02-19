@@ -7,14 +7,22 @@ classdef AFunGen < handle
             if nargin < 2
                 range = 0:.1:1000;
             elseif length(range) == 2
-                range = linspace(range(1),range(2),1000);
+                range = linspace(range(1),range(2),2000);
             end
-            f = this.getFunction;
-            pm = PlotManager;
+            [f, df] = this.getFunction;
+            args = {};
+            if ~isempty(df)
+                args = {false, 1, 2};
+            end
+            pm = PlotManager(args{:});
             pm.LeaveOpen = true;
             mc = metaclass(this);
             ax = pm.nextPlot(mc.Name,sprintf('Plot of %s\n%s',mc.Name,this.getConfigStr),'t [ms]','value');
             plot(ax,range,f(range));
+            if ~isempty(df)
+                ax = pm.nextPlot(mc.Name,sprintf('Plot of %s-derivative\n%s',mc.Name,this.getConfigStr),'t [ms]','value');
+                plot(ax,range,df(range));
+            end
             pm.done;
         end
         
@@ -28,7 +36,7 @@ classdef AFunGen < handle
     end
     
     methods(Abstract)
-        fhandle = getFunction(this);
+        [fhandle, dfhandle] = getFunction(this);
         
         str = getConfigStr(this);
     end

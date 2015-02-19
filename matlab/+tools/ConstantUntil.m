@@ -16,7 +16,7 @@ classdef ConstantUntil < tools.AFunGen
             this.rampperc = percent;
         end
         
-        function fhandle = getFunction(this)
+        function [fhandle, df] = getFunction(this)
             st = this.stoptime;
             p = this.rampperc;
             rampstart = st*(1-p);
@@ -24,6 +24,7 @@ classdef ConstantUntil < tools.AFunGen
             fhandle = @(t)(t < rampstart) + ...
                 (t >= rampstart & t < st).*(1-(t-st*(1-p))/(st*p)); 
                 % 1 to 0 over ramptime, zero after
+            df = [];
         end
         
         function str = getConfigStr(this)

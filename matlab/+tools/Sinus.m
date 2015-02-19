@@ -22,11 +22,12 @@ classdef Sinus < tools.AFunGen
             this.voffset = voffset;
         end
         
-        function fhandle = getFunction(this)
+        function [fhandle, dfhandle] = getFunction(this)
             f = this.freq;
             fo = this.foffset;
             vo = this.voffset;
             fhandle = @(t)sin(t/1000*f*2*pi+fo)+vo;
+            dfhandle = @(t)cos(t/1000*f*2*pi+fo);
         end
         
         function str = getConfigStr(this)

@@ -22,7 +22,7 @@ classdef Ramp < tools.AFunGen
             this.starttime = starttime;            
         end
         
-        function fhandle = getFunction(this)
+        function [fhandle, df] = getFunction(this)
             rt = this.ramptime;
             if rt <= 0
                 fhandle = @(t)0;
@@ -31,6 +31,7 @@ classdef Ramp < tools.AFunGen
                 start = this.starttime;
                 fhandle = @(t)(t >= start) .* (maxval * (((t-start)<rt).*(t-start)/rt + (t>=rt+start)));
             end
+            df = [];
         end
         
         function str = getConfigStr(this)
