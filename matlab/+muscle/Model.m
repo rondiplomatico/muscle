@@ -128,8 +128,6 @@ classdef Model < models.BaseFullModel
             this.System.prepareSimulation(mu,this.DefaultInput);
             this.Config.setForceLengthFun(f);
             
-            markertfun = @(lam,b,d)max(0,(b./lam.^2).*(lam.^d-1));
-            
             lambda = .2:.005:2;
             
             %% Plain Force-length function
@@ -144,7 +142,9 @@ classdef Model < models.BaseFullModel
             fl_eff = (mu(13)./lambda) .* fl;
             b1 = mu(5); d1 = mu(6);
             % Passive markert law
-            markertf = markertfun(lambda,b1,d1);
+            mfg = tools.MarkertLaw(b1,d1,this.System.f.MarkertMaxModulus);
+            mf = mfg.getFunction;
+            markertf = mf(lambda);
             
             % Find a suitable position to stop plotting (otherwise the
             % passive part will steal the show)
@@ -185,7 +185,9 @@ classdef Model < models.BaseFullModel
             
             %% Passive force-length function for 100% tendon tissue
             % Passive markert law
-            markertf = markertfun(lambda,mu(7),mu(8))
+            mfg = tools.MarkertLaw(mu(7),mu(8),this.System.f.MarkertMaxModulus);
+            [mf,~,mfbd] = mfg.getFunction;
+            markertf = mf(lambda);
             h = pm.nextPlot('force_length_tendon',...
                 'Effective force-length curve of tendon material (=passive)',...
                 '\lambda [-]','pressure [kPa]');
@@ -202,7 +204,7 @@ classdef Model < models.BaseFullModel
             [LAM,TMR] = meshgrid(lambda,tmr);
             B = repmat(b1',1,length(lambda));
             D = repmat(d1',1,length(lambda));
-            markertf = markertfun(LAM,B,D);
+            markertf = mfbd(LAM,B,D);
             
             %% Active part
             FL = (1-tmr)'*fl_eff;

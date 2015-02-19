@@ -21,6 +21,11 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
     c10 = sys.MuscleTendonParamc10;
     c01 = sys.MuscleTendonParamc01;
     
+    flfun = this.ForceLengthFun;
+    dflfun = this.ForceLengthFunDeriv;
+    mlfun = this.MarkertLawFun;
+    dmlfun = this.MarkertLawFunDeriv;
+    
     havefibres = sys.HasFibres;
     havefibretypes = sys.HasFibreTypes;
     usecrossfibres = this.crossfibres;
@@ -137,23 +142,26 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
                 Fa0 = F*fibres(:,1);
                 lambdaf = norm(Fa0);
 
-                fl = this.ForceLengthFun(lambdaf);
-                dfl = this.ForceLengthFunDeriv(lambdaf);
                 alpha = alphaconst;
                 if havefibretypes
                     alpha = ftwelem(gp);
                 end
+                fl = flfun(lambdaf);
                 alpha_prefactor = (Pmax/lambdaf)*fl;
                 g_value = alpha_prefactor*alpha;
-                dg_dlam = (Pmax/lambdaf^2)*alpha*(dfl - fl);
+                dg_dlam = (Pmax/lambdaf^2)*alpha*(dflfun(lambdaf) - fl);
                 % Using > 1 is deadly. All lambdas are equal to one at t=0
                 % (reference config, analytical), but numerically this is
                 % dependent on how precise F and hence lambda is computed.
                 % It is very very close to one, but sometimes 1e-7 smaller
                 % or bigger.. and that makes all the difference!
-                if lambdaf > .999
-                    g_value = g_value + (b1(gp,m)/lambdaf^2)*(lambdaf^d1(gp,m)-1);
-                    dg_dlam = dg_dlam + (b1(gp,m)/lambdaf^3)*((d1(gp,m)-2)*lambdaf^d1(gp,m) + 2);
+                if lambdaf > 1.0001
+                    %g_value = g_value + (b1(gp,m)/lambdaf^2)*(lambdaf^d1(gp,m)-1);
+%                     g_value = g_value + mlfun(lambdaf,b1(gp,m),d1(gp,m));
+                    g_value = g_value + mlfun(lambdaf);
+                    %dg_dlam = dg_dlam + (b1(gp,m)/lambdaf^3)*((d1(gp,m)-2)*lambdaf^d1(gp,m) + 2);
+%                     dg_dlam = dg_dlam + dmlfun(lambdaf,b1(gp,m),d1(gp,m));
+                    dg_dlam = dg_dlam + dmlfun(lambdaf);
                 end
                 a0 = sys.a0oa0(:,:,fibrenr);
                 

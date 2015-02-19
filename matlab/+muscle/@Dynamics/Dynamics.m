@@ -23,10 +23,18 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         
         ForceLengthFun;
         ForceLengthFunDeriv;
+        
+        % Maximal derivative of markert law function before it is
+        % linearized. This is to improve numerical stability.
+        %
+        % Set to [] to disable feature.
+        MarkertMaxModulus = 10000; % [mN]
     end
     
     properties(SetAccess=private)
         APExp;
+        MarkertLawFun;
+        MarkertLawFunDeriv;
     end
     
     properties(SetAccess=protected)
@@ -102,6 +110,15 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             
             % Prepare force-length fun
             mc.setForceLengthFun(this);
+            
+            % The 1,2 arguments are arbitrary here as we use the b,d
+            % parameterized functions. just dont use d=1 as this disables
+            % the linearized versions (see source of tools.MarkertLaw)
+            mlfg = tools.MarkertLaw(mu(7),mu(8),this.MarkertMaxModulus);
+            [this.MarkertLawFun,this.MarkertLawFunDeriv] = mlfg.getFunction;
+            % Get the law function handles that also take b,d as arguments.
+            % Needed due to possibly inhomogeneous material.
+            %[~,~,this.MarkertLawFun,this.MarkertLawFunDeriv] = mlfg.getFunction;
             
             if ~isempty(mc.VelocityBCTimeFun)
                 this.velo_bc_fun = mc.VelocityBCTimeFun.getFunction;

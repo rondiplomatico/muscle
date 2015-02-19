@@ -15,6 +15,7 @@ function duvw  = evaluate(this, uvwdof, t)
     % Cache variables instead of accessing them via this. in loops
     Pmax = this.mu(13);
     flfun = this.ForceLengthFun;
+    mlfun = this.MarkertLawFun;
     havefibres = sys.HasFibres;
     havefibretypes = sys.HasFibreTypes;
     usecrossfibres = this.crossfibres;
@@ -131,8 +132,10 @@ function duvw  = evaluate(this, uvwdof, t)
                 % dependent on how precise F and hence lambda is computed.
                 % It is very very close to one, but sometimes 1e-7 smaller
                 % or bigger.. and that makes all the difference!
-                if lambdaf > .999
-                    markert = (b1(gp,m)/lambdaf^2)*(lambdaf^d1(gp,m)-1);
+                if lambdaf > 1.0001
+                    %markert = (b1(gp,m)/lambdaf^2)*(lambdaf^d1(gp,m)-1);
+                    %markert = mlfun(lambdaf,b1(gp,m),d1(gp,m));
+                    markert = mlfun(lambdaf);
                 end
                 %if m == 1 && gp == 1
                 %    fprintf('markert=%g (lambda=%g)\n',markert,lambdaf);

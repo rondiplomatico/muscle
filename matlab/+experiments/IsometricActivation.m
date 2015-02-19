@@ -125,15 +125,16 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
     methods(Access=protected)
         
         function geo = getGeometry(this)
-            if this.Options.GeoNr == 1
-                [pts, cubes] = geometry.Cube27Node.DemoGrid(linspace(0,25,4),[0 7],[0 4]);
-                geo = geometry.Cube27Node(pts,cubes);
-            else
-                cent = 12;
-                k = kernels.GaussKernel(10);
-                k2 = kernels.GaussKernel(12);
-                rad = @(t)[k.evaluate(t,cent)*3.5 k2.evaluate(t,cent)*2]';
-                geo = Belly.getBelly(4,35,'Radius',rad,'Layers',[.8 1],'InnerRadius',.3);
+            switch this.Options.GeoNr
+                case 1
+                    [pts, cubes] = geometry.Cube27Node.DemoGrid(linspace(0,25,4),[0 7],[0 4]);
+                    geo = geometry.Cube27Node(pts,cubes);
+                case 2
+                    cent = 12;
+                    k = kernels.GaussKernel(10);
+                    k2 = kernels.GaussKernel(12);
+                    rad = @(t)[k.evaluate(t,cent)*3.5 k2.evaluate(t,cent)*2]';
+                    geo = Belly.getBelly(4,35,'Radius',rad,'Layers',[.8 1],'InnerRadius',.3);
             end
         end
         
