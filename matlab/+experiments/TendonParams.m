@@ -128,9 +128,15 @@ classdef TendonParams < experiments.AExperimentModelConfig
 %             prefix = 'b_d_initial';
             
             %% Initial rough test
-            br = logspace(5,7,15);
-            dr = linspace(7,35,15);
-            prefix = 'b_d_refined_100';
+%             br = logspace(5,7,15);
+%             dr = linspace(7,35,15);
+%             prefix = 'b_d_refined_100';
+            
+            %% Test on refined values with lower max modulus
+            br = logspace(6,7,5);
+            dr = linspace(7,20,5);
+            prefix = 'b_d_refined_maxmod8e3';
+            % Add m.System.f.MarkertMaxModulus = 8e3; below
 
             c = experiments.TendonParams('Tag',prefix);
             cap = 'Test for various b,d tendon params';
@@ -148,13 +154,14 @@ classdef TendonParams < experiments.AExperimentModelConfig
             nmu = size(range,2);
             mus = repmat(m.DefaultMu,1,nmu);
             mus(idx,:) = range;
+            m.System.f.MarkertMaxModulus = 8e3;
             data = e.runExperimentsCached(mus);
             
             sp = c.ExperimentalStretchMillimeters;
             force = data.o(:,:,1)';
             
-            %maxbest = 6;
-            maxbest = nmu;
+            maxbest = 10;
+            %maxbest = nmu;
             nbest = min(nmu,maxbest);
             diff = Norm.L2(force-repmat(c.TargetOutputValues',1,nmu))/norm(c.TargetOutputValues);
             [diff, idx] = sort(diff);

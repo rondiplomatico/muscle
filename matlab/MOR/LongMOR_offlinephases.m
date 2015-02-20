@@ -22,7 +22,7 @@ model = muscle.Model(modconf);
 %
 %%
 % runtime test
-[t,y,time] = model.simulate([5;40]);
+[t,y,time] = model.simulate;
 %
 %%
 % vary tolerances

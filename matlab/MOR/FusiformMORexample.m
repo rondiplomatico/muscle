@@ -6,7 +6,6 @@ classdef FusiformMORexample < muscle.AModelConfig
     %
     %%
     properties(Access=private)
-        
         % number of parts in one quarter of the belly
         NumParts;
         
@@ -17,64 +16,73 @@ classdef FusiformMORexample < muscle.AModelConfig
     %%
     methods
         
-        function this = FusiformMORexample
-            % setting up the fusiform muscle geometry
-%             np = 4;
-%             belly = Belly.getBelly(np,10,1,.5,2);
-            np = 12;
-            belly = Belly.getBelly(np,50,3,.5,15);
-            this = this@muscle.AModelConfig(belly);
-            this.NumParts = np;
+        function this = FusiformMORexample(varargin)
+            % specify as a subclass of AModelConfig
+            this = this@muscle.AModelConfig(varargin{:});
+            % initialise -- calls getGeometry()
+            this.init;
             % specify the definition of bc    
-            this.NeumannCoordinateSystem = 'local';
+            this.NeumannCoordinateSystem = 'local'; % same as default (not necessary)
         end
         
         function configureModel(this, model)
-            configureModel@muscle.AModelConfig(this, m);
+        
+            configureModel@muscle.AModelConfig(this, model);
+                    
+            % change default tolerances (necessary for convergence!!)
+            model.ODESolver.RelTol = 1e-5;
+            model.ODESolver.AbsTol = 1e-3;
+            
+            % simulation time and step size
             model.T = 350;
             model.dt = 0.1;
+            
+            % for offline phases
             model.EnableTrajectoryCaching = true;
             
             model.Data.useFileTrajectoryData;
             model.ComputeTrajectoryFxiData = true;
             
-            % default model parameters 
-            model.DefaultMu = [1; 50; 10; 0];      % mu = [viscosity; activation duration; NeumannBC (max force)]
+            % change default model parameters mu
+            model.DefaultMu(1) = 1;             % viscosity
+            model.DefaultMu(2) = 50;            % activation duration
+            model.DefaultMu(3) = 10;            % NeumannBC (max force)
+            
+            % default input index
             model.DefaultInput = 1;             % index for u (is a cell)
             
-            % specify model parameters (mu = [viscosity; activation duration; NeumannBC (max force)])
+            % specify model parameters - for trajectory computation
             sys = model.System;
+            % viscosity
             sys.Params(1).Range = [1e-3 10];
             sys.Params(1).Desired = 5;
             sys.Params(1).Spacing = 'log';
-            sys.Params(2).Name = 'alpha-ramp';
+            % activation-/alpha- ramp
             sys.Params(2).Range = [1 300];
             sys.Params(2).Desired = 5;
             sys.Params(2).Spacing = 'log';
-            sys.addParam('Neumann BC', [0.1 1e3], 5);
+            % Neumann BC
+            sys.Params(3).Range = [0.1 1e3];
+            sys.Params(3).Desired = 5;
             sys.Params(3).Spacing = 'log';
             
-            f = model.System.f;
-            % Material set (see main comment)
-            f.c10 = 6.352e-10; % [kPa]
-            f.c01 = 3.627; % [kPa]
-            model.DefaultMu(5) = 2.756e-5; % [kPa]
-            model.DefaultMu(6) = 43.373; % [-]
-            model.DefaultMu(13) = 73; % [kPa]
-            model.DefaultMu(14) = 1.2; % [-]
-           
-            %os = model.ODESolver;
-            %os.RelTol = 0.02;%0.01;
-            %os.AbsTol = 0.1;%0.1;
-
+            % simulation: starting at 20 ms, fully activate in mu(2) ms
+            % in mu(2) ms, up to maximal value ActivationRampMax, starting at ActivationRampOffset ms
+            this.ActivationRampMax = 1; % default
+            this.ActivationRampOffset = 20;            
         end
         
-        function prepareSimulation(this, mu, inputidx)
-            % 
-            sys = this.Model.System;
-            sys.f.alpha = this.getAlphaRamp(mu(2),1,20);    % (in ..ms, up to maxvalue.., starting at ..ms)
-            %sys.f.alpha = @(t)0;
-            sys.Inputs{1} = this.getAlphaRamp(10,mu(3));    % (in ..ms, up to maxvalue.., starting at ..ms)
+        % Neumann BC (mu(3)) 
+        % apply a force within 10 ms, up to maxvalue mu(3), starting at 0 ms
+        function u = getInputs(this)
+            % Returns the inputs `u(t)` of the model.
+            %
+            % if neumann boundary conditions are used, this input is
+            % multiplied with the mu(3) parameter, which determines the
+            % maximum force that is applied. u(t) determines its temporal
+            % strength.
+            ramp = tools.Ramp(10,1,0);
+            u{1} = ramp.getFunction;
         end
         
         function P = getBoundaryPressure(this, elemidx, faceidx)
@@ -83,11 +91,11 @@ classdef FusiformMORexample < muscle.AModelConfig
             % The unit for the applied quantities is kiloPascal [kPa]
             %
             % See also: NeumannCoordinateSystem
+            % positive values = traction, negative = pressure
             geo = this.PosFE.Geometry;
             P = [];
-%             if any(elemidx == [13:16]) && faceidx == 4
             if any(elemidx == [geo.NumElements-3:geo.NumElements]) && faceidx == 4
-                P = -1;
+                P = 1;
             end
         end
         
@@ -120,6 +128,13 @@ classdef FusiformMORexample < muscle.AModelConfig
             end
         end
         
+        function geo = getGeometry(this)
+            % geometry for model configuration
+            np = 12;
+            geo = Belly.getBelly(np,50,'Radius',3,'InnerRadius',.5,'Gamma',15);
+            this.NumParts = np;            
+        end
+        
         function anull = seta0(~, anull)
             % fibres in y direction
             anull(2,:,:) = 1;
@@ -131,12 +146,42 @@ classdef FusiformMORexample < muscle.AModelConfig
     % Testscript
     methods(Static)
         
-        function runTest
+        function runTest_FusiformMOR
+            JacobianHealthTest = false;
+            fprintf('Creating the model..');
+            % create geometry
             modconf = FusiformMORexample;
             geo = modconf.PosFE.Geometry;
+            geo.plot;
+            % create model
             model = muscle.Model(modconf);
-            [t,y] = model.simulate;
-            model.plot(t,y);
+            model.plotGeometrySetup;
+            model.plotForceLengthCurve;
+            % check jacobian
+            if JacobianHealthTest == true
+                fprintf('Running Jacobian health check..');
+                res = model.System.f.test_Jacobian;
+                fprintf('Done. Success = %d\n', res);
+            end
+            % perform simulation
+            fprintf('Running the simulation..');
+            mu = model.DefaultMu;
+            mu(1) = 1;
+            mu(2) = 50;
+            mu(3) = 10;
+            % 1)
+            [t,y,time] = model.simulate(mu);
+            model.plot(t(1:10:end),y(:,1:10:end));
+            % or 2)
+            %model.simulateAndPlot(mu);
+            %
+            % check output of interest
+            fprintf('Checking the output of interest..');
+            o = modconf.getOutputOfInterest(model,t,y);
+            figure()
+            plot(t,o);
+            xlabel('time [ms]');
+            ylabel('mean position of nodes at right end in y-direction');
         end
 
     end
