@@ -125,36 +125,50 @@ classdef TendonParams < experiments.AExperimentModelConfig
             %% Initial rough test
 %             br = logspace(4,7,3);
 %             dr = linspace(4,40,3);
+%             idx = [7 8];
 %             prefix = 'b_d_initial';
+%             range = Utils.createCombinations(br,dr);
             
             %% Initial rough test
 %             br = logspace(5,7,15);
 %             dr = linspace(7,35,15);
+%             idx = [7 8];
 %             prefix = 'b_d_refined_100';
+%             range = Utils.createCombinations(br,dr);
             
             %% Test on refined values with lower max modulus
-            br = logspace(6,7,5);
-            dr = linspace(7,20,5);
-            prefix = 'b_d_refined_maxmod8e3';
-            % Add m.System.f.MarkertMaxModulus = 8e3; below
+            % K_SEC=8003 from siebert paper (as rough test)
+%             br = logspace(6,7,5);
+%             dr = linspace(7,20,5);
+%             idx = [7 8];
+%             prefix = 'b_d_refined_maxmod8e3';
+%             range = Utils.createCombinations(br,dr);
+%             % + Add m.DefaultMu(15) = 8e3; below
 
+            %% Test on refined values with lower max modulus
+            % K_SEC=8003 from siebert paper (as rough test)
+            br = logspace(5,8,5);
+            dr = linspace(6,30,5);
+            mm = logspace(4,6,5);
+            idx = [7 8 15];
+            prefix = 'b_d_mm_initial';
+            range = Utils.createCombinations(br,dr,mm);
+            
+            %% TEST PART
             c = experiments.TendonParams('Tag',prefix);
             cap = 'Test for various b,d tendon params';
             
-            %% NOT CONFIGURABLE PART
-            range = Utils.createCombinations(br,dr);
-            mustr = [sprintf('-%g',br) '/' sprintf('-%g',dr)];
-            idx = [7 8];            
+            mustr = [sprintf('-%g',br) '/' sprintf('-%g',dr)];           
             
             m = muscle.Model(c);
             % Use mooney-rivlin for muscle material here
             m.DefaultMu(11:12) = m.DefaultMu(9:10);
             e = tools.ExperimentRunner(m);
-%             e.RunParallel = false;
             nmu = size(range,2);
+            
+%             m.DefaultMu(15) = 8e3;
             mus = repmat(m.DefaultMu,1,nmu);
             mus(idx,:) = range;
-            m.System.f.MarkertMaxModulus = 8e3;
             data = e.runExperimentsCached(mus);
             
             sp = c.ExperimentalStretchMillimeters;
