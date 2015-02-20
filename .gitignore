@@ -1,5 +1,6 @@
 matlab/examples/export
 matlab/+experiments/IsometricActivation/*
+latex/img/*.pdf
 *.ilg
 data/
 *.avi

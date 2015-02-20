@@ -268,9 +268,9 @@ Further, we introduce the stretch $\la > 0$ in fibre direction $\va_0(X), \no{\v
 	&= \sqrt{\va_0(X)^T\vF(X,t)^T\vF(X,t)\va_0(X))} = \no{\vF(X,t)\va_0(X)}\label{def:fibrestretch}
 \end{align}
 Now, according to \cite{Markert2005}, we employ
-\begin{align*}
-	\Psi(\la) := \sumi \frac{b_i}{d_i}(\la^{d_i} - 1) - b_i\ln\la
-\end{align*}
+\begin{align}
+	\Psi(\la) := \sumi \frac{b_i}{d_i}(\la^{d_i} - 1) - b_i\ln\la\label{def:markertlaw}
+\end{align}
 with $n=1$ summands 
 \begin{align*}
 	b_1 &= 2.756e^{-5}kPa, & d_1 &= 43.373 [-].
@@ -294,6 +294,17 @@ leading to
 	\vSa(X,t) &= \frac{b_1}{\la^2(X,t)}\left(\la^{d_1}(X,t) - 1\right) \va_0(X)\otimes\va_0(X)\\
 	\vPa(X,t) &= \frac{b_1}{\la^2(X,t)}\left(\la^{d_1}(X,t) - 1\right) \vF(X,t)\va_0(X)\otimes\va_0(X)
 \end{align}
+
+\paragraph{``Numerically improved'' markert law}
+The energy density function \eqref{def:markertlaw} has the slight disadvantage
+of leading to nonzero derivatives of the effectively applied function $\frac{b_1}{\la^2}\left(\la^{d_1} - 1\right)$ near $\lambda=1$.
+As the Markert law is only applicable for $\lambda>1$, quickly increasing parameterizations (e.g. for large $b_1$ and moderate $d_1$, see Figure \ref{fig:steepmarkert})
+develop discontinuous derivatives at $\lambda=1$. This is numerically problematic the stiffer the material modeled is.
+\begin{figure}[!ht]
+	\includegraphics[width=\textwidth]{MarkertLawOriginal}
+	\caption{Markert law for $b_1=7990 [kPa]$ and $d_1=16.6 [-]$. Discontinuous derivative at $\lambda=1$ with gap size $b_1d_1=132634 [kPa]$}
+	\label{fig:steepmarkert}
+\end{figure}
 
 \subsubsection{Active force tensor $\vSf$}\label{sec:active_force}
 We further assume to have a muscle activation $\alpha(X,t) \in [0,1]$, which is given by manual settings or motorunit models.

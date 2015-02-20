@@ -3,7 +3,7 @@ classdef AFunGen < handle
     %   Detailed explanation goes here
     
     methods
-        function plot(this, range)
+        function pm = plot(this, range)
             if nargin < 2
                 range = 0:.1:1000;
             elseif length(range) == 2
@@ -15,6 +15,7 @@ classdef AFunGen < handle
                 args = {false, 1, 2};
             end
             pm = PlotManager(args{:});
+            pm.UseFileTypeFolders = false;
             pm.LeaveOpen = true;
             mc = metaclass(this);
             ax = pm.nextPlot(mc.Name,sprintf('Plot of %s\n%s',mc.Name,this.getConfigStr),'t [ms]','value');

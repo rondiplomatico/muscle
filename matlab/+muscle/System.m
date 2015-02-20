@@ -227,6 +227,12 @@ classdef System < models.BaseDynSystem
             % #14
             this.addParam('force-length p1 (lam_0/width/...)',2.05);
             
+            % Experimental parameter for linearization point computation of
+            % the modified markert law
+            %
+            % #15
+            this.addParam('tendon markert max modulus',1e5);
+            
             %% Set system components
             % Core nonlinearity
             this.f = muscle.Dynamics(this);
