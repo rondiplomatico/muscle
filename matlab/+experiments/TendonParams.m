@@ -1,10 +1,13 @@
 classdef TendonParams < experiments.AExperimentModelConfig
     
     properties(Constant)
-        ExperimentalStretchMillimeters = linspace(0,.5,7);
+        TendonLength = 12; % [mm]
     end
     
-    properties
+    properties(SetAccess=private)
+        % Assume a maximal stretch of 5%
+        ExperimentalStretchPercent = linspace(0,.05,10);
+        ExperimentalStretchMillimeters;
         PositioningTime = 50;
         RelaxTime = 25;
     end
@@ -14,13 +17,22 @@ classdef TendonParams < experiments.AExperimentModelConfig
             this = this@experiments.AExperimentModelConfig(varargin{:});
             this.init;
             
+            this.ExperimentalStretchMillimeters = experiments.TendonParams.TendonLength...
+                *this.ExperimentalStretchPercent;
+            
             this.NumOutputs = 1;
             this.NumConfigurations = length(this.ExperimentalStretchMillimeters);
-            % Data from GM5 muscle, originally in [N], here transferred to
-            % [mN]
-            s = tools.SiebertTendonFun;
+            
+            % SEC function from GM5 muscle.
+            % Assumed a total tendon/elastic component length of 45mm to
+            % attain the max isometric force of 11.2N at 4.5% overall
+            % stretch (model fitted to apneurosis and tendon complex,
+            % we have plain tendon material here.
+            % This needs to be replaced with true experimental data)
+            s = tools.SiebertTendonFun(45);
             f = s.getFunction;
-            this.TargetOutputValues = f(this.ExperimentalStretchMillimeters);
+            lambda = 1+this.ExperimentalStretchPercent;
+            this.TargetOutputValues = f(lambda);
             
             this.VelocityBCTimeFun = tools.ConstantUntil(this.PositioningTime,.01);
         end
@@ -111,13 +123,13 @@ classdef TendonParams < experiments.AExperimentModelConfig
             %
             
             %% Initial rough test
-%             br = logspace(0,6,10);
-%             dr = linspace(3,40,10);
-%             prefix = 'b_d_100';
+%             br = logspace(4,7,3);
+%             dr = linspace(4,40,3);
+%             prefix = 'b_d_initial';
             
             %% Initial rough test
-            br = logspace(log10(4.64e+04),6,10);
-            dr = linspace(7,30,10);
+            br = logspace(5,7,15);
+            dr = linspace(7,35,15);
             prefix = 'b_d_refined_100';
 
             c = experiments.TendonParams('Tag',prefix);
@@ -133,15 +145,18 @@ classdef TendonParams < experiments.AExperimentModelConfig
             m.DefaultMu(11:12) = m.DefaultMu(9:10);
             e = tools.ExperimentRunner(m);
 %             e.RunParallel = false;
-            mus = repmat(m.DefaultMu,1,size(range,2));
+            nmu = size(range,2);
+            mus = repmat(m.DefaultMu,1,nmu);
             mus(idx,:) = range;
             data = e.runExperimentsCached(mus);
             
             sp = c.ExperimentalStretchMillimeters;
             force = data.o(:,:,1)';
             
-            nbest = 6;
-            diff = Norm.L2(force-repmat(c.TargetOutputValues',1,100))/norm(c.TargetOutputValues);
+            %maxbest = 6;
+            maxbest = nmu;
+            nbest = min(nmu,maxbest);
+            diff = Norm.L2(force-repmat(c.TargetOutputValues',1,nmu))/norm(c.TargetOutputValues);
             [diff, idx] = sort(diff);
             mus = mus(:,idx);
             for k=1:nbest
