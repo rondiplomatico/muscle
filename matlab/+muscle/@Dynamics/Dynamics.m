@@ -112,7 +112,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             [this.AnisoPassiveMuscle, this.AnisoPassiveMuscleDeriv] = mlfg.getFunction;
             
             % Tendon anisotropic passive law
-            mlfg = tools.QuadToLinear(mu(7),mu(8));
+            mlfg = tools.CubicToLinear(mu(7),mu(8));
             [this.AnisoPassiveTendon, this.AnisoPassiveTendonDeriv] = mlfg.getFunction;
 
             % Get the law function handles that also take b,d as arguments.
