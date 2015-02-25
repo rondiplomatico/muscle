@@ -56,7 +56,7 @@ classdef TendonParams < experiments.AExperimentModelConfig
             % parameter/input changes but not different BCs!
             m.EnableTrajectoryCaching = false;
             
-            m.System.f.MarkertMaxModulus = 1e6; % [mN]
+%             m.System.f.MarkertMaxModulus = 1e6; % [mN]
         end
         
         function configureModelFinal(this)
@@ -145,20 +145,26 @@ classdef TendonParams < experiments.AExperimentModelConfig
 %             range = Utils.createCombinations(br,dr);
 %             % + Add m.DefaultMu(15) = 8e3; below
 
-            %% Test on refined values with lower max modulus
-            % K_SEC=8003 from siebert paper (as rough test)
-            br = logspace(5,8,5);
-            dr = linspace(6,30,5);
-            mm = logspace(4,6,5);
+            %% Test on initial values
+%             br = logspace(5,8,5);
+%             dr = linspace(6,30,5);
+%             mm = logspace(4,6,5);
+%             idx = [7 8 15];
+%             prefix = 'b_d_mm_initial';
+%             range = Utils.createCombinations(br,dr,mm);
+            
+            %% Test on initial values
+            br = logspace(6,8,15);
+            dr = linspace(6,30,15);
+            mm = logspace(5,6,15);
             idx = [7 8 15];
-            prefix = 'b_d_mm_initial';
+            prefix = 'b_d_mm_detailed';
             range = Utils.createCombinations(br,dr,mm);
             
             %% TEST PART
             c = experiments.TendonParams('Tag',prefix);
             cap = 'Test for various b,d tendon params';
-            
-            mustr = [sprintf('-%g',br) '/' sprintf('-%g',dr)];           
+            %mustr = [sprintf('-%g',br) '/' sprintf('-%g',dr)];           
             
             m = muscle.Model(c);
             % Use mooney-rivlin for muscle material here
@@ -172,33 +178,33 @@ classdef TendonParams < experiments.AExperimentModelConfig
             data = e.runExperimentsCached(mus);
             
             sp = c.ExperimentalStretchMillimeters;
-            force = data.o(:,:,1)';
+            force = squeeze(data.o(:,1,:));
             
-            maxbest = 10;
+            maxbest = 5;
             %maxbest = nmu;
             nbest = min(nmu,maxbest);
             diff = Norm.L2(force-repmat(c.TargetOutputValues',1,nmu))/norm(c.TargetOutputValues);
             [diff, idx] = sort(diff);
             mus = mus(:,idx);
             for k=1:nbest
-                fprintf('%d. b=%10.3g, d=%10.4g with %10.4g relative L^2 error\n',k,mus(7,k),mus(8,k),diff(k));
+                fprintf('%d. mu(%d): b=%10.3g, d=%10.4g, M=%10.4g with %10.4g relative L^2 error\n',k,idx(k),mus(7,k),mus(8,k),mus(15,k),diff(k));
             end
             
             pm = PlotManager;
             pm.LeaveOpen = true;
             pm.UseFileTypeFolders = false;
             ax = pm.nextPlot(['tendonparam_' c.Options.Tag],...
-                ['B/D' mustr ' experiment: ' cap],'stretch [mm]','forces [mN]');
+                ['Experiment: ' cap],'stretch [mm]','forces [mN]');
             plot(ax,sp,force(:,idx(1:nbest)));
             hold(ax,'on');
             plot(ax,sp,c.TargetOutputValues,'rx');
-            legend([sprintfc('%d.',1:nbest) {'Data'}]);
+            legend([sprintfc('%2.2g',diff(1:nbest)) {'Data'}],'Location','NorthWest');
             
             % Set label
             % compute percent
-            w = c.PosFE.Geometry.Width;
+            w = c.PosFE.Geometry.Depth;
             sp_perc = (((w+sp)./w)-1)*100;
-            lab = sprintf('%dmm (%g%%)|',reshape([sp; sp_perc],1,[]));
+            lab = sprintf('%2.2gmm(%2.2g%%)|',reshape([sp; sp_perc],1,[]));
             set(ax,'XTick',sp,'XTickLabel', lab(1:end-1));
             
 %             disp('Computation times [s]:');

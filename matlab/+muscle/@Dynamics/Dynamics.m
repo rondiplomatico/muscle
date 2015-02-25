@@ -28,7 +28,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         % linearized. This is to improve numerical stability.
         %
         % Set to [] to disable feature.
-        MarkertMaxModulus = 10000; % [mN]
+        %MarkertMaxModulus = 10000; % [mN]
     end
     
     properties(SetAccess=private)
@@ -114,7 +114,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % The 1,2 arguments are arbitrary here as we use the b,d
             % parameterized functions. just dont use d=1 as this disables
             % the linearized versions (see source of tools.MarkertLaw)
-            mlfg = tools.MarkertLaw(mu(7),mu(8),this.MarkertMaxModulus);
+            mlfg = tools.MarkertLaw(mu(7),mu(8),mu(15));
             [this.MarkertLawFun,this.MarkertLawFunDeriv] = mlfg.getFunction;
             % Get the law function handles that also take b,d as arguments.
             % Needed due to possibly inhomogeneous material.
