@@ -114,7 +114,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % Tendon anisotropic passive law
             mlfg = tools.QuadToLinear(mu(7),mu(8));
             [this.AnisoPassiveTendon, this.AnisoPassiveTendonDeriv] = mlfg.getFunction;
-            
+
             % Get the law function handles that also take b,d as arguments.
             % Needed due to possibly inhomogeneous material.
             %[~,~,this.MarkertLawFun,this.MarkertLawFunDeriv] = mlfg.getFunction;
