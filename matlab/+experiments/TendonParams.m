@@ -129,7 +129,7 @@ classdef TendonParams < experiments.AExperimentModelConfig
             
             %% Fit for QuadToLinear law
             idx = 7;
-            range = linspace(1.01,1.03,5);
+            range = linspace(1.025,1.03,12);
             prefix = 'lambda_0_fit';
             
             %% TEST PART

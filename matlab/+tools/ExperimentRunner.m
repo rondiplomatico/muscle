@@ -33,6 +33,23 @@ classdef ExperimentRunner < handle
             this.StoreExperimentData = true;
         end
         
+        function [out, y, ct] = getCachedExperimentConfig(this, nr, mu)
+            if nargin < 3
+                mu = this.Model.DefaultMu;
+            end
+            % The cache key is param + config nr
+            key = [mu; nr];
+            out = [];
+            y = [];
+            ct = [];
+            if this.cachedata && this.cache.hasData(key);
+                data = this.cache.getData(key);
+                out = data.out;
+                y = data.y;
+                ct = data.ct;
+            end
+        end
+        
         function [out, y, ct] = runExperimentConfig(this, nr, mu)
             % Runs a single experiment configuration.
             % Coded here for convenience only.
@@ -41,30 +58,26 @@ classdef ExperimentRunner < handle
             if nargin < 3
                 mu = m.DefaultMu;
             end
-            c = this.Config;
-            % Apply configuration set within ModelConfig
-            c.CurrentConfigNr = nr;
-            % Update the model (precomputations)
-            m.setConfig(c);
-            % Run simulation
-            out = NaN(1,c.NumOutputs);
-            
-            % The cache key is param + config nr
-            key = [mu; nr];
-            if this.cachedata && this.cache.hasData(key);
-                data = this.cache.getData(key);
-                out = data.out;
-                y = data.y;
-                ct = data.ct;
-            else
+            [out, y, ct] = this.getCachedExperimentConfig(nr, mu);
+            if isempty(out)
+                c = this.Config;
+                out = NaN(1,c.NumOutputs);
                 try
+                    % Apply configuration set within ModelConfig
+                    % Updates the associated model automatically (precomputations)
+                    c.CurrentConfigNr = nr;
+                    
+                    % Run simulation
                     [t,y,ct] = m.simulate(mu);
+                    
                     % Get output of interest
                     tic;
                     out = c.getOutputOfInterest(t,y);
                     ct = ct + toc;
                     
                     if this.cachedata
+                        % The cache key is param + config nr
+                        key = [mu; nr];
                         data = struct('y',y,'t',t,'mu',mu,'nr',nr,'ct',ct,'out',out);
                         this.cache.addData(key,data);
                     end
@@ -74,7 +87,6 @@ classdef ExperimentRunner < handle
                     ME.getReport
                 end
             end
-            
         end
         
         function [out, ct] = runExperiment(this, mu)
@@ -87,7 +99,8 @@ classdef ExperimentRunner < handle
             ct = zeros(c.NumConfigurations,1);
             % Run all the settings!
             if this.RunParallel && ~this.multipleexperiments
-                fprintf('Running %d experiment configurations in parallel...',c.NumConfigurations);
+                fprintf('Running %d experiment configurations in parallel...\n',c.NumConfigurations);
+                closeafterrun = false;
                 if matlabpool('size') == 0
                     matlabpool open;
                     closeafterrun = true;
@@ -131,7 +144,7 @@ classdef ExperimentRunner < handle
                     matlabpool open;
                     closeafterrun = true;
                 end
-                fprintf('Running %d experiments (%d configs each) in parallel...',nex,c.NumConfigurations);
+                fprintf('Running %d experiments (%d configs each) in parallel...\n',nex,c.NumConfigurations);
                 parfor k=1:nex
                     t = getCurrentTask();
                     fprintf('Worker %d: Running experiment %d\n',t.ID,k);

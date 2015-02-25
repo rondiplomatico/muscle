@@ -38,6 +38,9 @@ classdef AExperimentModelConfig < muscle.AModelConfig
                 error('Please choose one of the %d possible configurations.',this.NumConfigurations);
             end
             this.fCurConfNr = nr;
+            if ~isempty(this.Model)
+                this.Model.setConfig(this);
+            end
         end
         
         function value = get.CurrentConfigNr(this)

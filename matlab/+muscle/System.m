@@ -188,7 +188,7 @@ classdef System < models.BaseDynSystem
             %
             % fit with tools.MarkertLaw: b1 = 1.3895e+07
             % #7
-            this.addParam('tendon passive 1 [b1/lam0]',1.024334754306857); % [kPa]
+            this.addParam('tendon passive 1 [b1/lam0]',1.027); % [kPa]
             
             % anisotropic passive stiffness for tendon material
             % markert law
