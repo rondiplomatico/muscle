@@ -98,15 +98,17 @@ classdef MarkertLaw < tools.AFunGen
             str = sprintf('b: %g, d: %g, MaxModulus:%g',this.b,this.d,this.max_modulus);
         end
         
-        function plot(this, range)
+        function plot(this, range, varargin)
             if nargin < 2
                 range = [1 1.2*this.t0];
             end
-            plot@tools.AFunGen(this, range);
-            ax = get(gcf,'Children');
-            ax = ax(2); % second one is the left one - hope this is reproducible
-            hold(ax,'on');
-            plot(ax,this.t0,this.ft0,'rx','MarkerSize',16);
+            plot@tools.AFunGen(this, range, varargin{:});
+            if (range(2) > this.t0)
+                ax = get(gcf,'Children');
+                ax = ax(2); % second one is the left one - hope this is reproducible
+                hold(ax,'on');
+                plot(ax,this.t0,this.ft0,'rx','MarkerSize',16);
+            end
         end
     end
     

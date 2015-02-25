@@ -55,8 +55,6 @@ classdef TendonParams < experiments.AExperimentModelConfig
             % IMPORTANT! Leave off, as the cache only recognized
             % parameter/input changes but not different BCs!
             m.EnableTrajectoryCaching = false;
-            
-            m.System.f.MarkertMaxModulus = 1e6; % [mN]
         end
         
         function configureModelFinal(this)

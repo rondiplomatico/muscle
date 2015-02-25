@@ -184,14 +184,19 @@ classdef System < models.BaseDynSystem
             this.addParam('muscle passive d1',43.373);
             
             % anisotropic passive stiffness for tendon material
-            % markert law b1
+            % markert law
+            %
+            % fit with tools.MarkertLaw: b1 = 1.3895e+07
             % #7
-            this.addParam('tendon passive b1',7990); % [kPa]
+            this.addParam('tendon passive 1 [b1/lam0]',1.024334754306857); % [kPa]
             
             % anisotropic passive stiffness for tendon material
-            % markert law d1
+            % markert law
+            %
+            % fit with tools.MarkertLaw: d1 = 11.1429
+            % max modulus  1.637893706954065e+05
             % #8
-            this.addParam('tendon passive d1',16.6);
+            this.addParam('tendon passive 2 [d1/M]', 1.637893706954065e+05);
             
             % isotropic muscle material
             % mooney-rivlin law c10
@@ -226,12 +231,6 @@ classdef System < models.BaseDynSystem
             % somewhere between 2 and 2.2 micrometer.
             % #14
             this.addParam('force-length p1 (lam_0/width/...)',2.05);
-            
-            % Experimental parameter for linearization point computation of
-            % the modified markert law
-            %
-            % #15
-            this.addParam('tendon markert max modulus',1e5);
             
             %% Set system components
             % Core nonlinearity

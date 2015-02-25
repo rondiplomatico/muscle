@@ -23,8 +23,10 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
     
     flfun = this.ForceLengthFun;
     dflfun = this.ForceLengthFunDeriv;
-    mlfun = this.MarkertLawFun;
-    dmlfun = this.MarkertLawFunDeriv;
+    anisotendonfun = this.AnisoPassiveTendon;
+    anisomusclefun = this.AnisoPassiveMuscle;
+    anisotendondfun = this.AnisoPassiveTendonDeriv;
+    anisomuscledfun = this.AnisoPassiveMuscleDeriv;
     
     havefibres = sys.HasFibres;
     havefibretypes = sys.HasFibreTypes;
@@ -156,12 +158,10 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
                 % It is very very close to one, but sometimes 1e-7 smaller
                 % or bigger.. and that makes all the difference!
                 if lambdaf > 1.0001
-                    %g_value = g_value + (b1(gp,m)/lambdaf^2)*(lambdaf^d1(gp,m)-1);
-%                     g_value = g_value + mlfun(lambdaf,b1(gp,m),d1(gp,m));
-                    g_value = g_value + mlfun(lambdaf);
-                    %dg_dlam = dg_dlam + (b1(gp,m)/lambdaf^3)*((d1(gp,m)-2)*lambdaf^d1(gp,m) + 2);
-%                     dg_dlam = dg_dlam + dmlfun(lambdaf,b1(gp,m),d1(gp,m));
-                    dg_dlam = dg_dlam + dmlfun(lambdaf);
+                    g_value = g_value + sys.MuscleTendonRatioGP(gp,m)*anisotendonfun(lambdaf) + ...
+                        (1-sys.MuscleTendonRatioGP(gp,m))*anisomusclefun(lambdaf);
+                    dg_dlam = dg_dlam + + sys.MuscleTendonRatioGP(gp,m)*anisotendondfun(lambdaf) + ...
+                        (1-sys.MuscleTendonRatioGP(gp,m))*anisomuscledfun(lambdaf);
                 end
                 a0 = sys.a0oa0(:,:,fibrenr);
                 

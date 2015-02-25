@@ -23,18 +23,14 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         
         ForceLengthFun;
         ForceLengthFunDeriv;
-        
-        % Maximal derivative of markert law function before it is
-        % linearized. This is to improve numerical stability.
-        %
-        % Set to [] to disable feature.
-        MarkertMaxModulus = 10000; % [mN]
     end
     
     properties(SetAccess=private)
         APExp;
-        MarkertLawFun;
-        MarkertLawFunDeriv;
+        AnisoPassiveMuscle;
+        AnisoPassiveMuscleDeriv;
+        AnisoPassiveTendon;
+        AnisoPassiveTendonDeriv;
     end
     
     properties(SetAccess=protected)
@@ -111,11 +107,14 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % Prepare force-length fun
             mc.setForceLengthFun(this);
             
-            % The 1,2 arguments are arbitrary here as we use the b,d
-            % parameterized functions. just dont use d=1 as this disables
-            % the linearized versions (see source of tools.MarkertLaw)
-            mlfg = tools.MarkertLaw(mu(7),mu(8),this.MarkertMaxModulus);
-            [this.MarkertLawFun,this.MarkertLawFunDeriv] = mlfg.getFunction;
+            % Muscle anisotropic passive law
+            mlfg = tools.MarkertLawOriginal(mu(5),mu(6));
+            [this.AnisoPassiveMuscle, this.AnisoPassiveMuscleDeriv] = mlfg.getFunction;
+            
+            % Tendon anisotropic passive law
+            mlfg = tools.QuadToLinear(mu(7),mu(8));
+            [this.AnisoPassiveTendon, this.AnisoPassiveTendonDeriv] = mlfg.getFunction;
+            
             % Get the law function handles that also take b,d as arguments.
             % Needed due to possibly inhomogeneous material.
             %[~,~,this.MarkertLawFun,this.MarkertLawFunDeriv] = mlfg.getFunction;

@@ -302,9 +302,25 @@ As the Markert law is only applicable for $\lambda>1$, quickly increasing parame
 develop discontinuous derivatives at $\lambda=1$. This is numerically problematic the stiffer the material modeled is.
 \begin{figure}[!ht]
 	\includegraphics[width=\textwidth]{MarkertLawOriginal}
-	\caption{Markert law for $b_1=7990 [kPa]$ and $d_1=16.6 [-]$. Discontinuous derivative at $\lambda=1$ with gap size $b_1d_1=132634 [kPa]$}
+	\caption{Markert law for $b_1=7990 [kPa]$ and $d_1=16.6 [-]$ in blue. Discontinuous derivative at $\lambda=1$ with gap size $b_1d_1=132634 [kPa]$. Red shows the modified
+	variant with same ``old'' parametrization and the green line is an example parameterization with similar shape}
 	\label{fig:steepmarkert}
 \end{figure}
+A modification of the law allows to circumvent this issue by assuming the following strain energy function:
+\begin{align}
+	\tilde{\Psi}(\la) &:= b\left(\left(\frac{\la}{d+2}-\frac{2}{d+1}\right)\la+\frac{b}{d}\right)\la^d - \frac{b\la^2}{2} + 2b\la - b\ln\la\\
+	\Psi(\la) &:= \tilde{\Psi}(\la) - \tilde{\Psi}(1)\label{def:markertlaw2}
+\end{align}
+For this we verify that $\Psi(1) = 0, \lim\limits_{\la\to0}\Psi(\la)=\infty$ and
+\begin{align*}
+	\Psi'(\la) &:= \frac{b}{\la}(\la^d-1)(\la-1)^2.
+\end{align*}
+Using this in \eqref{eq:dpsidC} we obtain
+\begin{align*}
+	\d{\Psi}{\vC}(\la) &= \frac{b}{\la^2}(\la^d-1)(\la-1)^2 =: g(\la)\\
+	g'(\la) &= \frac{b(\la-1)}{\la^3}\left((d(\la-1)+2)\la^d - 2\right),
+\end{align*}
+for which we quickly verify that $\d{\Psi}{\vC}(1) = 0, g'(1) = 0$.
 
 \subsubsection{Active force tensor $\vSf$}\label{sec:active_force}
 We further assume to have a muscle activation $\alpha(X,t) \in [0,1]$, which is given by manual settings or motorunit models.
