@@ -27,6 +27,7 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
     anisomusclefun = this.AnisoPassiveMuscle;
     anisotendondfun = this.AnisoPassiveTendonDeriv;
     anisomuscledfun = this.AnisoPassiveMuscleDeriv;
+    tmrgp = sys.MuscleTendonRatioGP;
     
     havefibres = sys.HasFibres;
     havefibretypes = sys.HasFibreTypes;
@@ -144,9 +145,13 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
                 Fa0 = F*fibres(:,1);
                 lambdaf = norm(Fa0);
 
-                alpha = alphaconst;
+                % Get weights for tendon/muscle part at current gauss point
+                tendonpart = tmrgp(gp,m);
+                musclepart = 1-tendonpart;
+                
+                alpha = musclepart*alphaconst;
                 if havefibretypes
-                    alpha = ftwelem(gp);
+                    alpha = musclepart*ftwelem(gp);
                 end
                 fl = flfun(lambdaf);
                 alpha_prefactor = (Pmax/lambdaf)*fl;
@@ -158,10 +163,10 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
                 % It is very very close to one, but sometimes 1e-7 smaller
                 % or bigger.. and that makes all the difference!
                 if lambdaf > 1.0001
-                    g_value = g_value + sys.MuscleTendonRatioGP(gp,m)*anisotendonfun(lambdaf) + ...
-                        (1-sys.MuscleTendonRatioGP(gp,m))*anisomusclefun(lambdaf);
-                    dg_dlam = dg_dlam + + sys.MuscleTendonRatioGP(gp,m)*anisotendondfun(lambdaf) + ...
-                        (1-sys.MuscleTendonRatioGP(gp,m))*anisomuscledfun(lambdaf);
+                    g_value = g_value + tendonpart*anisotendonfun(lambdaf) + ...
+                        musclepart*anisomusclefun(lambdaf);
+                    dg_dlam = dg_dlam + + tendonpart*anisotendondfun(lambdaf) + ...
+                        musclepart*anisomuscledfun(lambdaf);
                 end
                 a0 = sys.a0oa0(:,:,fibrenr);
                 

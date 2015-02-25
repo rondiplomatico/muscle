@@ -17,7 +17,9 @@ function duvw  = evaluate(this, uvwdof, t)
     flfun = this.ForceLengthFun;
     anisotendonfun = this.AnisoPassiveTendon;
     anisomusclefun = this.AnisoPassiveMuscle;
+    tmrgp = sys.MuscleTendonRatioGP;
     havefibres = sys.HasFibres;
+    
     havefibretypes = sys.HasFibreTypes;
     usecrossfibres = this.crossfibres;
     if usecrossfibres
@@ -25,6 +27,7 @@ function duvw  = evaluate(this, uvwdof, t)
         d1cf = this.d1cf;
     end
     ldotpos = this.lambda_dot_pos;
+    
     c10 = sys.MuscleTendonParamc10;
     c01 = sys.MuscleTendonParamc01;
     mooneyrivlin_ic_const = sys.MooneyRivlinICConst;
@@ -121,10 +124,13 @@ function duvw  = evaluate(this, uvwdof, t)
                 fibres = sys.a0Base(:,:,fibrenr);
                 lambdaf = norm(F*fibres(:,1));
                 
+                % Get weights for tendon/muscle part at current gauss point
+                tendonpart = tmrgp(gp,m);
+                musclepart = 1-tendonpart;
                 if havefibretypes
-                    alpha = ftwelem(gp);
+                    alpha = musclepart*ftwelem(gp);
                 else
-                    alpha = (1-sys.MuscleTendonRatioGP(gp,m))*alphaconst;
+                    alpha = musclepart*alphaconst;
                     %[t sys.MuscleTendonRatiosGP(gp,m) alpha]
                 end
                 markert = 0;
@@ -134,8 +140,8 @@ function duvw  = evaluate(this, uvwdof, t)
                 % It is very very close to one, but sometimes 1e-7 smaller
                 % or bigger.. and that makes all the difference!
                 if lambdaf > 1.0001
-                    markert = sys.MuscleTendonRatioGP(gp,m)*anisotendonfun(lambdaf) + ...
-                        (1-sys.MuscleTendonRatioGP(gp,m))*anisomusclefun(lambdaf);
+                    markert = tendonpart*anisotendonfun(lambdaf) + ...
+                        musclepart*anisomusclefun(lambdaf);
                 end
                 %if m == 1 && gp == 1
                 %    fprintf('markert=%g (lambda=%g)\n',markert,lambdaf);
@@ -172,19 +178,22 @@ function duvw  = evaluate(this, uvwdof, t)
                 end
             end
             
-%             Viscosity
+           %%  Viscosity - currently modeled as extra A linear system
+%             component
 %             if visc > 0
 %                 v = uvwcomplete(elemidx_velo);
 %                 P = P + visc * v * dtn;
 %             end
 
+            %% Assembly part I - sum up contributions from gauss points
             weight = fe_pos.GaussWeights(gp) * fe_pos.elem_detjac(m,gp);
 
             integrand_u = integrand_u + weight * P * dtn';
 
             integrand_p = integrand_p + weight * (det(F)-1) * fe_press.Ngp(:,gp,m);
-        end
+        end % end of gauss point loop
         
+        %% Assembly part II - sum up contributions of elements
         % Unassembled or assembled?
         if unassembled
             pos = unass_offset_dvelo + (1:3*dofsperelem_u) + (m-1) * 3 * dofsperelem_u;
@@ -200,7 +209,7 @@ function duvw  = evaluate(this, uvwdof, t)
             duvw(elemidx_v) = duvw(elemidx_v) - integrand_u;
             duvw(elemidx_p) = duvw(elemidx_p) + integrand_p;
         end
-    end
+    end % end of element loop
     
     if unassembled
         duvw(this.idx_uv_bc_glob_unass) = [];

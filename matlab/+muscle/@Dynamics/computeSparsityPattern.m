@@ -21,19 +21,28 @@ function [SP, SPalpha, SPLamDot] = computeSparsityPattern(this)
         ildot = [];
         jldot = [];
     end
-
-    %% -I part in u'(t) = -v(t)
-    i = (1:3*N)';
-    j = ((1:3*N)+3*N)';
-
-    globidx_disp = sys.idx_u_glob_elems;
-    globidx_press = sys.idx_p_glob_elems;
-
+    
+    num_elements = geo.NumElements;
+    num_gausspoints = fe_pos.GaussPointsPerElem;
     dofs_pos = N*3;
+    globidx_disp = sys.idx_u_glob_elems;
     dofsperelem_displ = geo.DofsPerElement;
     dofsperelem_press = pgeo.DofsPerElement;
-    num_gausspoints = fe_pos.GaussPointsPerElem;
-    num_elements = geo.NumElements;
+    
+    % Compute indices vectors size for speed
+    isize = dofs_pos + num_elements*num_gausspoints*(...
+            dofsperelem_displ*...
+                (3*(3*dofsperelem_displ + dofsperelem_press)) +...
+            dofsperelem_press*(3*dofsperelem_displ)) ;
+    i = zeros(isize,1,'int32');
+    j = zeros(isize,1,'int32');    
+
+    %% -I part in u'(t) = -v(t)
+    i(1:dofs_pos) = (1:3*N)';
+    j(1:dofs_pos) = ((1:3*N)+3*N)';
+    curoff = dofs_pos;
+
+    globidx_press = sys.idx_p_glob_elems;
     pones = ones(dofsperelem_press,1,'int32');
     for m = 1:num_elements
         elemidx_u = globidx_disp(:,:,m);
@@ -44,17 +53,15 @@ function [SP, SPalpha, SPLamDot] = computeSparsityPattern(this)
         for gp = 1:num_gausspoints
             for k = 1:dofsperelem_displ
                 %% Grad_u K(u,v,w)
-                % xdim
-                i = [i; inew]; %#ok<*AGROW>
-                j = [j; one*elemidx_u(1,k)];
-                % ydim
-                i = [i; inew]; 
-                j = [j; one*elemidx_u(2,k)]; 
-                % zdim
-                i = [i; inew]; 
-                j = [j; one*elemidx_u(3,k)]; 
-
-                %% Grad_v K(u,v,w)
+                step = 3*3*dofsperelem_displ;
+                % x,y,zdim
+                i(curoff+(1:step)) = [inew; inew; inew];
+                j(curoff+(1:step)) = [one*elemidx_u(1,k)
+                                      one*elemidx_u(2,k)
+                                      one*elemidx_u(3,k)];
+                curoff = curoff + step;
+                
+                %% Grad_v K(u,v,w) FIXME IF UNCOMMENTED
 %                 if visc > 0
 %                     % xdim
 %                     i = [i; inew]; %#ok<*AGROW>
@@ -68,21 +75,23 @@ function [SP, SPalpha, SPLamDot] = computeSparsityPattern(this)
 %                 end
 
                 %% grad u g(u)
-                % dx
-                i = [i; elemidx_p(:)];
-                j = [j; pones*elemidx_u(1,k)]; 
-                % dy
-                i = [i; elemidx_p(:)];
-                j = [j; pones*elemidx_u(2,k)]; 
-                %dz
-                i = [i; elemidx_p(:)];
-                j = [j; pones*elemidx_u(3,k)]; 
+                step = 3*dofsperelem_press;
+                % dx,dy,dz
+                i(curoff + (1:step)) = [elemidx_p(:)
+                                        elemidx_p(:)
+                                        elemidx_p(:)];
+                j(curoff + (1:step)) = [pones*elemidx_u(1,k)
+                                        pones*elemidx_u(2,k)
+                                        pones*elemidx_u(3,k)];
+                curoff = curoff + step;
             end
             %% Grad_w K(u,v,w)
             inew = elemidx_v(:);
+            step = 3*dofsperelem_displ;
             for k = 1:dofsperelem_press
-                i = [i; inew];
-                j = [j; ones(3*dofsperelem_displ,1,'int32')*elemidx_p(k)]; 
+                i(curoff + (1:step)) = inew;
+                j(curoff + (1:step)) = one*elemidx_p(k); 
+                curoff = curoff + step;
             end
             
             %% Jalpha pattern

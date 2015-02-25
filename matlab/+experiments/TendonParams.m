@@ -116,53 +116,25 @@ classdef TendonParams < experiments.AExperimentModelConfig
     methods(Static)
         
         function runExperiments()
-            % Runs the series of isometric tests for different Pmax values.
-            % Several variants can be chosen:
-            %
+            % Runs the series of isometric tests for different parameter
+            % variations to determine tendon anisotropic law components
             
-            %% Initial rough test
-%             br = logspace(4,7,3);
-%             dr = linspace(4,40,3);
-%             idx = [7 8];
-%             prefix = 'b_d_initial';
-%             range = Utils.createCombinations(br,dr);
-            
-            %% Initial rough test
-%             br = logspace(5,7,15);
-%             dr = linspace(7,35,15);
-%             idx = [7 8];
-%             prefix = 'b_d_refined_100';
-%             range = Utils.createCombinations(br,dr);
-            
-            %% Test on refined values with lower max modulus
-            % K_SEC=8003 from siebert paper (as rough test)
-%             br = logspace(6,7,5);
-%             dr = linspace(7,20,5);
-%             idx = [7 8];
-%             prefix = 'b_d_refined_maxmod8e3';
-%             range = Utils.createCombinations(br,dr);
-%             % + Add m.DefaultMu(15) = 8e3; below
-
-            %% Test on initial values
-%             br = logspace(5,8,5);
-%             dr = linspace(6,30,5);
-%             mm = logspace(4,6,5);
+            %% Test on initial values - LEAD 33000 traj
+%             br = logspace(6,8,15);
+%             dr = linspace(6,30,15);
+%             mm = logspace(5,6,15);
 %             idx = [7 8 15];
-%             prefix = 'b_d_mm_initial';
+%             prefix = 'b_d_mm_detailed';
 %             range = Utils.createCombinations(br,dr,mm);
             
-            %% Test on initial values
-            br = logspace(6,8,15);
-            dr = linspace(6,30,15);
-            mm = logspace(5,6,15);
-            idx = [7 8 15];
-            prefix = 'b_d_mm_detailed';
-            range = Utils.createCombinations(br,dr,mm);
+            %% Fit for QuadToLinear law
+            idx = 7;
+            range = linspace(1.01,1.03,5);
+            prefix = 'lambda_0_fit';
             
             %% TEST PART
             c = experiments.TendonParams('Tag',prefix);
-            cap = 'Test for various b,d tendon params';
-            %mustr = [sprintf('-%g',br) '/' sprintf('-%g',dr)];           
+            cap = 'Test for various b,d tendon params';      
             
             m = muscle.Model(c);
             % Use mooney-rivlin for muscle material here
@@ -170,7 +142,6 @@ classdef TendonParams < experiments.AExperimentModelConfig
             e = tools.ExperimentRunner(m);
             nmu = size(range,2);
             
-%             m.DefaultMu(15) = 8e3;
             mus = repmat(m.DefaultMu,1,nmu);
             mus(idx,:) = range;
             data = e.runExperimentsCached(mus);
