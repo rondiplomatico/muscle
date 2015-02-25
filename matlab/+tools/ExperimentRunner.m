@@ -93,6 +93,8 @@ classdef ExperimentRunner < handle
                     closeafterrun = true;
                 end
                 parfor nr = 1:c.NumConfigurations
+                    t = getCurrentTask();
+                    fprintf('Worker %d: Running configuration %d\n',t.ID,nr);
                     [out(nr,:), ~, ct(nr)] = this.runExperimentConfig(nr, mu);%#ok
                 end
                 if closeafterrun
@@ -131,6 +133,8 @@ classdef ExperimentRunner < handle
                 end
                 fprintf('Running %d experiments (%d configs each) in parallel...',nex,c.NumConfigurations);
                 parfor k=1:nex
+                    t = getCurrentTask();
+                    fprintf('Worker %d: Running experiment %d\n',t.ID,k);
                     [allout(:,:,k), allct(:,k)] = this.runExperiment(mus(:,k));%#ok
                 end
                 fprintf('done');
