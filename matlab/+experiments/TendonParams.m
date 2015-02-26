@@ -127,9 +127,9 @@ classdef TendonParams < experiments.AExperimentModelConfig
 %             prefix = 'b_d_mm_detailed';
 %             range = Utils.createCombinations(br,dr,mm);
             
-            %% Fit for QuadToLinear law
+            %% Fit for CubicToLinear law
             idx = 7;
-            range = linspace(1.025,1.03,12);
+            range = linspace(1.015,1.022,12);
             prefix = 'lambda_0_fit';
             
             %% TEST PART
@@ -147,7 +147,8 @@ classdef TendonParams < experiments.AExperimentModelConfig
             data = e.runExperimentsCached(mus);
             
             sp = c.ExperimentalStretchMillimeters;
-            force = squeeze(data.o(:,1,:));
+            %force = squeeze(data.o(:,1,:));
+            force = data.o(:,:,1)';
             
             maxbest = 5;
             %maxbest = nmu;
@@ -156,7 +157,8 @@ classdef TendonParams < experiments.AExperimentModelConfig
             [diff, idx] = sort(diff);
             mus = mus(:,idx);
             for k=1:nbest
-                fprintf('%d. mu(%d): b=%10.3g, d=%10.4g, M=%10.4g with %10.4g relative L^2 error\n',k,idx(k),mus(7,k),mus(8,k),mus(15,k),diff(k));
+                %fprintf('%d. mu(%d): b=%10.3g, d=%10.4g, M=%10.4g with %10.4g relative L^2 error\n',k,idx(k),mus(7,k),mus(8,k),mus(15,k),diff(k));
+                fprintf('%d. mu(%d): lam0=%10.5g, M=%10.5g, with %10.4g relative L^2 error\n',k,idx(k),mus(7,k),mus(8,k),diff(k));
             end
             
             pm = PlotManager;
@@ -176,8 +178,8 @@ classdef TendonParams < experiments.AExperimentModelConfig
             lab = sprintf('%2.2gmm(%2.2g%%)|',reshape([sp; sp_perc],1,[]));
             set(ax,'XTick',sp,'XTickLabel', lab(1:end-1));
             
-%             disp('Computation times [s]:');
-%             disp(data.ct);
+            disp('Computation times [s]:');
+            disp(data.ct);
             
             pm.savePlots(c.ImgDir,'Format',{'eps','jpg'});
         end

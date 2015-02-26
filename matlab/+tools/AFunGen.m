@@ -20,29 +20,28 @@ classdef AFunGen < handle
             if ~isempty(varargin) && all(ishandle(varargin{1}))    
                 ax = varargin{1};
                 varargin(1) = [];
-                for k=1:numel(ax)
-                    hold(ax(k),'on');
-                end
+                hold(ax(1),'on');
+                plot(ax(1),range,f(range),varargin{:});
+                hold(ax(2),'on');
+                plot(ax(2),range,f(range),varargin{:});
             else
                 pm = PlotManager(args{:});
                 pm.UseFileTypeFolders = false;
                 pm.LeaveOpen = true;
                 mc = metaclass(this);
                 ax = pm.nextPlot(mc.Name,sprintf('Plot of %s\n%s',mc.Name,this.getConfigStr),'t [ms]','value');
+                plot(ax,range,f(range),varargin{:});
                 if ~isempty(df)
-                    ax(2) = pm.nextPlot(mc.Name,sprintf('Plot of %s-derivative\n%s',mc.Name,this.getConfigStr),'t [ms]','value');
+                    ax = pm.nextPlot(mc.Name,sprintf('Plot of %s-derivative\n%s',mc.Name,this.getConfigStr),'t [ms]','value');
+                    plot(ax,range,df(range),varargin{:});
                 end
-            end
-            plot(ax(1),range,f(range),varargin{:});
-            if ~isempty(df)
-                plot(ax(2),range,df(range),varargin{:});
             end
             if ~isempty(pm)
                 pm.done;
             end
         end
         
-        function plottofigure(this, fignr, range)
+        function plottofigure(this, fignr, range, varargin)
             if nargin < 3
                 range = 0:.1:1000;
                 if nargin < 2
@@ -55,7 +54,7 @@ classdef AFunGen < handle
             if numel(ax) < 2
                 error('Need two axes handles.');
             end
-            this.plot(range, ax);
+            this.plot(range, ax, varargin{:});
         end
         
         function sum = plus(this, other)

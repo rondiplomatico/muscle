@@ -19,16 +19,18 @@ classdef MarkertLaw < tools.AFunGen
         function this = MarkertLaw(b, d, max_modulus)
             if nargin < 3
                 max_modulus = [];
+                % Take data from fit to original function over [1 1.3]
+                % -> tools.MarkertLaw.test_FitToOriginal(tools.MarkertLawOriginal,[1 1.3]);
                 if nargin < 2
-                    d = 2;
+                    d = 0.1660;
                     if nargin < 1
-                        b = 1;
+                        b = 1.3720e8;
                     end
                 end
             end
             this.b = b;
             this.d = d;
-            if ~isempty(max_modulus) && d > 1
+            if ~isempty(max_modulus) %&& d > 1
                 [f,df] = this.getFunction;
                 rightval = 2;
                 found = false;
@@ -100,7 +102,11 @@ classdef MarkertLaw < tools.AFunGen
         
         function plot(this, range, varargin)
             if nargin < 2
-                range = [1 1.2*this.t0];
+                if ~isempty(this.t0)
+                    range = [1 1.2*this.t0];
+                else
+                    range = [1 1.2];
+                end
             end
             plot@tools.AFunGen(this, range, varargin{:});
             if (range(2) > this.t0)
@@ -141,6 +147,40 @@ classdef MarkertLaw < tools.AFunGen
             end
             pm.done;
             ylim(ax,[0 1e6]);
+        end
+        
+        function [fit, fitlin] = test_FitToOriginal(orig,range)
+            if nargin < 2
+                range = [1 1.2];
+                if nargin < 1
+                    orig = tools.MarkertLawOriginal(7990, 16.6);
+                end
+            end
+            ntest = 100;
+            fac = 100;
+            p = Utils.createCombinations(...
+                linspace(orig.b/fac,orig.b*fac*1000,ntest),...
+                linspace(orig.d/fac,orig.d*fac,ntest));
+            l = linspace(range(1),range(2),100);
+            of = orig.getFunction;
+            n = size(p,2);
+            forig = of(l);
+            err = zeros(1,n);
+            pi = ProcessIndicator('Performing fit for %d cases',n,false,n);
+            for k=1:n
+                m = tools.MarkertLaw(p(1,k),p(2,k));
+                mf = m.getFunction;
+                ftest = mf(l);
+                err(k) = norm(forig-ftest);
+                pi.step;
+            end
+            pi.stop;
+            [~, idx] = min(err(1,:));
+            fit = tools.MarkertLaw(p(1,idx),p(2,idx));
+            fitlin = tools.MarkertLaw(p(1,idx),p(2,idx),1e5);
+            orig.plot(l);
+            fit.plottofigure(gcf,l,'r');
+            fitlin.plottofigure(gcf,l,'g');
         end
     end
     

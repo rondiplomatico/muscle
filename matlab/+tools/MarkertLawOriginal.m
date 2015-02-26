@@ -11,9 +11,9 @@ classdef MarkertLawOriginal < tools.AFunGen
     methods
         function this = MarkertLawOriginal(b, d)
             if nargin < 2
-                d = 2;
+                d = 16.6;
                 if nargin < 1
-                    b = 1;
+                    b = 7990;
                 end
             end
             this.b = b;
@@ -49,7 +49,7 @@ classdef MarkertLawOriginal < tools.AFunGen
         
         function pm = plot(this, range, varargin)
             if nargin < 2
-                range = [.5 2];
+                range = [.9 1.2];
             end
             pm = plot@tools.AFunGen(this, range, varargin{:});
         end
