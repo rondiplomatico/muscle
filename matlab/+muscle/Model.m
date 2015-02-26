@@ -102,6 +102,8 @@ classdef Model < models.BaseFullModel
             % by the AModelConfig class.
             this.Config.prepareSimulation(mu, inputidx);
             [t, x, time, cache] = computeTrajectory@models.BaseFullModel(this, mu, inputidx);
+            f = this.System.f;
+            fprintf('Finished after %gs (fevals:%d, Jacobians: %d)\n',time,f.nfevals,f.nJevals);
         end
         
         function t = getConfigTable(this, mu)

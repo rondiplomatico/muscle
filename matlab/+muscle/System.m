@@ -97,10 +97,6 @@ classdef System < models.BaseDynSystem
        MuscleTendonRatioGP = [];
        MuscleTendonRatioNodes = [];
        
-       % Fields to read the passive markert law parameters b1,d1 from at
-       % each gauss point
-       MuscleTendonParamB1 = [];
-       MuscleTendonParamD1 = [];
        % Fields to contain c10/c01 values for mooney-rivlin law
        % (muscle+tendon)
        MuscleTendonParamc10 = [];
@@ -326,6 +322,7 @@ classdef System < models.BaseDynSystem
             % Check for viscosity setting
             %
             % See also: muslce.System.MooneyRivlinICConst
+            
             this.A = [];
             if mu(1) > 0
                 this.A = this.fD;
@@ -717,20 +714,12 @@ classdef System < models.BaseDynSystem
             % All muscle - set without extra computations
             tmr = this.MuscleTendonRatioGP;
             if ~this.HasTendons
-                tmr(:) = mu(5);
-                this.MuscleTendonParamB1 = tmr;
-                tmr(:) = mu(6);
-                this.MuscleTendonParamD1 = tmr;
                 tmr(:) = mu(9);
                 this.MuscleTendonParamc10 = tmr;
                 tmr(:) = mu(10);
                 this.MuscleTendonParamc01 = tmr;
             else
                 f = this.MuscleTendonParamMapFun;
-                % Log-interpolated Markert parameter b1
-                this.MuscleTendonParamB1 = f(tmr,mu(5),mu(7));
-                % Log-interpolated Markert parameter d1
-                this.MuscleTendonParamD1 = f(tmr,mu(6),mu(8));
                 % Log-interpolated MR c10
                 this.MuscleTendonParamc10 = f(tmr,mu(9),mu(11));
                 % Log-interpolated MR c01

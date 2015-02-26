@@ -60,7 +60,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
         end
         
         function configureModelFinal(this)
-            if this.Options.GeoNr == 2
+            if this.Options.GeoNr == 2 || this.Options.GeoNr == 3
                 m = this.Model;
                 m.Plotter.DefaultArgs = {'Fibres',false};
             end
@@ -73,19 +73,39 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             % This method simply returns an all-zero ratio, meaning muscle only. 
             tmr = zeros(1,size(points,2));
             o = this.Options;
-            if o.GeoNr == 2
-                tmr = this.TMRFun(points(2,:),points(3,:));
+            if o.GeoNr == 2 || o.GeoNr == 3
+                tmr = this.TMRFun(points(1,:),points(2,:),points(3,:));
             end            
         end
         
-        function tmr = TMRFun(~, y, z)
-            tmr = zeros(size(y));
-            fr = @(x)1.2*sqrt(max(0,27-x))-2;
-            right = z > fr(y);
-            tmr(right) = 1;
-            fl = @(x)-1*sqrt(x)+1;
-            left = z < fl(y);
-            tmr(left) = 1;
+        function tmr = TMRFun(this, x, y, z)
+            switch this.Options.GeoNr
+                case 2
+                    tmr = zeros(size(y));
+                    fr = @(x)1.2*sqrt(max(0,27-x))-2;
+                    right = z > fr(y);
+                    tmr(right) = 1;
+                    fl = @(x)-1*sqrt(x)+1;
+                    left = z < fl(y);
+                    tmr(left) = 1;
+                case 3
+                    inner = 4.5;
+                    cent = [0 11 0];
+                    fac = [.5 1 1];
+                    fr = @(x,y,z)sqrt(fac(1)*(x-cent(1)).^2 ...
+                        + fac(2)*(y-cent(2)+3*z).^2 ...
+                        + fac(3)*(z-cent(3)).^2)/sqrt(3)-inner;
+                    tmr = fr(x,y,z);
+                    %tmr = tmr/norm(cent);
+                    rate = 1;
+                    tmr = min(rate,max(0,tmr))/rate;
+%                     tmr
+%                     right = z > fr(y);
+%                     tmr(right) = 1;
+%                     fl = @(x)-1*sqrt(x)+1;
+%                     left = z < fl(y);
+%                     tmr(left) = 1;
+            end
         end
         
         function o = getOutputOfInterest(this, t, y)
@@ -135,6 +155,12 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                     k2 = kernels.GaussKernel(12);
                     rad = @(t)[k.evaluate(t,cent)*3.5 k2.evaluate(t,cent)*2]';
                     geo = Belly.getBelly(4,35,'Radius',rad,'Layers',[.8 1],'InnerRadius',.3);
+                case 3
+                    cent = 12;
+                    k = kernels.GaussKernel(8.5);
+                    k2 = kernels.GaussKernel(9.5);
+                    rad = @(t)[k.evaluate(t,cent)*3.5 k2.evaluate(t,cent)*2]';
+                    geo = Belly.getBelly(5,35,'Radius',rad,'Layers',[.8 1],'InnerRadius',.3);
             end
         end
         
@@ -155,7 +181,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                             % Fix right side in yz
                             displ_dir([2 3],geo.Elements(3,geo.MasterFaces(2,:))) = true;
                     end
-                case 2
+                case {2,3}
                     displ_dir(2,geo.Nodes(2,:) == 0) = true;
                     displ_dir(:,1) = true;
                     displ_dir([1 3],geo.Nodes(2,:) > 33) = true;
@@ -171,7 +197,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             switch o.GeoNr
                 case 1
                     velo_dir(1,geo.Elements(3,geo.MasterFaces(2,:))) = true;
-                case 2
+                case {2,3}
                     velo_dir(2,geo.Nodes(2,:) > 33) = true;
             end
             velo_dir_val(velo_dir) = velo;
@@ -189,7 +215,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                         % Fibres in x direction
                         anull(1,:,:) = 1;
                     end
-                case 2
+                case {2,3}
                     anull(2,:,:) = 1;
                     anull(3,:,:) = 1;
             end

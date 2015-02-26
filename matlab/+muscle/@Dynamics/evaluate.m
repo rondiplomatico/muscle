@@ -1,4 +1,5 @@
 function duvw  = evaluate(this, uvwdof, t)
+    this.nfevals = this.nfevals+1;
     sys = this.System;
     mc = sys.Model.Config;
     fe_pos = mc.PosFE;
@@ -15,11 +16,8 @@ function duvw  = evaluate(this, uvwdof, t)
     % Cache variables instead of accessing them via this. in loops
     Pmax = this.mu(13);
     flfun = this.ForceLengthFun;
-    anisotendonfun = this.AnisoPassiveTendon;
-    anisomusclefun = this.AnisoPassiveMuscle;
-    tmrgp = sys.MuscleTendonRatioGP;
-    havefibres = sys.HasFibres;
     
+    havefibres = sys.HasFibres;
     havefibretypes = sys.HasFibreTypes;
     usecrossfibres = this.crossfibres;
     if usecrossfibres
@@ -33,8 +31,14 @@ function duvw  = evaluate(this, uvwdof, t)
     mooneyrivlin_ic_const = sys.MooneyRivlinICConst;
     
     if havefibres
-        b1 = sys.MuscleTendonParamB1;
-        d1 = sys.MuscleTendonParamD1;
+        % Muscle/tendon material inits. Assume muscle only.
+        musclepart = 1;
+        anisomusclefun = this.AnisoPassiveMuscle;
+        hastendons = sys.HasTendons;
+        if hastendons
+            tmrgp = sys.MuscleTendonRatioGP;
+            anisotendonfun = this.AnisoPassiveTendon;
+        end
         if havefibretypes
             alphaconst = [];
             fibretypeweights = mc.FibreTypeWeights;
@@ -125,32 +129,33 @@ function duvw  = evaluate(this, uvwdof, t)
                 lambdaf = norm(F*fibres(:,1));
                 
                 % Get weights for tendon/muscle part at current gauss point
-                tendonpart = tmrgp(gp,m);
-                musclepart = 1-tendonpart;
+                if hastendons
+                    tendonpart = tmrgp(gp,m);
+                    musclepart = 1-tendonpart;
+                end
                 if havefibretypes
                     alpha = musclepart*ftwelem(gp);
                 else
                     alpha = musclepart*alphaconst;
                     %[t sys.MuscleTendonRatiosGP(gp,m) alpha]
                 end
-                markert = 0;
+                passive_aniso_stress = 0;
                 % Using > 1 is deadly. All lambdas are equal to one at t=0
                 % (reference config, analytical), but numerically this is
                 % dependent on how precise F and hence lambda is computed.
                 % It is very very close to one, but sometimes 1e-7 smaller
                 % or bigger.. and that makes all the difference!
                 if lambdaf > 1.0001
-                    markert = tendonpart*anisotendonfun(lambdaf) + ...
-                        musclepart*anisomusclefun(lambdaf);
+                    passive_aniso_stress = musclepart*anisomusclefun(lambdaf);
+                    if hastendons
+                        passive_aniso_stress = passive_aniso_stress + tendonpart*anisotendonfun(lambdaf);
+                    end
                 end
-                %if m == 1 && gp == 1
-                %    fprintf('markert=%g (lambda=%g)\n',markert,lambdaf);
-                %end
                 
                 % Using a class-subfunction is 20% slower!
                 % So: function handle
                 fl = flfun(lambdaf);
-                gval = markert + (Pmax/lambdaf)*fl*alpha;
+                gval = passive_aniso_stress + (Pmax/lambdaf)*fl*alpha;
                 P = P + gval*F*sys.a0oa0(:,:,fibrenr);
                 
                 %% Cross-fibre stiffness part

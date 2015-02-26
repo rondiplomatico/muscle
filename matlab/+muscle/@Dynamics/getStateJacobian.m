@@ -1,4 +1,5 @@
 function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
+    this.nJevals = this.nJevals+1;
 %     J = this.getStateJacobianFD(uvwdof,t);
 %     return;
     sys = this.System;
@@ -23,11 +24,6 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
     
     flfun = this.ForceLengthFun;
     dflfun = this.ForceLengthFunDeriv;
-    anisotendonfun = this.AnisoPassiveTendon;
-    anisomusclefun = this.AnisoPassiveMuscle;
-    anisotendondfun = this.AnisoPassiveTendonDeriv;
-    anisomuscledfun = this.AnisoPassiveMuscleDeriv;
-    tmrgp = sys.MuscleTendonRatioGP;
     
     havefibres = sys.HasFibres;
     havefibretypes = sys.HasFibreTypes;
@@ -61,8 +57,18 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
     
     %% Extra stuff if fibres are used
     if havefibres
-        b1 = sys.MuscleTendonParamB1;
-        d1 = sys.MuscleTendonParamD1;
+        
+        % Muscle/tendon material inits. Assume muscle only.
+        musclepart = 1;
+        anisomusclefun = this.AnisoPassiveMuscle;
+        anisomuscledfun = this.AnisoPassiveMuscleDeriv;
+        hastendons = sys.HasTendons;
+        if hastendons
+            tmrgp = sys.MuscleTendonRatioGP;
+            anisotendonfun = this.AnisoPassiveTendon;
+            anisotendondfun = this.AnisoPassiveTendonDeriv;
+        end
+        
         if havefibretypes
             alphaconst = [];
             fibretypeweights = mc.FibreTypeWeights;
@@ -146,8 +152,10 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
                 lambdaf = norm(Fa0);
 
                 % Get weights for tendon/muscle part at current gauss point
-                tendonpart = tmrgp(gp,m);
-                musclepart = 1-tendonpart;
+               if hastendons
+                    tendonpart = tmrgp(gp,m);
+                    musclepart = 1-tendonpart;
+                end
                 
                 alpha = musclepart*alphaconst;
                 if havefibretypes
@@ -163,10 +171,12 @@ function [J, Jalpha, JLamDot] = getStateJacobian(this, uvwdof, t)
                 % It is very very close to one, but sometimes 1e-7 smaller
                 % or bigger.. and that makes all the difference!
                 if lambdaf > 1.0001
-                    g_value = g_value + tendonpart*anisotendonfun(lambdaf) + ...
-                        musclepart*anisomusclefun(lambdaf);
-                    dg_dlam = dg_dlam + + tendonpart*anisotendondfun(lambdaf) + ...
-                        musclepart*anisomuscledfun(lambdaf);
+                    g_value = g_value + musclepart*anisomusclefun(lambdaf);
+                    dg_dlam = dg_dlam + musclepart*anisomuscledfun(lambdaf);
+                    if hastendons
+                        g_value = g_value + tendonpart*anisotendonfun(lambdaf);
+                        dg_dlam = dg_dlam + tendonpart*anisotendondfun(lambdaf);
+                    end
                 end
                 a0 = sys.a0oa0(:,:,fibrenr);
                 

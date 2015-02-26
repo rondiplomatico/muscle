@@ -46,6 +46,9 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         %         muprep;
         
         LastBCResiduals;
+        
+        nfevals;
+        nJevals;
     end
     
     properties(Transient)
@@ -96,6 +99,11 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         
         function prepareSimulation(this, mu)
             prepareSimulation@dscomponents.ACompEvalCoreFun(this, mu);
+            
+            % Reset counters
+            this.nfevals = 0;
+            this.nJevals = 0;
+            
             sys = this.System;
             mc = sys.Model.Config;
             if ~isempty(mc.Pool)
@@ -113,6 +121,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             
             % Tendon anisotropic passive law
             mlfg = tools.CubicToLinear(mu(7),mu(8));
+%             mlfg = tools.MarkertLaw(1.3895e+07,11.1429,1.637893706954065e+05);
             [this.AnisoPassiveTendon, this.AnisoPassiveTendonDeriv] = mlfg.getFunction;
 
             % Get the law function handles that also take b,d as arguments.

@@ -54,12 +54,6 @@ classdef MuscleTendonMix < muscle.AModelConfig
             os.AbsTol = .05;
             
             mu = m.DefaultMu;
-            mu(1:12) = [1; 0; 0; 0
-                    %% Anisotropic parameters muscle+tendon (Markert)
-                    4.02; 38.5; 7990; 16.6
-                    %% Isotropic parameters muscle+tendon (Moonley-Rivlin)
-                    35.6; 3.86; 2310; 1.15e-3]; % Micha
-                    % 6.352e-10; 3.627 [Kpa] thomas alt
             switch this.Options.Variant
                 case {1 2}
                     mu(3) = 4000;
@@ -84,7 +78,6 @@ classdef MuscleTendonMix < muscle.AModelConfig
                     mu(3) = 0;
             end
             mu(13) = 250; % Pmax [kPa]
-            
             m.DefaultMu = mu;
         end
         
