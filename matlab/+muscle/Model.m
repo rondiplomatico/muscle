@@ -126,8 +126,9 @@ classdef Model < models.BaseFullModel
                     mu = this.DefaultMu;
                 end
             end
-            f = this.System.f;
-            this.System.prepareSimulation(mu,this.DefaultInput);
+            sys = this.System;
+            f = sys.f;
+            sys.prepareSimulation(mu,this.DefaultInput);
             this.Config.setForceLengthFun(f);
             
             lambda = .2:.005:2;
@@ -142,25 +143,22 @@ classdef Model < models.BaseFullModel
             %% Effective force-length function for muscle tissue
             % effective signal from active part
             fl_eff = (mu(13)./lambda) .* fl;
-            b1 = mu(5); d1 = mu(6);
-            % Passive markert law
-            mfg = tools.MarkertLaw(b1,d1,this.System.f.MarkertMaxModulus);
-            mf = mfg.getFunction;
-            markertf = mf(lambda);
+            % Passive markert laws
+            aniso_passive_muscle = f.AnisoPassiveMuscle(lambda);
             
             % Find a suitable position to stop plotting (otherwise the
             % passive part will steal the show)
-            pos = find(markertf > max(fl_eff)*1.4,1,'first');
+            pos = find(aniso_passive_muscle > max(fl_eff)*1.4,1,'first');
             if ~isempty(pos)
                 lambda = lambda(1:pos);
                 fl_eff = fl_eff(1:pos);
-                markertf = markertf(1:pos);
+                aniso_passive_muscle = aniso_passive_muscle(1:pos);
             end
             
             h = pm.nextPlot('force_length_eff',...
                 'Effective force-length curve of muscle material',...
                 '\lambda [-]','pressure [kPa]');
-            plot(h,lambda,fl_eff,'r',lambda,markertf,'g',lambda,fl_eff+markertf,'b');
+            plot(h,lambda,fl_eff,'r',lambda,aniso_passive_muscle,'g',lambda,fl_eff+aniso_passive_muscle,'b');
             legend(h,'Active','Passive','Total','Location','NorthWest');
             
 %             %% Effective force-length function derivative for muscle tissue
@@ -187,37 +185,35 @@ classdef Model < models.BaseFullModel
             
             %% Passive force-length function for 100% tendon tissue
             % Passive markert law
-            mfg = tools.MarkertLaw(mu(7),mu(8),this.System.f.MarkertMaxModulus);
-            [mf,~,mfbd] = mfg.getFunction;
-            markertf = mf(lambda);
-            h = pm.nextPlot('force_length_tendon',...
-                'Effective force-length curve of tendon material (=passive)',...
-                '\lambda [-]','pressure [kPa]');
-            plot(h,lambda,markertf,'g');
-            
-            %% Effective force-length surface for muscle-tendon tissue
-            pmap = this.System.MuscleTendonParamMapFun;
-            % Sampled ratios
-            tmr = 0:.03:1;
-            %% Passive part
-            % Resulting markert law params
-            b1 = pmap(tmr,mu(5),mu(7));
-            d1 = pmap(tmr,mu(6),mu(8));
-            [LAM,TMR] = meshgrid(lambda,tmr);
-            B = repmat(b1',1,length(lambda));
-            D = repmat(d1',1,length(lambda));
-            markertf = mfbd(LAM,B,D);
-            
-            %% Active part
-            FL = (1-tmr)'*fl_eff;
-            
-            %% Plot dat stuff!
-            h = pm.nextPlot('force_length_muscle_tendon',...
-                'Effective force-length curve between muscle/tendon material',...
-                '\lambda [-]','muscle/tendon ratio [m=0,t=1]');
-            surfc(LAM,TMR,markertf+FL,'Parent',h,'EdgeColor','interp');
-            zlabel('pressure [kPa]');
-            zlim([0, 3*max(fl_eff(:))]);
+            if sys.HasTendons
+                aniso_passive_tendon = f.AnisoPassiveTendon(lambda);
+                h = pm.nextPlot('force_length_tendon',...
+                    'Effective force-length curve of tendon material (=passive)',...
+                    '\lambda [-]','pressure [kPa]');
+                plot(h,lambda,aniso_passive_tendon,'g');
+
+                %% Effective force-length surface for muscle-tendon tissue
+                % Sampled ratios
+                tmr = 0:.03:1;
+                %tmrlog = [0 logspace(-4,0,length(tmr)-1)];
+                tmrlog = tmr;
+                
+                %% Passive part
+                [LAM,TMR] = meshgrid(lambda,tmr);
+                passive = repmat(aniso_passive_muscle,length(tmr),1) ...
+                    + tmrlog'*(aniso_passive_tendon-aniso_passive_muscle);
+
+                %% Active part
+                FL = (1-tmr)'*fl_eff;
+
+                %% Plot dat stuff!
+                h = pm.nextPlot('force_length_muscle_tendon',...
+                    'Effective force-length curve between muscle/tendon material',...
+                    '\lambda [-]','muscle/tendon ratio [m=0,t=1]');
+                surfc(LAM,TMR,passive+FL,'Parent',h,'EdgeColor','interp');
+                zlabel('pressure [kPa]');
+                zlim([0, 3*max(fl_eff(:))]);
+            end
                 
             if nargin < 2
                 pm.done;

@@ -160,7 +160,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                     k = kernels.GaussKernel(8.5);
                     k2 = kernels.GaussKernel(9.5);
                     rad = @(t)[k.evaluate(t,cent)*3.5 k2.evaluate(t,cent)*2]';
-                    geo = Belly.getBelly(5,35,'Radius',rad,'Layers',[.8 1],'InnerRadius',.3);
+                    geo = Belly.getBelly(4,35,'Radius',rad,'Layers',[.8 1],'InnerRadius',.3);
             end
         end
         
@@ -228,7 +228,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             % Runs the series of isometric tests for different Pmax values.
             % Several variants can be chosen:
             %
-            Geo = 2;
+            Geo =3;
             
             %% Mus 1 - Only PMAX
 %             range = linspace(300,440,12);
@@ -244,7 +244,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             
             %% Mus 3 - pmax/lamdaopt
             pmaxr = 250:50:400;
-            lamr = 1.8:.05:2.2;
+            lamr = 1.8:.05:2.1;
             range = Utils.createCombinations(pmaxr,lamr);
             idx = [13 14];
             mustr = [sprintf('-%g',pmaxr) '/' sprintf('-%g',lamr)];

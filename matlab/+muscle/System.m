@@ -210,12 +210,16 @@ classdef System < models.BaseDynSystem
             this.addParam('muscle mooney-rivlin c01',3.86);
             
             % isotropic tendon material
-            % mooney-rivlin law c10
+            % mooney-rivlin law c10 - from sprenger thesis
+            %
+            % Unit [kPa]
             % #11
             this.addParam('tendon mooney-rivlin c10',2310);
             
             % isotropic tendon material
-            % mooney-rivlin law c01
+            % mooney-rivlin law c01 - from sprenger thesis
+            %
+            % Unit [kPa]
             % #12
             this.addParam('tendon mooney-rivlin c01',1.15e-3);
             

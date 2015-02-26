@@ -137,8 +137,6 @@ classdef TendonParams < experiments.AExperimentModelConfig
             cap = 'Test for various b,d tendon params';      
             
             m = muscle.Model(c);
-            % Use mooney-rivlin for muscle material here
-            m.DefaultMu(11:12) = m.DefaultMu(9:10);
             e = tools.ExperimentRunner(m);
             nmu = size(range,2);
             
