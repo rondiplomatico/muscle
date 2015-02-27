@@ -252,20 +252,27 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
 %             prefix = 'pmax_lamopt';
             
             %% Test with no anisotropic muscle force
-            %pmaxr = 400;
-            %lamr = 1.8;
-            range = [0; 400; 1.8];
-            idx = [5 13 14];
-            prefix = 'zero_muscle_aniso';
+%             range = [0; 400; 1.8];
+%             idx = [5 13 14];
+%             prefix = 'zero_muscle_aniso';
             
-            %% Test with no anisotropic muscle force
+            %% Test with no anisotropic muscle force and various mr-coeffs
+%             pmaxr = 400;
+%             lamr = 2.05;
+%             c10r = 1:5;
+%             c01r = 1:5;
+%             range = Utils.createCombinations(0,c10r,c01r,pmaxr,lamr);
+%             idx = [5 9 10 13 14];
+%             prefix = 'zero_muscle_aniso_mooneytest';
+            
+            %% Test with no anisotropic muscle force and finer mr-coeffs
             pmaxr = 400;
-            lamr = 1.8;
-            c10r = 3;
-            c01r = 3;
+            lamr = 2.05;
+            c10r = [0 logspace(-3,1,5)];
+            c01r = [0 logspace(-3,1,5)];
             range = Utils.createCombinations(0,c10r,c01r,pmaxr,lamr);
             idx = [5 9 10 13 14];
-            prefix = 'zero_muscle_aniso_mooneytest';
+            prefix = 'zero_muscle_aniso_mooneytest_withzero';
             
             %% -- EACH to be combinable with --
             
@@ -306,20 +313,38 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             %passive(:,sp < 0) = -passive(:,sp < 0);
             active = data.o(:,idx,1);%-passive;
             
-            %sel = mus(13,:) == 400;
-            %passive = passive(sel,:);
-            %active = active(sel,:);
-            
             pm = PlotManager;
             pm.LeaveOpen = true;
             pm.UseFileTypeFolders = false;
-            ax = pm.nextPlot(['isomet_' c.Options.Tag],...
-                ['Pmax' mustr ' experiment: ' cap],'stretch','forces [mN]');
-            plot(ax,sp,-active');
-            hold(ax,'on');
-            plot(ax,sp,-passive','b');
             tv = c.TargetOutputValues(idx,:);
-            plot(ax,sp,tv(:,1)-tv(:,2),'rx',sp,tv(:,2),'bx');
+            nex = size(mus,2);
+            % Select best mooney-rivlin parameter for muscle
+            if ~c.Options.Activate
+                orig = repmat(tv(:,2),1,nex);
+                diff = Norm.L2(-passive' - orig);
+%                 reldiff = Norm.L2((-passive' - orig)./abs(orig));
+%                 reldiff = sort(mean(abs((-passive' - orig)./abs(orig))));
+                ax = pm.nextPlot(['fit_passive_mooney_rivlin_' c.Options.Tag],...
+                    'Absolute L2 fitting errors','stretch','error');
+                %plot(ax,sp,tv(:,2),'rx');
+                %hold(ax,'on');
+                plot(ax,1:nex,diff,'rx');
+                [~, sel] = sort(diff);
+                sel = sel(1:3);
+            else
+                sel = 1:nex;
+            end
+            
+            %% Normal output plot
+            ax = pm.nextPlot(['isomet_' c.Options.Tag],...
+                ['Experiment: ' cap],'stretch','forces [mN]');
+            plot(ax,sp,-passive(sel,:)','b');
+            hold(ax,'on');
+            plot(ax,sp,tv(:,2),'bx');
+            if c.Options.Activate
+                plot(ax,sp,-active');
+                plot(ax,sp,tv(:,1)-tv(:,2),'rx');
+            end
             
             % Set label
             % compute percent
