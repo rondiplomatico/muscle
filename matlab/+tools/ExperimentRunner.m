@@ -136,9 +136,9 @@ classdef ExperimentRunner < handle
             nex = size(mus,2);
             allout = zeros(c.NumConfigurations,c.NumOutputs,nex);
             allct = zeros(c.NumConfigurations,nex);
-            this.multipleexperiments = true;
+            this.multipleexperiments = nex > 1;
             
-            if this.RunParallel
+            if this.RunParallel && nex > 1
                 closeafterrun = false;
                 if matlabpool('size') == 0
                     matlabpool open;

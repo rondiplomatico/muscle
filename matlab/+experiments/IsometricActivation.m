@@ -110,22 +110,31 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
         
         function o = getOutputOfInterest(this, t, y)
             m = this.Model;
-            % Get the residual dirichlet forces
-            df = m.getResidualForces(t,y);
             
             % Get the position at which to determine the passive forces
             passive_pos = floor((this.PositioningTime + this.RelaxTime)/m.dt);
-            % Get the range at which to determine the max forces
-            act_range = passive_pos + 1 : size(y,2);
+            
+            % Get the residual dirichlet forces on interesting part only
+            % (=passive_pos until end)
+            all = passive_pos : size(y,2);
+            df = m.getResidualForces(t(all),y(:,all));
+            
             switch this.Options.GeoNr
                 case 1
                     idx = m.getVelocityDirichletBCFaceIdx(3,2);        
-                case 2    
+                case {2,3}    
                     %this.Geometry.Nodes(2,:) > 33 & m.System.bool_v_bc_nodes
                     idx = m.getVelocityDirichletBCFaceIdx(37:48,4);
             end
-            o(1) = max(abs(sum(df(idx,act_range),1)));
-            o(2) = sum(df(idx,passive_pos));            
+            % Passive force
+            o(2) = sum(df(idx,1));
+            
+            % Get the range at which to determine the max forces, relative
+            % to passive_pos (active part begins after passiv_pos till end)
+            force = sum(df(idx,2:end),1);
+            % Get the force with the largest magnitude
+            [~, pos] = max(abs(force));
+            o(1) = force(pos);
         end
         
         function plotGeometryInfo(this, varargin)
@@ -228,27 +237,21 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             % Runs the series of isometric tests for different Pmax values.
             % Several variants can be chosen:
             %
-            Geo =3;
+            Geo = 3;
             
-            %% Mus 1 - Only PMAX
-%             range = linspace(300,440,12);
-%             idx = 13;
-%             mustr = sprintf('-%d',range);
-%             prefix = 'pmax';
+            %% pmax/lamdaopt rough test
+%             pmaxr = 250:50:400;
+%             lamr = 1.8:.05:2.1;
+%             range = Utils.createCombinations(pmaxr,lamr);
+%             idx = [13 14];
+%             prefix = 'pmax_lamopt';
             
-            %% Mus 1 - Only lambda_opt
-%             range = 2:.1:2.2;
-%             idx = 14;
-%             mustr = sprintf('-%g',range);
-%             prefix = 'lamopt';
-            
-            %% Mus 3 - pmax/lamdaopt
-            pmaxr = 250:50:400;
-            lamr = 1.8:.05:2.1;
-            range = Utils.createCombinations(pmaxr,lamr);
-            idx = [13 14];
-            mustr = [sprintf('-%g',pmaxr) '/' sprintf('-%g',lamr)];
-            prefix = 'pmax_lamopt';
+            %% Test with no anisotropic muscle force
+            %pmaxr = 400;
+            %lamr = 1.8;
+            range = [0; 400; 1.8];
+            idx = [5 13 14];
+            prefix = 'zero_muscle_aniso';
             
             %% -- EACH to be combinable with --
             
@@ -267,7 +270,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             %% Geoconfig 3
             % Diagonal fibres in xz direction with completely
             % fixed ends
-%             c = experiments.IsometricActivation('Tag',[prefix '_fixed_xzfibre'],'BC',3,'FL',1,'GeoNr',Geo);
+%             c = experiments.IsometricActivation('Tag',[prefix '_fixed_xzfibre'],'BC',1,'FL',1,'GeoNr',Geo);
 %             cap = 'Fixed setup with xz-diagonal fibres';
             
             %% NOT CONFIGURABLE PART
@@ -280,16 +283,21 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             sp = c.ExperimentalStretchMillimeters;
             [sp,idx] = sort(sp);
             passive = data.o(:,idx,2);
-            passive(:,sp < 0) = -passive(:,sp < 0);
-            active = data.o(:,idx,1)-passive;
+            %passive(:,sp < 0) = -passive(:,sp < 0);
+            active = data.o(:,idx,1);%-passive;
+            
+            %sel = mus(13,:) == 400;
+            %passive = passive(sel,:);
+            %active = active(sel,:);
             
             pm = PlotManager;
             pm.LeaveOpen = true;
             pm.UseFileTypeFolders = false;
             ax = pm.nextPlot(['isomet_' c.Options.Tag],...
                 ['Pmax' mustr ' experiment: ' cap],'stretch','forces [mN]');
-            plot(ax,sp,active','r',sp,passive','b');
+            plot(ax,sp,-active');
             hold(ax,'on');
+            plot(ax,sp,-passive','b');
             tv = c.TargetOutputValues(idx,:);
             plot(ax,sp,tv(:,1)-tv(:,2),'rx',sp,tv(:,2),'bx');
             
