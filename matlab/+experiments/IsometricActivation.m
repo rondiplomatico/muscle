@@ -257,22 +257,23 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
 %             prefix = 'zero_muscle_aniso';
             
             %% Test with no anisotropic muscle force and various mr-coeffs
-%             pmaxr = 400;
-%             lamr = 2.05;
-%             c10r = 1:5;
-%             c01r = 1:5;
-%             range = Utils.createCombinations(0,c10r,c01r,pmaxr,lamr);
-%             idx = [5 9 10 13 14];
-%             prefix = 'zero_muscle_aniso_mooneytest';
-            
-            %% Test with no anisotropic muscle force and finer mr-coeffs
             pmaxr = 400;
             lamr = 2.05;
-            c10r = [0 logspace(-3,1,5)];
-            c01r = [0 logspace(-3,1,5)];
+            c10r = 1:5;
+            c01r = 1:5;
             range = Utils.createCombinations(0,c10r,c01r,pmaxr,lamr);
             idx = [5 9 10 13 14];
-            prefix = 'zero_muscle_aniso_mooneytest_withzero';
+            prefix = 'zero_muscle_aniso_mooneytest';
+            
+            %% Test with no anisotropic muscle force and finer mr-coeffs
+            % Did not work well at all (long comp times)
+%             pmaxr = 400;
+%             lamr = 2.05;
+%             c10r = [0 logspace(-3,1,5)];
+%             c01r = [0 logspace(-3,1,5)];
+%             range = Utils.createCombinations(0,c10r,c01r,pmaxr,lamr);
+%             idx = [5 9 10 13 14];
+%             prefix = 'zero_muscle_aniso_mooneytest_withzero';
             
             %% -- EACH to be combinable with --
             
@@ -350,7 +351,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             % compute percent
             w = c.PosFE.Geometry.Width;
             sp_perc = (((w+sp)./w)-1)*100;
-            lab = sprintf('%dmm (%g%%)|',reshape([sp; sp_perc],1,[]));
+            lab = sprintf('%dmm (%.3g%%)|',reshape([sp; sp_perc],1,[]));
             set(ax,'XTick',sp,'XTickLabel', lab(1:end-1));
             
             disp('Values:');
