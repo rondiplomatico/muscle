@@ -257,13 +257,13 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
 %             prefix = 'zero_muscle_aniso';
             
             %% Test with no anisotropic muscle force and various mr-coeffs
-            pmaxr = 400;
-            lamr = 2.05;
-            c10r = 1:5;
-            c01r = 1:5;
-            range = Utils.createCombinations(0,c10r,c01r,pmaxr,lamr);
-            idx = [5 9 10 13 14];
-            prefix = 'zero_muscle_aniso_mooneytest';
+%             pmaxr = 400;
+%             lamr = 2.05;
+%             c10r = 1:5;
+%             c01r = 1:5;
+%             range = Utils.createCombinations(0,c10r,c01r,pmaxr,lamr);
+%             idx = [5 9 10 13 14];
+%             prefix = 'zero_muscle_aniso_mooneytest';
             
             %% Test with no anisotropic muscle force and finer mr-coeffs
             % Did not work well at all (long comp times)
@@ -274,14 +274,19 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
 %             range = Utils.createCombinations(0,c10r,c01r,pmaxr,lamr);
 %             idx = [5 9 10 13 14];
 %             prefix = 'zero_muscle_aniso_mooneytest_withzero';
+
+            %% Default run
+            range = double.empty(0,1);
+            idx = [];
+            prefix = 'default_params';
             
             %% -- EACH to be combinable with --
             
             %% Geoconfig 1: With activation
             % Straight fibres in x direction, "loose" ends that
             % allow the geometry to expand when compressed
-%             c = experiments.IsometricActivation('Tag',prefix,'BC',1,'FL',1,'GeoNr',Geo);
-%             cap = 'Movable setup with x-aligned fibres';
+            c = experiments.IsometricActivation('Tag',prefix,'BC',1,'FL',1,'GeoNr',Geo);
+            cap = 'Movable setup with x-aligned fibres';
             
             %% Geoconfig 2
             % Straight fibres in x direction, but completely
@@ -298,8 +303,8 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             %% Geoconfig 4: No activation (fit for mooney-rivlin)
             % Straight fibres in x direction, "loose" ends that
             % allow the geometry to expand when compressed
-            c = experiments.IsometricActivation('Tag',prefix,'BC',1,'FL',1,'GeoNr',Geo,'Activate',0);
-            cap = 'Movable setup with x-aligned fibres, no activation';
+%             c = experiments.IsometricActivation('Tag',prefix,'BC',1,'FL',1,'GeoNr',Geo,'Activate',0);
+%             cap = 'Movable setup with x-aligned fibres, no activation';
             
             %% NOT CONFIGURABLE PART
             m = muscle.Model(c);

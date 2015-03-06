@@ -39,7 +39,7 @@ classdef LongForceBC < muscle.AModelConfig
             % model.
             %
             % @type cell @default {}
-            u = {this.getAlphaRamp(30,1)};
+            u = {this.getAlphaRamp(1,1)};
         end
         
         function P = getBoundaryPressure(~, elemidx, faceidx)

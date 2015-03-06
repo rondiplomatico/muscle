@@ -210,6 +210,7 @@ classdef AModelConfig < handle
             % starttime: The offset time (in milliseconds) to wait before
             % increasing the signal. @type double 
             % @default AModelConfig.ActivationRampOffset
+%             alpha = @(t)1;
             if nargin < 4
                 starttime = this.ActivationRampOffset;
                 if nargin < 3

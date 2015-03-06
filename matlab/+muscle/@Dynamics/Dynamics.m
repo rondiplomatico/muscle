@@ -137,10 +137,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             this.crossfibres = sys.HasFibres && sys.UseCrossFibreStiffness;
         end
         
-        function evaluateCoreFun(varargin)
-            error('Custom projection is implemented and evaluate overridden directly');
-        end
-        
         function fx = evaluateComponentSet(this, nr, x, t)
             % Computes the full or reduced component functions of the given point set.
             %

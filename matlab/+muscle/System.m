@@ -201,13 +201,20 @@ classdef System < models.BaseDynSystem
             % isotropic muscle material
             % mooney-rivlin law c10
             %
+            % from sprenger thesis: 35.6
+            % Unit [kPa]
+            %
             % #9
-            this.addParam('muscle mooney-rivlin c10',35.6);
+            this.addParam('muscle mooney-rivlin c10',35);
             
             % isotropic muscle material
             % mooney-rivlin law c01
+            %
+            % from sprenger thesis: 3.86
+            % Unit [kPa]
+            %
             % #10
-            this.addParam('muscle mooney-rivlin c01',3.86);
+            this.addParam('muscle mooney-rivlin c01',3);
             
             % isotropic tendon material
             % mooney-rivlin law c10 - from sprenger thesis
@@ -305,7 +312,8 @@ classdef System < models.BaseDynSystem
                 this.idx_p_glob_elems = globalpressuredofs;
 
                 %% Compile Mass Matrix
-                this.M = dscomponents.ConstMassMatrix(this.assembleMassMatrix);
+                this.M = dscomponents.ConstMassMatrix(this.assembleMassMatrix,...
+                    this.AlgebraicConditionDoF);
 
                 %% Compile Damping Matrix
                 this.fD = this.assembleDampingMatrix;
@@ -456,6 +464,7 @@ classdef System < models.BaseDynSystem
                 % Remove dirichlet DoFs
                 B(this.idx_uv_bc_glob) = [];
                 Baff = dscomponents.AffLinInputConv;
+                Baff.TimeDependent = false;
                 Baff.addMatrix('mu(3)',B);
             end
         end
@@ -568,6 +577,9 @@ classdef System < models.BaseDynSystem
             % no possible dirichlet values for p. so have all
             this.idx_p_dof_glob = geo.NumNodes*6-length(this.idx_uv_bc_glob) + (1:pgeo.NumNodes);
             this.num_p_dof = length(this.idx_p_dof_glob);
+            % Automatically mark the pressure DoFs as algebraic condition.
+            % Important for reduction.
+            this.AlgebraicConditionDoF = this.idx_p_dof_glob;
             
             idx = int32(1:total);
             idx(this.idx_uv_bc_glob) = [];

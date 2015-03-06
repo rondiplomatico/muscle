@@ -1,4 +1,4 @@
-function duvw  = evaluate(this, uvwdof, t)
+function duvw  = evaluateCoreFun(this, uvwdof, t)
     this.nfevals = this.nfevals+1;
     sys = this.System;
     mc = sys.Model.Config;
@@ -108,6 +108,7 @@ function duvw  = evaluate(this, uvwdof, t)
             dtn = fe_pos.transgrad(:,pos,m);
 
             if any(isnan(u(:)))
+                fprintf('NaNs in muscle.Dynamics#evaluateCoreFun! Have a look.\n');
                 keyboard;
             end
             % Deformation gradient

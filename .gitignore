@@ -1,4 +1,4 @@
-matlab/examples/export
+matlab/export
 matlab/+experiments/IsometricActivation/*
 latex/img/*.pdf
 *.ilg

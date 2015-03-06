@@ -44,7 +44,6 @@ classdef Model < models.BaseFullModel
             
             this.SaveTag = sprintf('musclemodel_%s',class(conf));
             this.Data = data.ModelData(this,basedir);
-            %this.Data.useFileTrajectoryData;
             
             this.System = muscle.System(this);
             % Sets DefaultMu
