@@ -102,7 +102,13 @@ classdef AModelConfig < handle
         end
         
         function configureModelFinal(this)
-            %
+            % Automatically set the reducable dimensions for u,v
+            % separately.
+            m = this.Model;
+            if length(m.SpaceReducer) == 2
+                m.SpaceReducer(1).TargetDimensions = 1:m.System.num_u_dof;
+                m.SpaceReducer(2).TargetDimensions = m.System.num_u_dof + (1:m.System.num_v_dof);
+            end
         end
         
         function prepareSimulation(this, mu, inputidx)

@@ -17,6 +17,26 @@ classdef CubePull < muscle.AModelConfig
             %os = m.ODESolver;
             %os.RelTol = .0001;
             %os.AbsTol = .05;
+            
+            % Set up two reducers for u,v.
+            % The value will be set later when the geometry is completely
+            % computed (configureModelFinal below)
+            s = spacereduction.PODReducer;
+            s.Mode = 'abs';
+            m.SpaceReducer = s;
+            s = spacereduction.PODReducer;
+            s.Mode = 'abs';
+            m.SpaceReducer(2) = s;
+        end
+        
+        function configureModelFinal(this)
+            % Set desired reduction to full state space dimension by
+            % default
+            m = this.Model;
+            dim = m.System.StateSpaceDimension;
+            m.SpaceReducer(1).Value = dim;
+            m.SpaceReducer(2).Value = dim;
+            configureModelFinal@muscle.AModelConfig(this);
         end
         
         function P = getBoundaryPressure(~, elemidx, faceidx)
@@ -78,25 +98,20 @@ classdef CubePull < muscle.AModelConfig
             m.TrainingParams = 3;
             m.TrainingInputs = 1;
             
-            s = spacereduction.PODReducer;
-            s.Mode = 'abs';
-            s.Value = m.System.StateSpaceDimension;
-            m.SpaceReducer = s;
-            
             m.offlineGenerations;
             
-            A = m.Data.TrajectoryData.toMemoryMatrix;
-            U = A(1:610,:);
-            V = A(611:1220,:);
-            [uu,us,uv] = svd(U,'econ');
-            [vu,vs,vv] = svd(V,'econ');
-            pm = PlotManager;
-            ma.plotReductionOverview(pm);
-            ax = pm.nextPlot('singvals_split',...
-                'Singular values of same training data when split into u/v parts','singular value number','value');
-            semilogy(ax,1:610,diag(us),'r',1:610,diag(vs),'b')
-            pm.done;
-            pm.savePlots(pwd,'Format',{'jpg','pdf'});
+%             A = m.Data.TrajectoryData.toMemoryMatrix;
+%             U = A(1:610,:);
+%             V = A(611:1220,:);
+%             [uu,us,uv] = svd(U,'econ');
+%             [vu,vs,vv] = svd(V,'econ');
+%             pm = PlotManager;
+%             ma.plotReductionOverview(pm);
+%             ax = pm.nextPlot('singvals_split',...
+%                 'Singular values of same training data when split into u/v parts','singular value number','value');
+%             semilogy(ax,1:610,diag(us),'r',1:610,diag(vs),'b')
+%             pm.done;
+%             pm.savePlots(pwd,'Format',{'jpg','pdf'});
         end
     end
     

@@ -61,12 +61,23 @@ classdef Model < models.BaseFullModel
             this.ODESolver = s;
             this.System.MaxTimestep = []; %model.dt;
             
+            % MOR pre-setup.
+            % If you assign a new SpaceReducer instance, dont forget to set
+            % the TargetDimensions property accordingly (is now
+            % automatically set within the configureModel base routine)
+            s = spacereduction.PODGreedy;
+            s.Eps = 1e-9;
+            s.MaxSubspaceSize = 500;
+            this.SpaceReducer = s;
+            
             % Call the config-specific model configuration
             conf.configureModel(this);
             
             % Set the config to the model, triggering geometry related
             % pre-computations
             this.setConfig(conf);
+            
+            conf.configureModelFinal;
             
             %% Health tests
             % Propagate the current default param
@@ -371,7 +382,6 @@ classdef Model < models.BaseFullModel
             this.Config = value;
             this.System.configUpdated;
             this.Plotter = muscle.MusclePlotter(this.System);
-            value.configureModelFinal;
         end
         
         function setGaussIntegrationRule(this, value)
