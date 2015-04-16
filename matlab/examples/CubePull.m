@@ -9,10 +9,9 @@ classdef CubePull < muscle.AModelConfig
         
         function configureModel(this, m)
             configureModel@muscle.AModelConfig(this, m);
-            m.T = 7;
-            m.dt = .005;
+            m.T = 150;
+            m.dt = .5;
             m.DefaultMu(1) = .1;
-            m.DefaultMu(3) = 100;
             m.DefaultInput = 1;
             %os = m.ODESolver;
             %os.RelTol = .0001;
@@ -48,12 +47,12 @@ classdef CubePull < muscle.AModelConfig
             % conditions.
             P = [];
             if elemidx == 1 && faceidx == 3
-                P = -1;
+                P = 1;
             end
         end
         
         function u = getInputs(this)
-            u = {this.getAlphaRamp(1,1)};
+            u = {this.getAlphaRamp(this.Model.T/3,1)};
         end
     end
     
@@ -81,39 +80,5 @@ classdef CubePull < muscle.AModelConfig
            %anull([1 3],:,:) = 1;
         end
     end
-    
-    methods(Static)
-        function m = test_CubePull_MOR
-            m = muscle.Model(CubePull);
-            %m.EnableTrajectoryCaching = true;
-            
-            %m.ComputeParallel = true;
-            %m.Data.useFileTrajectoryData;
-            
-            forces = linspace(-200,100,5);
-            %mus = repmat(m.DefaultMu,1,length(forces));
-            %mus(3,:) = forces;
-            
-            m.Sampler = sampling.ManualSampler(forces);
-            m.TrainingParams = 3;
-            m.TrainingInputs = 1;
-            
-            m.offlineGenerations;
-            
-%             A = m.Data.TrajectoryData.toMemoryMatrix;
-%             U = A(1:610,:);
-%             V = A(611:1220,:);
-%             [uu,us,uv] = svd(U,'econ');
-%             [vu,vs,vv] = svd(V,'econ');
-%             pm = PlotManager;
-%             ma.plotReductionOverview(pm);
-%             ax = pm.nextPlot('singvals_split',...
-%                 'Singular values of same training data when split into u/v parts','singular value number','value');
-%             semilogy(ax,1:610,diag(us),'r',1:610,diag(vs),'b')
-%             pm.done;
-%             pm.savePlots(pwd,'Format',{'jpg','pdf'});
-        end
-    end
-    
 end
 
