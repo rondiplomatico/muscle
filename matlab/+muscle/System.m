@@ -154,16 +154,21 @@ classdef System < models.BaseDynSystem
             % Call superclass constructor
             this = this@models.BaseDynSystem(model);
             
-            % The muscle viscosity. [mN * mm/ms]
-            this.addParam('viscosity',1);
+            % The muscle viscosity
+            % @unit [g / (mm * ms)] = [kP] (kiloPoiseulle)
+            this.addParam('viscosity',.1);
             
             % The amount of milliseconds over which to activate the model
             % Set this parameter to zero to deactivate (any maybe use a
             % custom activation ramp)
+            %
+            % @unit [ms]
             this.addParam('alpha_ramp_time',0);
             
-            % The force of the faces exposed to neumann conditions
-            this.addParam('neumann_force',0);
+            % The pressure on the faces (neumann conditions)
+            %
+            % @unit [MPa] = [N / mm^2]
+            this.addParam('neumann_pressure',0);
             
             % For some variants, we have the mean input current for the
             % motoneuron pool (generating activation)
@@ -171,27 +176,34 @@ classdef System < models.BaseDynSystem
             
             % anisotropic passive stiffness for muscle material
             % markert law b1
+            %
+            % @unit [MPa]
             % #5
             this.addParam('muscle passive b1',2.756e-5);
             
             % anisotropic passive stiffness for muscle material
-            % markert law d1
+            % markert law d1 [-]
             % #6
             this.addParam('muscle passive d1',43.373);
             
             % anisotropic passive stiffness for tendon material
             % markert law
             %
-            % fit with tools.MarkertLaw: b1 = 1.3895e+07
+            % @unit [MPa]
+            %
+            % -or-
+            % ideal length of sarcomere w.r.t force production [-]
+            %
+            % fit with tools.MarkertLaw: b1 = 1.3895e+04
             % fit with tools.QuadToLinear: lam0 = 1.027
             % fit with tools.CubicToLinear: lam0 =  1.0175 [26.2.15]
             % #7
-            this.addParam('tendon passive 1 [b1/lam0]', 1.0175); % [kPa]
+            this.addParam('tendon passive 1 [b1/lam0]', 1.0175); % [MPa/-]
             
             % anisotropic passive stiffness for tendon material
             % markert law
             %
-            % fit with tools.MarkertLaw: d1 = 11.1429
+            % fit with tools.MarkertLaw: d1 = 11.1429 [-]
             % max modulus  1.637893706954065e+05
             % fit with tools.QuadToLinear: M = 1.637893706954065e+05
             % fit with tools.CubicToLinear: M =  1.637893706954065e+05 [26.2.15]
@@ -201,39 +213,45 @@ classdef System < models.BaseDynSystem
             % isotropic muscle material
             % mooney-rivlin law c10
             %
-            % from sprenger thesis: 35.6
-            % Unit [kPa]
+            % from sprenger thesis: 35.6 kPa
+            %
+            % @unit [MPa]
             %
             % #9
-            this.addParam('muscle mooney-rivlin c10',35);
+            this.addParam('muscle mooney-rivlin c10',35.6e-3);
             
             % isotropic muscle material
             % mooney-rivlin law c01
             %
-            % from sprenger thesis: 3.86
-            % Unit [kPa]
+            % from sprenger thesis: 3.86 kPa
+            %
+            % @unit [MPa]
             %
             % #10
-            this.addParam('muscle mooney-rivlin c01',3);
+            this.addParam('muscle mooney-rivlin c01',3.86e-3);
             
             % isotropic tendon material
-            % mooney-rivlin law c10 - from sprenger thesis
+            % mooney-rivlin law c10
             %
-            % Unit [kPa]
+            % @unit [MPa]
+            %
             % #11
-            this.addParam('tendon mooney-rivlin c10',2310);
+            this.addParam('tendon mooney-rivlin c10',2.310e3);
             
             % isotropic tendon material
-            % mooney-rivlin law c01 - from sprenger thesis
+            % mooney-rivlin law c01
             %
-            % Unit [kPa]
+            % @unit [MPa]
+            %
             % #12
             this.addParam('tendon mooney-rivlin c01',1.15e-3);
             
-            % muscle fibre maximal force [kPa]
-            % kPa = 0.1N/cm² 
+            % muscle fibre maximal force
+            %
+            % @unit [MPa]
+            %
             % #13
-            this.addParam('P_max',300);
+            this.addParam('P_max',.3);
             
             % parameter p1 for force-length curve customization.
             %

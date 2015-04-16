@@ -44,16 +44,16 @@ classdef SidePressureTest < experiments.AExperimentModelConfig
             % Use the material set of
             f = m.System.f;
             
-            m.DefaultMu(5) = 2.756e-5; % b1 [kPa]
+            m.DefaultMu(5) = 2.756e-7; % b1 [MPa]
             m.DefaultMu(6) = 43.373; % d1 [-]
-            m.DefaultMu(9) = 6.352e-10; % c10 [kPa]
-            m.DefaultMu(10) = 3.627; % c01 [kPa]
+            m.DefaultMu(9) = 6.352e-13; % c10 [MPa]
+            m.DefaultMu(10) = 3.627e-3; % c01 [MPa]
             
             % Cross-fibre markert part
-            f.b1cf = 53163.72204148964/10; % [kPa] = [N/mm²]
+            f.b1cf = 53163.72204148964e-4; % [MPa] = [N/mm²]
             f.d1cf = 0.014991843974911; % [-]
             
-            m.DefaultMu(13) = 250; % [kPa]
+            m.DefaultMu(13) = .250; % [MPa]
             m.DefaultMu(14) = 1; % [-]
             
             os = m.ODESolver;
@@ -97,7 +97,7 @@ classdef SidePressureTest < experiments.AExperimentModelConfig
         function P = getBoundaryPressure(this, elemidx, faceidx)
             % Determines the neumann forces on the boundary.
             %
-            % The unit for the applied quantities is kiloPascal [kPa]
+            % The unit for the applied quantities is megaPascal [MPa]
             %
             % See also: NeumannCoordinateSystem
             P = [];
@@ -122,11 +122,6 @@ classdef SidePressureTest < experiments.AExperimentModelConfig
             % loads in [g]
             loads = [0 100 200 500 1000];
 
-            % convert to pressure:
-            % [g]/1000 = [kg]
-            % [kg]*[m/s²] = [N]
-            % [N]*1000 = [mN]
-            % [mN]/[mm²] = [kPa]
             switch this.Options.GeoNr
                 case 1
                     a = this.PosFE.getFaceArea(2,6);
@@ -135,7 +130,8 @@ classdef SidePressureTest < experiments.AExperimentModelConfig
                 case 3
                     a = this.PosFE.getFaceArea([2 3 9 10],[6 6 6 6]);
             end
-            pressures = (loads/1000*this.Model.Gravity)*1000/a; % [kPa]
+            % [g*mm/ms^2/mm^-2] = [N/mm^-2] = [MPa]
+            pressures = loads*this.Model.Gravity/a; 
             u = {};
             start = this.ActivationTime+this.RelaxTime;
             % Configure a load input that increases over LoadRampTime
@@ -255,7 +251,7 @@ classdef SidePressureTest < experiments.AExperimentModelConfig
                     end
                     
                     h = pm.nextPlot(sprintf('force_velo_load%g_visc%g',mc.Loads(inidx),mu(1)),...
-                        sprintf('Force plot\nLoad: %g[g] (eff. pressure %g[kPa]), viscosity:%g [mNs/m]',mc.Loads(inidx),mc.Pressures(inidx),mu(1)),...
+                        sprintf('Force plot\nLoad: %g[g] (eff. pressure %g[MPa]), viscosity:%g [mNs/m]',mc.Loads(inidx),mc.Pressures(inidx),mu(1)),...
                         'Time [ms]','Force [N]');
                     plot(h,t,o(1,:),'r','LineWidth',2);
                     

@@ -50,7 +50,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             end
             m.dt = m.T / 300;
             
-            m.DefaultMu(13) = 380; % [kPa]
+            m.DefaultMu(13) = .380; % [MPa]
             m.DefaultMu(14) = 2.05; % lambda_opt, educated guess from data
             
             % Set to activation within 10ms
@@ -257,13 +257,13 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
 %             prefix = 'zero_muscle_aniso';
             
             %% Test with no anisotropic muscle force and various mr-coeffs
-%             pmaxr = 400;
-%             lamr = 2.05;
-%             c10r = 1:5;
-%             c01r = 1:5;
-%             range = Utils.createCombinations(0,c10r,c01r,pmaxr,lamr);
-%             idx = [5 9 10 13 14];
-%             prefix = 'zero_muscle_aniso_mooneytest';
+            pmaxr = 400;
+            lamr = 2.05;
+            c10r = 1:5;
+            c01r = 1:5;
+            range = Utils.createCombinations(0,c10r,c01r,pmaxr,lamr);
+            idx = [5 9 10 13 14];
+            prefix = 'zero_muscle_aniso_mooneytest';
             
             %% Test with no anisotropic muscle force and finer mr-coeffs
             % Did not work well at all (long comp times)
@@ -276,9 +276,9 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
 %             prefix = 'zero_muscle_aniso_mooneytest_withzero';
 
             %% Default run
-            range = double.empty(0,1);
-            idx = [];
-            prefix = 'default_params';
+%             range = double.empty(0,1);
+%             idx = [];
+%             prefix = 'default_params';
             
             %% -- EACH to be combinable with --
             

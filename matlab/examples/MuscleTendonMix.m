@@ -5,16 +5,16 @@ classdef MuscleTendonMix < muscle.AModelConfig
     % Variant 1: A 4 element long block with 4 block-wise constant,
     % linearly changing muscle-to-tendon material. The tendon part is at a
     % dirichlet xz-fixed side and the other side gets increasingly pulled over
-    % 4 sec until 4000kPa
+    % 4 sec until 4MPa
     %
     % Variant 2: A single element with the top 9 gauss points as tendons
     % (tmr=1) and the lower part muscle (tmr=0). Fixed (xz only) on right
-    % side and pulled on left side over 4 seconds increasing to 4000kPa
+    % side and pulled on left side over 4 seconds increasing to 4MPa
     %
     % Variant 3: A 2x2x3 geometry on domain [0 2]x[0 6]x[0 2] with a
     % nonlinear muscle/tendon function (use plotTMRFun to see). Fixed xz on
     % right side (with xyz fix in center node) and pulled on left with
-    % 4000kPa. The fibres are at 45deg throughout the muscle
+    % 4MPa. The fibres are at 45deg throughout the muscle
     %
     % Variant 4: The same geometry as Variant 4 with same muscle/tendon
     % ratio, but this time completely fixed at both long ends. An
@@ -56,9 +56,9 @@ classdef MuscleTendonMix < muscle.AModelConfig
             mu = m.DefaultMu;
             switch this.Options.Variant
                 case {1 2}
-                    mu(3) = 4000;
+                    mu(3) = 4;
                 case 3
-                    mu(3) = 4000;
+                    mu(3) = 4;
                     m.ODESolver.AbsTol = .1;
                 case 4
                     mu(2) = m.T;
@@ -70,14 +70,14 @@ classdef MuscleTendonMix < muscle.AModelConfig
                     m.ODESolver.RelTol = .1;
                     m.ODESolver.AbsTol = .1;
                 case 6
-                    mu(3) = 10000;
+                    mu(3) = 10;
                 case 7
                     m.T = 30;
                     m.dt = .05;
                     mu(2) = m.T*2/3; % activate 2/3rds of the time
                     mu(3) = 0;
             end
-            mu(13) = 250; % Pmax [kPa]
+            mu(13) = .250; % Pmax [MPa]
             m.DefaultMu = mu;
         end
         
@@ -141,7 +141,7 @@ classdef MuscleTendonMix < muscle.AModelConfig
         function P = getBoundaryPressure(this, elemidx, faceidx)
             % Determines the neumann forces on the boundary.
             %
-            % The unit for the applied quantities is kiloPascal [kPa]
+            % The unit for the applied quantities is megaPascal [MPa]
             %
             % In the default implementation there are no force boundary
             % conditions.

@@ -24,17 +24,17 @@ classdef SprengerUnitCube8Elem < muscle.AModelConfig
             
             %% Material configuration from CMISS/3Elem_sprenger.xml
             % c3M = 3.05907e-10 MPa
-            mu(5) = 3.05907e-7; % [kPa]
+            mu(5) = 3.05907e-10; % [MPa]
             % c4M 
             mu(6) = 47.270456264135881; % [-]
             
             % c01 ^= c1M = 3.56463903963e-02 MPa
-            mu(9) = 35.6463903963; % [kPa]
+            mu(9) = 3.6463903963e-2; % [MPa]
             % c01 ^= c2M = 3.859558659683e-3 MPa
-            mu(10) = 3.859558659683; % [kPa]
+            mu(10) = 3.859558659683e-3; % [MPa]
             
-            % sigma_max_calculation = 0.3 in MPa
-            mu(13) = 300; % [kPa]
+            % sigma_max_calculation
+            mu(13) = .300; % [MPa]
             % Exponential FL-fun
             mu(14) = .57; % [-]
             

@@ -12,7 +12,7 @@ classdef Cube12 < muscle.AModelConfig
             m.dt = .05;
             % Activate over 20ms
             m.DefaultMu(2) = 20;
-            m.DefaultMu(13) = 100; % [kPa]
+            m.DefaultMu(13) = .1; % [MPa]
         end
     end
     

@@ -181,7 +181,7 @@ classdef MusclePlotter < handle
                 residuals(pd.residuals_pos) = pd.DF(pd.sortidx,ts)/pd.maxdfval;
                 quiver3(h,udir(1,:),udir(2,:),udir(3,:),...
                     residuals(1,have_residuals),residuals(2,have_residuals),...
-                    residuals(3,have_residuals),0,'k', 'MarkerSize',14);
+                    residuals(3,have_residuals),1,'k', 'MarkerSize',14);
             end
 
             %% Neumann condition forces
@@ -225,11 +225,12 @@ classdef MusclePlotter < handle
                 end
             end
 
-            %% a0 fibres
+            %% a0 fibres & gp values
             fibres = sys.HasFibres && opts.Fibres;
             doI1 = any(opts.Invariants == 1);
             doLam = opts.Lambdas;
-            if fibres || ~isempty(opts.Invariants) || doLam
+            doMR = opts.MR;
+            if fibres || ~isempty(opts.Invariants) || doLam || doMR
                 for m = 1:geo.NumElements
                     u = y_dofs(1:pd.vstart-1);
                     u = u(sys.idx_u_glob_elems(:,:,m));
@@ -250,11 +251,21 @@ classdef MusclePlotter < handle
                         values = sprintfc('I_1=%3.3g',pd.I1(:,m,ts));
                         text(gps(1,:),gps(2,:),gps(3,:),values,'Parent',h)
                     end
-                    
+                    %% Lambdas
                     if doLam
                         %values = sprintfc('\\lambda=%3.3g',pd.lambdas(:,m,ts));
                         values = sprintfc('%3.4g',pd.lambdas(:,m,ts));
                         text(gps(1,:),gps(2,:),gps(3,:),values,'Parent',h)
+                    end
+                    %% Mooney-Rivlin tensors
+                    if doMR
+                        values = cellfun(@(m)sprintf('%g ',diag(m)), pd.MR(:,m,ts),'UniformOutput',false);
+                        %values = sprintfc('%3.4g',diags{:});
+                        text(gps(1,:),gps(2,:),gps(3,:),values,'Parent',h)
+%                         for gp = 1:size(pd.MR,1)
+%                             text(gps(1,gp),gps(2,gp),gps(3,gp),num2str(pd.MR{gp,m,ts}),...
+%                                 'Parent',h);
+%                         end
                     end
                 end
             end
@@ -325,15 +336,21 @@ classdef MusclePlotter < handle
             end
             
             %% Show invariants or lambda stretch values
-            if ~isempty(opts.Invariants) || opts.Lambdas
+            if ~isempty(opts.Invariants) || opts.Lambdas || opts.MR
                 nt = length(t);
                 doI1 = any(opts.Invariants == 1);
                 doLam = opts.Lambdas;
-                if doI1
+                doMR = opts.MR;
+                if doI1 || doMR
                     pd.I1 = zeros(dfem.GaussPointsPerElem,geo.NumElements,nt);
                 end
                 if doLam
                     pd.lambdas = zeros(dfem.GaussPointsPerElem,geo.NumElements,nt);
+                end
+                if doMR
+                    pd.MR = cell(dfem.GaussPointsPerElem,geo.NumElements,nt);
+                    c10 = sys.MuscleTendonParamc10;
+                    c01 = sys.MuscleTendonParamc01;
                 end
                 num_gp = dfem.GaussPointsPerElem;
                 for m = 1:geo.NumElements
@@ -346,12 +363,17 @@ classdef MusclePlotter < handle
                             yts = pd.yfull(:,ts) ;
                             F = yts(elemidx_u) * dtn;
                             C = F'*F;
-                            if doI1
+                            if doI1 || doMR
                                 pd.I1(gp,m,ts) = C(1,1)+C(2,2)+C(3,3);
                             end
                             if doLam
                                 fibres = sys.a0Base(:,:,(m-1)*num_gp + gp);
                                 pd.lambdas(gp,m,ts) = norm(F*fibres(:,1));
+                            end
+                            if doMR
+                                pd.MR{gp,m,ts} = sys.MooneyRivlinICConst(gp,m)*eye(3) ...
+                                    + 2*(c10(gp,m) + pd.I1(gp,m,ts)*c01(gp,m))*F ...
+                                    - 2*c01(gp,m)*F*C;
                             end
                         end
                     end
@@ -375,6 +397,7 @@ classdef MusclePlotter < handle
             i.addParamValue('F',[]);
             i.addParamValue('Invariants',[]);
             i.addParamValue('Lambdas',false);
+            i.addParamValue('MR',false);
             i.addParamValue('Pause',.01);
             
             args = [this.DefaultArgs args];

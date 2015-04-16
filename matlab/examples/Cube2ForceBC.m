@@ -12,7 +12,7 @@ classdef Cube2ForceBC < muscle.AModelConfig
             m.T = 4;
             m.dt = .01;
             m.DefaultMu(1) = .1;
-            m.DefaultMu(3) = 100;
+            m.DefaultMu(3) = .1;
             m.DefaultInput = 1;
             os = m.ODESolver;
             os.RelTol = .0001;
@@ -22,7 +22,7 @@ classdef Cube2ForceBC < muscle.AModelConfig
         function P = getBoundaryPressure(~, elemidx, faceidx)
             % Determines the neumann forces on the boundary.
             %
-            % The unit for the applied quantities is kiloPascal [kPa]
+            % The unit for the applied quantities is megaPascal [MPa]
             %
             % In the default implementation there are no force boundary
             % conditions.

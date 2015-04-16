@@ -1,11 +1,12 @@
-classdef DebugConfig < muscle.AModelConfig
+classdef Debug < muscle.AModelConfig
     % A simple configuration for Debug purposes.
     % 
     % Uses a single undeformed cube with triquadratic position shape
     % functions and trilinear shape functions for pressure.
     %
     %
-    % Version 1: No fibres, and one fixed side
+    % Version 1: No fibres, and one fixed side. Simple "does it simulate"
+    % test
     % Version 2: Fibres, but no FibreTypes
     % Version 3: Fibres with fibre type distribution and APExp
     % evaluations
@@ -26,9 +27,14 @@ classdef DebugConfig < muscle.AModelConfig
     % boundary conditions
     % Version 12: A cube with fibres and additional cross-fibre direction
     % markert pressure. (only activation used)
+    %
+    % Version 13: Unit tests. Pull at a unit cube with 1MPa, so should give
+    % force of 1N
+    % Version 14: Unit tests. Fix both sides and activate to max of 1MPa.
+    % Should give a force of 1N on both sides
     
     methods
-        function this = DebugConfig(varargin)
+        function this = Debug(varargin)
             % Quick fix for old-style DebugConfig call passing in the
             % version number directly
             if nargin == 1 && isscalar(varargin{1})
@@ -44,7 +50,10 @@ classdef DebugConfig < muscle.AModelConfig
                     this.VelocityBCTimeFun = tools.ConstantUntil(10);
                     this.Options.FL = 2;
                 case {7,8,9}
-                    this.VelocityBCTimeFun = tools.ConstantUntil(9.5);
+                    this.VelocityBCTimeFun = tools.ConstantUntil(10);
+                case 14
+                    % Use classical FL function with fl(1)=1
+                    this.Options.FL = 3;
             end
         end
         
@@ -52,15 +61,15 @@ classdef DebugConfig < muscle.AModelConfig
             configureModel@muscle.AModelConfig(this, m);
             sys = m.System;
             f = sys.f;
-            m.T = 1;
-            m.dt = .01;
+            m.T = 100;
+            m.dt = 1;
             m.ODESolver.RelTol = .00001;
             m.ODESolver.AbsTol = .002;
             switch this.Options.Version
             case 1
                 m.DefaultMu(2) = -1;
             case 2
-                m.DefaultMu(1:2) = [.1; .5];
+                m.DefaultMu(1:2) = [50; .5];
             case 3
                 m.T = 400;
                 m.dt = 1;
@@ -85,31 +94,30 @@ classdef DebugConfig < muscle.AModelConfig
                 m.DefaultMu(4) = 4;
             case {4,5,6}
                 %% Material configuration from CMISS/3Elem_sprenger.xml                
-                % Here in kPa
                 % c3M = 3.05907e-10 MPa
-                m.DefaultMu(5) = 3.05907e-7; % b1 [kPa]
+                m.DefaultMu(5) = 3.05907e-10; % b1 [MPa]
                 % c4M = 47.270456264135881
                 m.DefaultMu(6) = 47.270456264135881; % d1 [-]
                 % c1M = 3.56463903963e-02 MPa
-                m.DefaultMu(9) = 35.6463903963; % c10 [kPa]
+                m.DefaultMu(9) = 3.56463903963e1; % c10 [MPa]
                 % c2M = 3.859558659683e-3 MPa
-                m.DefaultMu(10) = 3.859558659683; % c01 [kPa]
+                m.DefaultMu(10) = 3.859558659683; % c01 [MPa]
                 
-                % sigma_max_calculation = 0.3 in MPa
-                m.DefaultMu(13) = 300; % [kPa]
+                % sigma_max_calculation 
+                m.DefaultMu(13) = .300; % [MPa]
                 % lambda_ofl_calculation
                 m.DefaultMu(14) = 1.4; % [-]
-                m.T = 12;
-                m.dt = .2;
+                m.T = 20;
+                m.dt = .5;
             case {7,8,9}
                 %% Using the Material configuration of Heidlauf
-                m.DefaultMu(5) = 0.00355439810963035; % b1 [kPa]
+                m.DefaultMu(5) = 0.00355439810963035e-3; % b1 [MPa]
                 m.DefaultMu(6) = 12.660539325481963; % d1 [-]
-                m.DefaultMu(9) = 6.352e-10; % c10 [kPa]
-                m.DefaultMu(10) = 3.627; % c01 [kPa]
+                m.DefaultMu(9) = 6.352e-13; % c10 [MPa]
+                m.DefaultMu(10) = 3.627e-3; % c01 [MPa]
                 
-                m.T = 15;
-                m.dt = .1;
+                m.T = 50;
+                m.dt = .5;
             case 10
                 f.alpha = @(t)0;
                 m.ODESolver.RelTol = .001;
@@ -126,13 +134,18 @@ classdef DebugConfig < muscle.AModelConfig
             case 12
                 m.DefaultMu(1:2) = [.01; .04];
                 m.System.UseCrossFibreStiffness = true;
+            case 14
+                m.DefaultMu(2) = 10;
+                m.DefaultMu(13) = 1;
+                m.T = 20;
+                m.dt = .05;
             end
         end
         
         function P = getBoundaryPressure(this, elemidx, faceidx)
             % Determines the neumann forces on the boundary.
             %
-            % The unit for the applied quantities is kiloPascal [kPa]
+            % The unit for the applied quantities is megaPascal [MPa]
             %
             % In the default implementation there are no force boundary
             % conditions.
@@ -158,6 +171,7 @@ classdef DebugConfig < muscle.AModelConfig
         function geo = getGeometry(this)
             % Single cube with same config as reference element
             [pts, cubes] = geometry.Cube8Node.DemoGrid([0 1],[0 1],[0 1]);
+            %[pts, cubes] = geometry.Cube8Node.DemoGrid([0:.5:1],[0:.5:1],[0:.5:1]);
             if this.Options.Version == 11 || this.Options.Version == 12
                 [pts, cubes] = geometry.Cube8Node.DemoGrid([-1 1],[-1 1],[-1 1]);
                 pts(1,[6 8]) = 2;
@@ -178,10 +192,14 @@ classdef DebugConfig < muscle.AModelConfig
         function displ_dir = setPositionDirichletBC(this, displ_dir)
             geo = this.PosFE.Geometry;
             % Always fix back side
-            if this.Options.Version == 10
-                displ_dir(1,geo.Elements(1,geo.MasterFaces(1,:))) = true;
-            else
-                displ_dir(:,geo.Elements(1,geo.MasterFaces(1,:))) = true;
+            switch this.Options.Version
+                case 10
+                    displ_dir(1,geo.Elements(1,geo.MasterFaces(1,:))) = true;
+                case 14
+                    displ_dir(:,geo.Elements(1,geo.MasterFaces(1:2,:))) = true;
+                otherwise
+                    displ_dir(:,geo.Elements(1,geo.MasterFaces(1,:))) = true;
+                    %displ_dir(:,geo.Elements(1:4,geo.MasterFaces(1,:))) = true;
             end
         end
         
@@ -195,6 +213,7 @@ classdef DebugConfig < muscle.AModelConfig
             case {4,5,6}
                 % Move the whole front
                 velo_dir(1,geo.Elements(1,geo.MasterFaces(2,:))) = true;
+                %velo_dir(1,geo.Elements(5:8,geo.MasterFaces(2,:))) = true;
                 velo_dir_val(velo_dir) = .05;
             case {7,8,9}
                 % Move the whole front
@@ -210,13 +229,10 @@ classdef DebugConfig < muscle.AModelConfig
         
         function anull = seta0(this, anull)
             switch this.Options.Version
-            case {2,3,12}
+            case {2,3,5,8,12,14}
                 anull(1,:,:) = 1;
             case {4,7}
                 % No fibres
-            case {5,8}
-                % Stretch along fibre direction
-                anull(1,:,:) = 1;
             case {6,9}
                 % Stretch perpendicular to fibre direction
                 anull(2,:,:) = 1;
@@ -229,22 +245,22 @@ classdef DebugConfig < muscle.AModelConfig
     methods(Static)
         function test_DebugConfigV4_9(version)
             % Results:
-            % 4: Force at T=12, x-position (center node) 1.5: -89.4587mN
-            % 5: Force at T=12, x-position (center node) 1.5: -222.511mN
-            % 6: Force at T=12, x-position (center node) 1.5: -89.458mN
-            %
-            % 7: Force at T=15, x-position (center node) 1.40088: -5.11973mN
-            % with  4^3 gaussp:  -5.12226mN
-            %       5^3 gaussp: -5.12224mN
-            % 8: Force at T=15, x-position (center node) 1.4: -98.0233mN
-            % with  4^3 gaussp:  -101.762mN
-            %       5^3 gaussp: -102.297mN
-            % 9: Force at T=15, x-position (center node) 1.4: -5.11482mN
-            % with 4^3 gaussp:  -5.12227mN, 5^3 gaussp: -5.11725mN
+            % 4: Force at T=20, x-position (center node) 1.49844: -0.0476511N
+            % 5: Force at T=20, x-position (center node) 1.4986: -0.170556N
+            % 6: Force at T=20, x-position (center node) 1.49844: -0.0476511N
+            % 7: Force at T=50, x-position (center node) 1.39931: 0.00210816N
+            % with  4^3 gaussp:  
+            %       5^3 gaussp: 
+            % 8: Force at T=50, x-position (center node) 1.39056: 0.000453817N
+            % with  4^3 gaussp: 
+            %       5^3 gaussp: 
+            % 9: Force at T=50, x-position (center node) 1.39931: 0.00210815N
+            % with 4^3 gaussp: 
+            %      5^3 gaussp: 
             if nargin < 1
                 version = 4;
             end
-            m = muscle.Model(muscle.DebugConfig(version));
+            m = muscle.Model(Debug(version));
             [t,y] = m.simulate;
             pdf = m.getResidualForces(t,y);
             
@@ -254,12 +270,54 @@ classdef DebugConfig < muscle.AModelConfig
             force_on_moved_side = sum(pdf(28:end,:),1);
             figure;
             plot(t,force_on_fixed_side,'r',t,force_on_moved_side,'b');
-            xlabel('time'); ylabel('force [mN]');
+            xlabel('time'); ylabel('force [N]');
 
             % Node 15 is center -> dof indices (15-1)*3 + [1 2 3]
             yall = m.System.includeDirichletValues(t,y);
             xpos = yall((15-1)*3+1,end);
-            fprintf('Force at T=%g, x-position (center node) %g: %gmN\n',t(end),xpos,force_on_moved_side(end));
+            fprintf('Force at T=%g, x-position (center node) %g: %gN\n',t(end),xpos,force_on_moved_side(end));
+            
+            m.plot(t,y,'DF',pdf,'Velo',true,'Pause',.02);
+        end
+        
+        function test_Config13
+            m = muscle.Model(Debug(13));
+            [t,y] = m.simulate;
+            pdf = m.getResidualForces(t,y);
+            
+            % 1..27 are residual forces from fixed position nodes
+            force_on_fixed_side = sum(pdf(1:27,:),1);
+            % 28..36 (=9) are residual forces from moved nodes
+            force_on_moved_side = sum(pdf(28:end,:),1);
+            figure;
+            plot(t,force_on_fixed_side,'r',t,force_on_moved_side,'b');
+            xlabel('time'); ylabel('force [N]');
+
+            % Node 15 is center -> dof indices (15-1)*3 + [1 2 3]
+            yall = m.System.includeDirichletValues(t,y);
+            xpos = yall((15-1)*3+1,end);
+            fprintf('Force at T=%g, x-position (center node) %g: %gN\n',t(end),xpos,force_on_moved_side(end));
+            
+            m.plot(t,y,'DF',pdf,'Velo',true,'Pause',.02);
+        end
+        
+        function test_Config14
+            m = muscle.Model(Debug(14));
+            [t,y] = m.simulate;
+            pdf = m.getResidualForces(t,y);
+            
+            % 1..27 are residual forces from fixed position nodes
+            force_on_fixed_side = sum(pdf(1:27,:),1);
+            % 28..36 (=9) are residual forces from moved nodes
+            force_on_moved_side = sum(pdf(28:end,:),1);
+            figure;
+            plot(t,force_on_fixed_side,'r',t,force_on_moved_side,'b');
+            xlabel('time'); ylabel('force [N]');
+
+            % Node 15 is center -> dof indices (15-1)*3 + [1 2 3]
+            yall = m.System.includeDirichletValues(t,y);
+            xpos = yall((15-1)*3+1,end);
+            fprintf('Force at T=%g, x-position (center node) %g: %gN\n',t(end),xpos,force_on_moved_side(end));
             
             m.plot(t,y,'DF',pdf,'Velo',true,'Pause',.02);
         end
@@ -270,7 +328,7 @@ classdef DebugConfig < muscle.AModelConfig
             end
             for k = versions
                 fprintf('Testing DebugConfig Version %d\n',k);
-                m = muscle.Model(muscle.DebugConfig(k));
+                m = muscle.Model(Debug(k));
                 [t,y] = m.simulate;
                 df = m.getResidualForces(t,y);
                 m.plot(t,y,'DF',df,'Velo',true);

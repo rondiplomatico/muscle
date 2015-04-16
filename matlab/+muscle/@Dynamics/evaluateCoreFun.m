@@ -156,6 +156,9 @@ function duvw  = evaluateCoreFun(this, uvwdof, t)
                 % Using a class-subfunction is 20% slower!
                 % So: function handle
                 fl = flfun(lambdaf);
+                if alpha == 1
+                    a = 4;
+                end
                 gval = passive_aniso_stress + (Pmax/lambdaf)*fl*alpha;
                 P = P + gval*F*sys.a0oa0(:,:,fibrenr);
                 

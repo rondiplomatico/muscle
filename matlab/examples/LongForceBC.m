@@ -14,9 +14,9 @@ classdef LongForceBC < muscle.AModelConfig
             configureModel@muscle.AModelConfig(this, m);
             m.T = 40;
             m.dt = .2;
-            m.DefaultMu(1) = .1;
-            m.DefaultMu(2) = 5;
-            m.DefaultMu(3) = 100;
+            m.DefaultMu(1) = .1; % viscosity [g/(mm*ms)] = [kP] (kiloPoiseulle)
+            m.DefaultMu(2) = 5; % activation ramp time [ms]
+            m.DefaultMu(3) = 1;  % neumann pressure [MPa]
             m.DefaultInput = 1;
             os = m.ODESolver;
             os.RelTol = .001;
@@ -45,7 +45,7 @@ classdef LongForceBC < muscle.AModelConfig
         function P = getBoundaryPressure(~, elemidx, faceidx)
             % Determines the neumann forces on the boundary.
             %
-            % The unit for the applied quantities is kiloPascal [kPa]
+            % The unit for the applied quantities is megaPascal [MPa]
             %
             % In the default implementation there are no force boundary
             % conditions.

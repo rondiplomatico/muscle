@@ -41,14 +41,14 @@ classdef CPull < fullmuscle.AModelConfig
             end
             
             m.DefaultMu(1:4) = [1; 0; 1; 0];
-            m.DefaultMu(13) = 250;
+            m.DefaultMu(13) = .250; %[MPa]
             m.EnableTrajectoryCaching = true;
         end
         
         function P = getBoundaryPressure(this, elemidx, faceidx)
             % Determines the neumann forces on the boundary.
             %
-            % The unit for the applied quantities is kiloPascal [kPa]
+            % The unit for the applied quantities is megaPascal [MPa]
             %
             % In the default implementation there are no force boundary
             % conditions.

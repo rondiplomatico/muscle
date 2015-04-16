@@ -46,7 +46,7 @@ classdef TendonParams < experiments.AExperimentModelConfig
             m.T = this.PositioningTime+this.RelaxTime;
             m.dt = m.T / 300;
             
-            m.DefaultMu(13) = 380; % [kPa]
+            m.DefaultMu(13) = .380; % [MPa]
             m.DefaultMu(14) = 2.05; % lambda_opt, educated guess from data
             
             % No activation here

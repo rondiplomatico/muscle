@@ -22,7 +22,7 @@ classdef CFibreDemo < fullmuscle.AModelConfig
             m.dt = 1;
             
             m.DefaultMu(1:4) = [1; 0; 1; 0];
-            m.DefaultMu(13) = 250;
+            m.DefaultMu(13) = .250; %[MPa]
             m.EnableTrajectoryCaching = true;
             s = m.System.Plotter;
             s.GeoView = [72 74];

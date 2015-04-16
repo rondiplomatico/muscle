@@ -57,11 +57,11 @@ classdef QuickRelease < experiments.AExperimentModelConfig
             end
             %% Material setup
             % Material set (see main comment)
-            m.DefaultMu(5) = 0.00355439810963035; % b1 [kPa]
+            m.DefaultMu(5) = 0.00355439810963035; % b1 [MPa]
             m.DefaultMu(6) = 12.660539325481963; % d1 [-]
-            m.DefaultMu(9) = 6.352e-10; % c10 [kPa]
-            m.DefaultMu(10) = 3.627; % c01 [kPa]
-            m.DefaultMu(13) = 250; % [kPa]
+            m.DefaultMu(9) = 6.352e-10; % c10 [MPa]
+            m.DefaultMu(10) = 3.627; % c01 [MPa]
+            m.DefaultMu(13) = .250; % [MPa]
             m.DefaultMu(14) = 1.2; % [-]
             
             if this.ICCompMode
@@ -131,7 +131,7 @@ classdef QuickRelease < experiments.AExperimentModelConfig
         function P = getBoundaryPressure(this, elemidx, faceidx)
             % Determines the neumann forces on the boundary.
             %
-            % The unit for the applied quantities is kiloPascal [kPa]
+            % The unit for the applied quantities is kiloPascal [MPa]
             %
             % In the default implementation there are no force boundary
             % conditions.
@@ -158,11 +158,6 @@ classdef QuickRelease < experiments.AExperimentModelConfig
             % loads in [g]
             loads = [0 100 2000];
 
-            % convert to pressure:
-            % [g]/1000 = [kg]
-            % [kg]*[m/s²] = [N]
-            % [N]*1000 = [mN]
-            % [mN]/[mm²] = [kPa]
             switch this.GeoNr
                 case 1
                     a = this.PosFE.getFaceArea(2,2);
@@ -172,7 +167,8 @@ classdef QuickRelease < experiments.AExperimentModelConfig
                     a = this.PosFE.getFaceArea(6,3);
             end
             m = this.Model;
-            pressures = (loads/1000*m.Gravity)*1000/a; % [kPa]
+            % [g*mm/ms^2/mm^-2] = [N/mm^-2] = [MPa]
+            pressures = loads*m.Gravity/a; % [MPa]
             u = {};
             for lidx = 1:length(loads)
                 pressure = pressures(lidx);
@@ -335,7 +331,7 @@ classdef QuickRelease < experiments.AExperimentModelConfig
                     end
                     
                     h = pm.nextPlot(sprintf('force_velo_load%g_visc%g',mc.Loads(inidx),mu(1)),...
-                        sprintf('Force / velocity plot\nLoad: %g[g] (eff. pressure %g[kPa]), viscosity:%g [mNs/m]',mc.Loads(inidx),mc.Pressures(inidx),mu(1)),...
+                        sprintf('Force / velocity plot\nLoad: %g[g] (eff. pressure %g[MPa]), viscosity:%g [mNs/m]',mc.Loads(inidx),mc.Pressures(inidx),mu(1)),...
                         'Velocity [mm/ms]','Force [N]');
                     plot(h,o(1,:),o(2,:),'r');
                     

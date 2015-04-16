@@ -1,6 +1,6 @@
-Assuming a density $\rho_0(X), \left[\rho_0(X)\right] = \frac{kg}{mm^3}$ at each point we define the total momentum
+Assuming a density $\rho_0(X), \left[\rho_0(X)\right] = \frac{g}{mm^3}$ at each point we define the total momentum
 \begin{align*}
- 	\vL(t) &:= \intor \rho_0(X)\vV(X,t) dX, & [\vL(t)] &= [\rho_0\vV]mm^3 = \frac{kg}{mm^3}\frac{m}{s}mm^3 = 10^{-3}Nms
+ 	\vL(t) &:= \intor \rho_0(X)\vV(X,t) dX, & [\vL(t)] &= [\rho_0\vV]mm^3 = \frac{g}{mm^3}\frac{mm}{ms}mm^3 = Nms
 \end{align*} 
 for which we postulate the balance equation
 \begin{align}
@@ -10,20 +10,20 @@ given \e{resultant forces} $\force(t)$.
 
 \subsection{Structure of force}
 We assume the forces $\force(t)$ to be composed of two different sources: Forces on the boundary and body forces.
-The body forces $\vB(X,t)$ measures the force per unit reference volume ($\left[\vB(X,t)\right] = 10^{-3}\frac{N}{mm^3}$) on $X$ at time $t$.
+The body forces $\vB(X,t)$ measures the force per unit reference volume ($\left[\vB(X,t)\right] = \frac{N}{mm^3} = 10^{6}Pa = MPa$) on $X$ at time $t$.
 These forces are self-weight or gravity, for example.
 Further, we assume to have \e{traction vectors} $\vT(X,t,N)$ (first Piola-Kirchhoff traction vector) that indicates the force working per unit
-surface area ($[\vT(X,t,N)] = 10^{-3}\frac{N}{mm^2} = 10^{-3}MPa = kPa$) with normal $N$ at the point $X\in\partial\Or$ at time $t$.
+surface area ($[\vT(X,t,N)] = \frac{N}{mm^2} = MPa$) with normal $N$ at the point $X\in\partial\Or$ at time $t$.
 Then the resultant forces are given as
 \begin{align}
-	\force(t) &:= \intorb \vT(X,t,N)dN + \intor \vB(X,t)dX, & \left[\force(t)\right] = \left[\vL'(t)\right] &= 10^{-3}N = mN. \label{def:force}
+	\force(t) &:= \intorb \vT(X,t,N)dN + \intor \vB(X,t)dX, & \left[\force(t)\right] = \left[\vL'(t)\right] &= N. \label{def:force}
 \end{align}
 
 According to \e{Cauchy's stress theorem}, we can express tractions as tensor product
 \begin{align}
 	\vT(X,t,N) &= \vP(X,t)N,\label{def:T}
 \end{align}
-where $\vP$ denotes the \e{first Piola-Kirchhoff stress tensor}, which is measured in kiloPascal, i.e. $[\vP] = kPa$.
+where $\vP$ denotes the \e{first Piola-Kirchhoff stress tensor}, which is measured in MegaPascal, i.e. $[\vP] = MPa$.
 With this we have, following Gauss integral theorem,
 \begin{align}
 	\intorb \vT(X,t,N)dN &= \intorb \vP(X,t)NdN = \intor \divergence\vP(X,t)dX.\label{eq:div_form_traction}
@@ -62,9 +62,9 @@ By the variational approach, we see that the internal virtual work conjugate of 
 which allows us to define a \e{elastic potential} or \e{stored strain energy function} as
 \begin{align*}
 	\Psi_F(\vF(X,t),X) &:= \intl{0}{t}\vP(X,s):\dot{\vF}(X,s)ds,\\
-	[\Psi_F] &= kPa = 10^{-3}\frac{N}{mm^2} = 10^{-3}\frac{J}{mm^2 m} = 10^{-6}\frac{J}{mm^3}.
+	[\Psi_F] &= MPa = \frac{N}{mm^2} = \frac{J}{mm^2m} = \frac{mJ}{mm^3}.
 \end{align*}
-which denotes the work done by the stresses per unit undeformed volume from initial to current configuration at $t$,
+which denotes the work done by the stresses (in milliJoule) per unit undeformed volume from initial to current configuration at $t$,
 see \cite[p.156]{Bonet2008} or \cite[p.207]{Holzapfel2000}.
 Now, by definition, we have
 \begin{align}
@@ -251,11 +251,15 @@ In the following, we will specify different $\Psi(I_1,I_2,I_4,I_5)$ depending on
 \end{align}
 
 \subsubsection{Isotropic stress tensor $\vSi$}
-Now, for the isotropic part we use (for constants see \cite{Zheng1999})
+Now, for the isotropic part we use
 \begin{align*}
-	\Psi(I_1,I_2,I_3) &= c_{10}(I_1-3) + c_{01}(I_2-3), & c_{10} &= 6.352e^{-10}kPa, & c_{01} &= 3.627kPa, 
+	\Psi(I_1,I_2,I_3) &= c_{10}(I_1-3) + c_{01}(I_2-3), 
 \end{align*}
-which gives
+Initially chosen constants are (see \cite{Zheng1999})
+\begin{align}
+	c_{10} &= 6.352e^{-10}MPa, & c_{01} &= 3.627MPa.
+\end{align}
+This  gives
 \begin{align}
 	\vSi(X,t) &= 2(c_{10} + I_1c_{01})\vI - 2c_{01}\vC(X,t)\\
 	\vPi(X,t) &= 2(c_{10} + I_1c_{01})\vF(X,t) - 2c_{01}\vF(X,t)\vC(X,t)
@@ -271,9 +275,10 @@ Now, according to \cite{Markert2005}, we employ
 \begin{align}
 	\Psi(\la) := \sumi \frac{b_i}{d_i}(\la^{d_i} - 1) - b_i\ln\la\label{def:markertlaw}
 \end{align}
-with $n=1$ summands 
+with $n=1$ summands $[b_1] = MPa, [d_1] = [-]$.
+Initially chosen were 
 \begin{align*}
-	b_1 &= 2.756e^{-5}kPa, & d_1 &= 43.373 [-].
+	b_1 &= 2.756e^{-5}MPa, & d_1 &= 43.373 [-].
 \end{align*}
 We thus have
 \begin{align}
@@ -302,7 +307,7 @@ As the Markert law is only applicable for $\lambda>1$, quickly increasing parame
 develop discontinuous derivatives at $\lambda=1$. This is numerically problematic the stiffer the material modeled is.
 \begin{figure}[!ht]
 	\includegraphics[width=\textwidth]{MarkertLawOriginal}
-	\caption{Markert law for $b_1=7990 [kPa]$ and $d_1=16.6 [-]$ in blue. Discontinuous derivative at $\lambda=1$ with gap size $b_1d_1=132634 [kPa]$. Red shows the modified
+	\caption{Markert law for $b_1=7990 [MPa]$ and $d_1=16.6 [-]$ in blue. Discontinuous derivative at $\lambda=1$ with gap size $b_1d_1=132634 [MPa]$. Red shows the modified
 	variant with same ``old'' parametrization and the green line is an example parameterization with similar shape}
 	\label{fig:steepmarkert}
 \end{figure}
@@ -334,7 +339,7 @@ We then define
 	\end{cases} \label{def:fl},\\
 	f_v(\dla) &:= ??,
 \end{align}
-with maximum pressure $p^{max} = 7.3 \left[\frac{N}{cm^2}\right] = 73~[kPa]$ and.
+with maximum pressure $p^{max}, [p^{max}] = MPa$.
 Similar to \eqref{eq:dpsidC} we obtain
 \begin{align}
 	\d{\Psi}{\vC}(\la) &= \frac{p^{max}}{2\la}f_l(\la)f_v(\dla)\alpha(X,t)\va_0\otimes\va_0
@@ -345,12 +350,13 @@ This gives
 	\vPf(X,t) &= \frac{p^{max}}{\la(X,t)}f_l(\la(X,t))f_v(\dla(X,t))\alpha(X,t)\vF(X,t)\va_0(X)\otimes\va_0(X)
 \end{align}
 
-\subsubsection{Viscous damping tensor $\vSv$/$\vPv$}
+\subsubsection{Dynamic viscosity / viscous damping tensor $\vSv$/$\vPv$}
 We introduce the viscous part of the stress tensor in the current configuration by defining
 \begin{align}
 \vPv(X,t) := \eta\,\dot{\vF}(X,t) \,,
 \end{align}
-where $\eta$ is a parameter describing the viscosity. 
+where $\eta, [\eta] = MPa\ ms = \frac{g}{mm\ ms} = kP$ (kiloPoiseulle, Poiseulle = $Pa\ s$) is a parameter describing the dynamic viscosity.
+%= \frac{N}{mm^2}ms = \frac{g\ mm}{mm^2 ms^2}ms = \frac{g}{mm ms} 
 \\
 For the second Piola-Kirchhoff tensor that means
 \begin{align}

@@ -115,7 +115,7 @@ classdef MusclePlotter < muscle.MusclePlotter
 
                 if opts.Ext
                     hext = pm.nextPlot('ext_neumann',...
-                        'External pressure','t [ms]','Normal pressure [kPa]');
+                        'External pressure','t [ms]','Normal pressure [MPa]');
                     axis(hext,[0 t(end) min(pd.uneum(:)) max(pd.uneum(:))+eps]);
                     hold(hext,'on');
 

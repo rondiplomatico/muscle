@@ -2,14 +2,14 @@ classdef Model < models.BaseFullModel
     % Model: Model for a FEM-discretized muscle model
     %
     % The global time unit for this model is milliseconds [ms] and the
-    % spatial quantities are in [mm].
-    % This results in pressure values of [kPa] and the forces K(u,v,w) are
-    % measured in [mN] (milliNewton).
+    % spatial quantities are in [mm]. Weight is in [g].
+    % This results in pressure values of [MPa] and the forces K(u,v,w) are
+    % measured in [N] (Newton).
     %
     % @author Daniel Wirtz @date 2012-11-22
     
     properties
-        MuscleDensity = 1.1e-6; % [kg/mm³] (1100kg/m³)
+        MuscleDensity = 1.1e-3; % [g/mm³] (1100kg/m³)
         
         % The plotter class for visualization
         Plotter;
@@ -23,7 +23,7 @@ classdef Model < models.BaseFullModel
         
         Config;
         
-        Gravity = 9.80665; % [m/s²]
+        Gravity = 9.80665e-3; % [mm/ms²]
     end
     
     properties(Dependent)
@@ -123,7 +123,7 @@ classdef Model < models.BaseFullModel
             f = this.System.f;
             t = PrintTable('Configuration of Model %s',this.Name);
             t.HasHeader = true;
-            t.addRow('\rho_0', 'c_{10} [kPa]','c_{01} [kPa]','b_1 [kPa]','d_1 [-]','P_{max} [kPa]','\lambda_f^{opt}');
+            t.addRow('\rho_0', 'c_{10} [MPa]','c_{01} [MPa]','b_1 [MPa]','d_1 [-]','P_{max} [MPa]','\lambda_f^{opt}');
             t.addRow(this.MuscleDensity, mu(9),mu(10),mu(5),mu(6),mu(13),mu(14));
             t.Format = 'tex';
         end
@@ -167,7 +167,7 @@ classdef Model < models.BaseFullModel
             
             h = pm.nextPlot('force_length_eff',...
                 'Effective force-length curve of muscle material',...
-                '\lambda [-]','pressure [kPa]');
+                '\lambda [-]','pressure [MPa]');
             plot(h,lambda,fl_eff,'r',lambda,aniso_passive_muscle,'g',lambda,fl_eff+aniso_passive_muscle,'b');
             legend(h,'Active','Passive','Total','Location','NorthWest');
             
@@ -176,20 +176,20 @@ classdef Model < models.BaseFullModel
 %             dmarkertf = (lambda>=1).*(b1./lambda.^3).*((d1-2)*lambda.^d1 + 2);
 %             h = pm.nextPlot('force_length_eff_deriv',...
 %                 'Effective force-length curve derivative of muscle material',...
-%                 '\lambda','deriv [kPa/ms]');
+%                 '\lambda','deriv [MPa/ms]');
 %             plot(h,lambda,dfl,'r',lambda,dmarkertf,'g',lambda,dfl + dmarkertf,'b');
             
 %             %% Cross fibre stuff
 %             if this.System.UseCrossFibreStiffness
 %                 error('fixme');
 %                 markertf = max(0,(f.b1cf./lambda.^2).*(lambda.^f.d1cf-1));
-%                 h = pm.nextPlot('force_length_xfibre',sprintf('Force-Length curve in cross-fibre direction for model %s',this.Name),'\lambda [-]','pressure [kPa]');
+%                 h = pm.nextPlot('force_length_xfibre',sprintf('Force-Length curve in cross-fibre direction for model %s',this.Name),'\lambda [-]','pressure [MPa]');
 %                 plot(h,lambda,markertf,'r');
 %                 axis(h,[0 2 0 150]);
 %                 legend(h,'Passive cross-fibre pressure','Location','NorthWest');
 %                 
 %                 dmarkertf = (lambda >= 1).*(f.b1cf./lambda.^3).*((f.d1cf-2)*lambda.^f.d1cf + 2);
-%                 h = pm.nextPlot('force_length_xfibre_deriv',sprintf('Derivative of Force-Length curve in cross-fibre direction for model %s',this.Name),'\lambda [-]','pressure [kPa]');
+%                 h = pm.nextPlot('force_length_xfibre_deriv',sprintf('Derivative of Force-Length curve in cross-fibre direction for model %s',this.Name),'\lambda [-]','pressure [MPa]');
 %                 plot(h,lambda,dmarkertf,'r');
 %             end
             
@@ -199,7 +199,7 @@ classdef Model < models.BaseFullModel
                 aniso_passive_tendon = f.AnisoPassiveTendon(lambda);
                 h = pm.nextPlot('force_length_tendon',...
                     'Effective force-length curve of tendon material (=passive)',...
-                    '\lambda [-]','pressure [kPa]');
+                    '\lambda [-]','pressure [MPa]');
                 plot(h,lambda,aniso_passive_tendon,'g');
 
                 %% Effective force-length surface for muscle-tendon tissue
@@ -221,7 +221,7 @@ classdef Model < models.BaseFullModel
                     'Effective force-length curve between muscle/tendon material',...
                     '\lambda [-]','muscle/tendon ratio [m=0,t=1]');
                 surfc(LAM,TMR,passive+FL,'Parent',h,'EdgeColor','interp');
-                zlabel('pressure [kPa]');
+                zlabel('pressure [MPa]');
                 zlim([0, 3*max(fl_eff(:))]);
             end
                 

@@ -88,7 +88,7 @@ classdef FusiformMORexample < muscle.AModelConfig
         function P = getBoundaryPressure(this, elemidx, faceidx)
             % Determines the Neumann forces on the boundary (matrix B)
             %
-            % The unit for the applied quantities is kiloPascal [kPa]
+            % The unit for the applied quantities is megaPascal [MPa]
             %
             % See also: NeumannCoordinateSystem
             % positive values = traction, negative = pressure

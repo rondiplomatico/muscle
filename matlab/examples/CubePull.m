@@ -42,7 +42,7 @@ classdef CubePull < muscle.AModelConfig
         function P = getBoundaryPressure(~, elemidx, faceidx)
             % Determines the neumann forces on the boundary.
             %
-            % The unit for the applied quantities is kiloPascal [kPa]
+            % The unit for the applied quantities is megaPascal [MPa]
             %
             % In the default implementation there are no force boundary
             % conditions.

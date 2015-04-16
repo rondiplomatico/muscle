@@ -43,7 +43,7 @@ classdef IsotonicActivation < experiments.AExperimentModelConfig
             m.DefaultMu(7) = 1;
             m.DefaultMu(8) = 25;
             
-            m.DefaultMu(13) = 380; % [kPa]
+            m.DefaultMu(13) = .380; % [MPa]
             m.DefaultMu(14) = 2.05; % lambda_opt, educated guess from data
             
             % Set to activation within 10ms
