@@ -13,42 +13,42 @@ classdef Shaker < muscle.AModelConfig
         
         function configureModel(this, m)
             configureModel@muscle.AModelConfig(this, m);
-            m.T = 40;
-            m.dt = .05;
+            m.T = 75;
+            m.dt = .5;
             
             mu = m.DefaultMu;
             % Small viscosity
-            mu(1) = 1e-5;
+            mu(1) = .005;
             m.DefaultMu = mu;
         end
         
-        function tmr = getTendonMuscleRatio(this, points)
-            % Returns the [0,1] ratio between tendon and muscle at all
-            % specified points
-            %
-            % This method simply returns an all-zero ratio, meaning muscle only. 
-            tmr = zeros(1,size(points,2));
-            
-            % Set the middle 20% percent to 100% muscle
-            zeroperc = .2;
-
-            y = points(2,:);
-            cent = this.ylen/2;
-            left = y <= cent*(1-zeroperc/2);
-            tmr(left) = 1-y(left)/(cent*(1-zeroperc/2));
-            right = y > cent + this.ylen*zeroperc/2;
-            tmr(right) = (y(right)-(this.ylen*(.5+zeroperc/2)))/...
-                (this.ylen*(.5-zeroperc/2));
-            
-            tmr = 2*tmr/5;
-        end
+%         function tmr = getTendonMuscleRatio(this, points)
+%             % Returns the [0,1] ratio between tendon and muscle at all
+%             % specified points
+%             %
+%             % This method simply returns an all-zero ratio, meaning muscle only. 
+%             tmr = zeros(1,size(points,2));
+%             
+%             % Set the middle 20% percent to 100% muscle
+%             zeroperc = .2;
+% 
+%             y = points(2,:);
+%             cent = this.ylen/2;
+%             left = y <= cent*(1-zeroperc/2);
+%             tmr(left) = 1-y(left)/(cent*(1-zeroperc/2));
+%             right = y > cent + this.ylen*zeroperc/2;
+%             tmr(right) = (y(right)-(this.ylen*(.5+zeroperc/2)))/...
+%                 (this.ylen*(.5-zeroperc/2));
+%             
+%             tmr = 2*tmr/5;
+%         end
     end
     
     methods(Access=protected)
         
         function geo = getGeometry(this)
-            belly = Belly.getBelly(4,10,'Radius',1,'InnerRadius',.1,'Gamma',2);
-            geo = belly.scale(10);
+            belly = Belly.getBelly(4,10,'Radius',1,'InnerRadius',.4,'Gamma',2);
+            geo = belly.scale(20);
             this.ylen = 100;
         end
         
@@ -71,7 +71,7 @@ classdef Shaker < muscle.AModelConfig
 %                 velo_dir(1,pos) = true;
 %                 %velo_dir_val(1,pos) = 1;
 %             end
-            velo_dir_val(velo_dir) = 1;
+            velo_dir_val(velo_dir) = 2;
         end
         
         function anull = seta0(~, anull)

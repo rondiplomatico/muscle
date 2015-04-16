@@ -92,7 +92,7 @@ classdef Debug < muscle.AModelConfig
                 % c4M = 47.270456264135881
                 m.DefaultMu(6) = 47.270456264135881; % d1 [-]
                 % c1M = 3.56463903963e-02 MPa
-                m.DefaultMu(9) = 3.56463903963e1; % c10 [MPa]
+                m.DefaultMu(9) = 35.6463903963; % c10 [MPa]
                 % c2M = 3.859558659683e-3 MPa
                 m.DefaultMu(10) = 3.859558659683; % c01 [MPa]
                 

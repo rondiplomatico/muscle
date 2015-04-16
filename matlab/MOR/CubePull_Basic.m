@@ -13,11 +13,17 @@ m.TrainingInputs = 1;
 
 %% Crunch
 m.offlineGenerations;
-r = m.buildReducedModel;
-ma = ModelAnalyzer(r);
+r = m.buildReducedModel(500);
+
+mu = m.DefaultMu;
+mu(3) = -.15; %new param!
+[t,y] = m.simulate(mu,1);
+[t,yr] = r.simulate(mu,1);
+norm(y-yr)/norm(y)
 
 %% Plot
 pm = PlotManager(false,2,2);
+ma = ModelAnalyzer(r);
 ma.plotReductionOverview(pm);
 
 %% Manual subspace comp
