@@ -4,7 +4,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     
     properties
         % Cross-fibre markert part
-        b1cf = 53163.72204148964; % [MPa] = [N/mm²]
+        b1cf = 5.316372204148964; % [MPa] = [N/mm²]
         d1cf = 0.014991843974911; % [-]
         
         % The activation of the muscle at time t
