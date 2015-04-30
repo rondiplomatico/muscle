@@ -105,8 +105,19 @@ classdef ThinTendon < experiments.AExperimentModelConfig
     
     methods(Static)
         function test_ThinTendon
-            m = muscle.Model(ThinTendon);
+            c = ThinTendon;
+            m = c.createModel;
+            c.CurrentConfigNr = 4;
             m.simulateAndPlot;
+        end
+        
+        function runExperiment
+            c = ThinTendon;
+            m = c.createModel;
+            e = tools.ExperimentRunner(m);
+            d = e.runExperimentsCached;
+            semilogy(d.o);
+            title('Forces at fixed nodes at end time');
         end
     end
     
