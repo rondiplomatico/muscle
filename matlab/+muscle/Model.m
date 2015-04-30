@@ -35,7 +35,7 @@ classdef Model < models.BaseFullModel
             if nargin < 2
                 basedir = KerMor.App.DataDirectory;
                 if nargin < 1
-                    conf = muscle.DebugConfig;
+                    conf = Debug;
                 end
             end
             % Creates a new muscle model

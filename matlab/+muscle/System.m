@@ -197,8 +197,9 @@ classdef System < models.BaseDynSystem
             % fit with tools.MarkertLaw: b1 = 1.3895e+04
             % fit with tools.QuadToLinear: lam0 = 1.027
             % fit with tools.CubicToLinear: lam0 =  1.0175 [26.2.15]
+            % fit with tools.CubicToLinear: lam0 =  1.0207 [29.4.15, after scaling fix]
             % #7
-            this.addParam('tendon passive 1 [b1/lam0]', 1.0175); % [MPa/-]
+            this.addParam('tendon passive 1 [b1/lam0]', 1.0207); % [MPa/-]
             
             % anisotropic passive stiffness for tendon material
             % markert law
@@ -207,6 +208,7 @@ classdef System < models.BaseDynSystem
             % max modulus  1.637893706954065e+05
             % fit with tools.QuadToLinear: M = 1.637893706954065e+05
             % fit with tools.CubicToLinear: M =  1.637893706954065e+05 [26.2.15]
+            % fit with tools.CubicToLinear: M =  1.637893706954065e+05 [29.4.15, after scaling fix]
             % #8
             this.addParam('tendon passive 2 [d1/M]', 1.637893706954065e+05);
             
