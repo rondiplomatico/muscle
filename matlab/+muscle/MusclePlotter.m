@@ -178,7 +178,8 @@ classdef MusclePlotter < handle
                 residuals = pd.residuals;
                 have_residuals = pd.have_residuals;
                 udir = u(:,have_residuals);
-                residuals(pd.residuals_pos) = pd.DF(pd.sortidx,ts)/pd.maxdfval;
+                %residuals(pd.residuals_pos) = pd.DF(pd.sortidx,ts)/pd.maxdfval;
+                residuals(pd.residuals_pos) = pd.DF(:,ts)/pd.maxdfval;
                 quiver3(h,udir(1,:),udir(2,:),udir(3,:),...
                     residuals(1,have_residuals),residuals(2,have_residuals),...
                     residuals(3,have_residuals),1,'k', 'MarkerSize',14);
@@ -230,7 +231,8 @@ classdef MusclePlotter < handle
             doI1 = any(opts.Invariants == 1);
             doLam = opts.Lambdas;
             doMR = opts.MR;
-            if fibres || ~isempty(opts.Invariants) || doLam || doMR
+            doTMR = opts.MTRatio;
+            if fibres || ~isempty(opts.Invariants) || doLam || doMR || doTMR
                 for m = 1:geo.NumElements
                     u = y_dofs(1:pd.vstart-1);
                     u = u(sys.idx_u_glob_elems(:,:,m));
@@ -260,12 +262,14 @@ classdef MusclePlotter < handle
                     %% Mooney-Rivlin tensors
                     if doMR
                         values = cellfun(@(m)sprintf('%g ',diag(m)), pd.MR(:,m,ts),'UniformOutput',false);
+                        text(gps(1,:),gps(2,:),gps(3,:),values,'Parent',h)
+                    end
+                    
+                    %% Tendon-Muscle ratio
+                    if doTMR
+                        values = sprintfc('%3.4g',sys.MuscleTendonRatioGP(:,m,ts));
                         %values = sprintfc('%3.4g',diags{:});
                         text(gps(1,:),gps(2,:),gps(3,:),values,'Parent',h)
-%                         for gp = 1:size(pd.MR,1)
-%                             text(gps(1,gp),gps(2,gp),gps(3,gp),num2str(pd.MR{gp,m,ts}),...
-%                                 'Parent',h);
-%                         end
                     end
                 end
             end
@@ -398,6 +402,7 @@ classdef MusclePlotter < handle
             i.addParamValue('Invariants',[]);
             i.addParamValue('Lambdas',false);
             i.addParamValue('MR',false);
+            i.addParamValue('MTRatio',false);
             i.addParamValue('Pause',.01);
             
             args = [this.DefaultArgs args];

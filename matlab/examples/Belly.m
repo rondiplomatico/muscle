@@ -75,7 +75,11 @@ classdef Belly < muscle.AModelConfig
                     parts = 4;
                 end
             end
-            x = linspace(0,len,parts*2+1);
+            if numel(len) == 2 
+                x = linspace(len(1),len(2),parts*2+1);
+            else
+                x = linspace(0,len,parts*2+1);
+            end
             if isa(opt.Radius,'function_handle')
                 fx = opt.Radius(x);
                 if size(fx,1) == 1

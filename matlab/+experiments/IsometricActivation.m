@@ -11,11 +11,16 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
         RelaxTime = 5; %[ms]
     end
     
+    properties(Access=private)
+        rat3;
+    end
+    
     methods
         function this = IsometricActivation(varargin)
             this = this@experiments.AExperimentModelConfig(varargin{:});
             this.addOption('BC',1);
             this.addOption('Activate',1);
+            this.rat3 = experiments.Rat3Geo;
             this.init;
             
             this.NumOutputs = 2;
@@ -35,6 +40,9 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                 1.065	-0.0568]*1000;
             
             this.VelocityBCTimeFun = tools.ConstantUntil(this.PositioningTime,.01);
+            if this.Options.GeoNr == 4
+                this.rat3.load;
+            end
         end
         
         function configureModel(this, m)
@@ -78,12 +86,9 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             % This method simply returns an all-zero ratio, meaning muscle only. 
             tmr = zeros(1,size(points,2));
             o = this.Options;
-            if o.GeoNr == 2 || o.GeoNr == 3
-                tmr = this.TMRFun(points(1,:),points(2,:),points(3,:));
-            end            
-        end
-        
-        function tmr = TMRFun(this, x, y, z)
+            x = points(1,:);
+            y = points(2,:);
+            z = points(3,:);
             switch this.Options.GeoNr
                 case 2
                     tmr = zeros(size(y));
@@ -110,7 +115,9 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
 %                     fl = @(x)-1*sqrt(x)+1;
 %                     left = z < fl(y);
 %                     tmr(left) = 1;
-            end
+                case 4
+                    tmr = this.rat3.getTMR(x,y,z);
+            end            
         end
         
         function o = getOutputOfInterest(this, t, y)
@@ -175,6 +182,8 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                     k2 = kernels.GaussKernel(9.5);
                     rad = @(t)[k.evaluate(t,cent)*3.5 k2.evaluate(t,cent)*2]';
                     geo = Belly.getBelly(4,35,'Radius',rad,'Layers',[.8 1],'InnerRadius',.3);
+                case 4
+                    geo = this.rat3.getGeometry;
             end
         end
         
@@ -199,6 +208,8 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                     displ_dir(2,geo.Nodes(2,:) == 0) = true;
                     displ_dir(:,1) = true;
                     displ_dir([1 3],geo.Nodes(2,:) > 33) = true;
+                case 4
+                    displ_dir(:,geo.Elements(1:12,geo.MasterFaces(3,:))) = true;
             end
         end
         
@@ -213,6 +224,8 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                     velo_dir(1,geo.Elements(3,geo.MasterFaces(2,:))) = true;
                 case {2,3}
                     velo_dir(2,geo.Nodes(2,:) > 33) = true;
+                case 4
+                    velo_dir(:,geo.Elements(49:60,geo.MasterFaces(4,:))) = true;
             end
             velo_dir_val(velo_dir) = velo;
         end
@@ -232,6 +245,20 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
                 case {2,3}
                     anull(2,:,:) = 1;
                     anull(3,:,:) = 1;
+                case 4
+                    cached = fullfile(this.OutputDir,'fibredirections_gp.mat');
+                    if exist(cached,'file') == 2
+                        s = load(cached);
+                        anull = s.anull;
+                    else
+                        fe = this.PosFE;
+                        g = fe.Geometry;
+                        for m = 1:g.NumElements
+                            gp = g.Nodes(:,g.Elements(m,:)) * fe.N(fe.GaussPoints);
+                            anull(:,:,m) = this.rat3.getA0(gp);
+                        end
+                        save(cached,'anull');
+                    end
             end
         end
     end
@@ -242,7 +269,7 @@ classdef IsometricActivation < experiments.AExperimentModelConfig
             % Runs the series of isometric tests for different Pmax values.
             % Several variants can be chosen:
             %
-            Geo = 3;
+            Geo = 4;
             
             %% pmax/lamdaopt rough test
 %             pmaxr = 250:50:400;
