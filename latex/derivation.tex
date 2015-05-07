@@ -10,7 +10,7 @@ given \e{resultant forces} $\force(t)$.
 
 \subsection{Structure of force}
 We assume the forces $\force(t)$ to be composed of two different sources: Forces on the boundary and body forces.
-The body forces $\vB(X,t)$ measures the force per unit reference volume ($\left[\vB(X,t)\right] = \frac{N}{mm^3} = 10^{6}Pa = MPa$) on $X$ at time $t$.
+The body forces $\vB(X,t)$ measures the force per unit reference volume ($\left[\vB(X,t)\right] = \frac{N}{mm^3} = \frac{10^{6}Pa}{mm^3} = \frac{MPa}{mm^3}$) on $X$ at time $t$.
 These forces are self-weight or gravity, for example.
 Further, we assume to have \e{traction vectors} $\vT(X,t,N)$ (first Piola-Kirchhoff traction vector) that indicates the force working per unit
 surface area ($[\vT(X,t,N)] = \frac{N}{mm^2} = MPa$) with normal $N$ at the point $X\in\partial\Or$ at time $t$.
@@ -150,7 +150,7 @@ The resulting deviatoric part is trace-free, e.g.
 \begin{align}
 	\tr{\vsig'} &= \tr\left(\vsig - \frac{1}{3}(\tr\vsig)\vI\right) = \suml{i=1}{3}(\vsig_{ii} - \frac{1}{3}\tr\vsig) = \tr\vsig - \tr\vsig = 0.
 \end{align}
-Here, the scalar $p$ is called the \e{hydrostatic pressure}, $[p] = kPa$.
+Here, the scalar $p$ is called the \e{hydrostatic pressure}, $[p] = MPa$.
 From the definition \eqref{def:secondpiola} of the second Piola-Kirchhoff stress tensor we obtain the same split for $\vS$
 (omitting $X,t$ arguments for readability) via
 \begin{align}
