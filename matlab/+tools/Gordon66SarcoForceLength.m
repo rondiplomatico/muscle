@@ -1,4 +1,4 @@
-classdef Gordon66SarcoForceLength < tools.AFunGen
+classdef Gordon66SarcoForceLength < tools.PiecewiseLinear
     
     properties(Access=private)
         l0;
@@ -10,7 +10,7 @@ classdef Gordon66SarcoForceLength < tools.AFunGen
             if nargin < 1
                 l0 = 2.05;
             end
-            this.l0 = l0;
+            
             % Data from Paper Gordon1966
             dopt_tab = [1.98 97.09; 2.03 98.6; 2.08 99.87; 2.13 100; 2.18 100.09; 2.23 98.85; 2.28 97.06];
             % Roughly "estimated"
@@ -28,54 +28,23 @@ classdef Gordon66SarcoForceLength < tools.AFunGen
             % Pad zeros
             curve = [1.1 0; 1.25 0; curve; 3.7 0; 3.8 0];
             
+            sel = [2 9 13 19 25];
+            this = this@tools.PiecewiseLinear(curve(sel,1)',curve(sel,2)');
+            this.l0 = l0;
             this.cdata = curve;
-        end
-        
-        function [fhandle, dfhandle] = getFunction(this)
-            curve = this.cdata;
-            % Scale to l_0 (standard/resting length)
-            curve(:,1) = curve(:,1) / this.l0;
-            
-            % Extract piecewise linear function
-            parts = [2 9 13 19 25];
-            np = length(parts)-1;
-            funs = cell(1,np);
-            dfuns = cell(1,np);
-            for k=1:np
-                xy1 = curve(parts(k),:);
-                xy2 = curve(parts(k+1),:);
-                cond = sprintf('(t>=%g & t <%g)',xy1(1),xy2(1));
-                a = (xy2(2)-xy1(2))/(xy2(1)-xy1(1));
-                b = xy1(2)-a*xy1(1);
-                fun = sprintf('(%g*t+%g)',a,b);
-                funs{k} = [cond '.*' fun];
-                dfuns{k} = [cond '.*' sprintf('%g',a)];
-            end
-            funstr = sprintf('@(t)%s',Utils.implode(funs,' + '));
-            dfunstr = sprintf('@(t)%s',Utils.implode(dfuns,' + '));
-            fhandle = eval(funstr);
-            dfhandle = eval(dfunstr);
         end
         
         function str = getConfigStr(this)
             str = sprintf('L_0=%g',this.l0);
         end
         
-        function plot(this, range)
-            curve = this.cdata;
-            % ALSO Scale to l_0 (standard/resting length)
-            curve(:,1) = curve(:,1) / this.l0;
+        function plot(this, varargin)
+            pm = plot@tools.PiecewiseLinear(this, varargin{:});
             
-            if nargin < 2
-                range = linspace(min(curve(:,1))*0.95,max(curve(:,1))*1.05,1000);
-            end
-            plot@tools.AFunGen(this, range);
-            
-            ax = gca;
+            ax = pm.nextPlot('gordon66_fit','Splint fits','length','force');
             hold(ax,'on');
             
-            len = curve(:,1)';
-            proc = curve(:,2)';
+            [len, proc] = this.transform(this.cdata(:,1)',this.cdata(:,2)');
             
             plot(len,proc,'r-x');
             
@@ -93,6 +62,12 @@ classdef Gordon66SarcoForceLength < tools.AFunGen
             axis(ax,'tight');
         end
         
+    end
+    
+    methods(Access=protected)
+        function [x,y] = transform(this, x, y)
+            x  = x / this.l0;
+        end
     end
     
 end

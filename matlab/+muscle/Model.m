@@ -278,7 +278,12 @@ classdef Model < models.BaseFullModel
             if ~isempty(nf)
                 varargin(end+1:end+2) = {'NF',nf};
             end
+            % Plot without default args (time-plotting might want to
+            % suppress fibres for speed, but we want them here)
+            old = this.Plotter.DefaultArgs;
+            this.Plotter.DefaultArgs = {};
             [varargout{1:nargout}] = this.plot(0,x0,varargin{:});
+            this.Plotter.DefaultArgs = old;
         end
         
         function plotGeometryInfo(this, varargin)

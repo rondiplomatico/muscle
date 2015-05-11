@@ -27,7 +27,7 @@ classdef Debug < muscle.AModelConfig
     % boundary conditions
     % Version 12: A cube with fibres and additional cross-fibre direction
     % markert pressure. (only activation used)
-    
+        
     methods
         function this = Debug(varargin)
             % Quick fix for old-style DebugConfig call passing in the

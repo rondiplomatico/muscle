@@ -13,7 +13,7 @@ classdef ExperimentRunner < handle
         Model;
     end
     
-    properties(Access=private)
+    properties%(Access=private)
         multipleexperiments = false;
         cache;
         cachedata;
@@ -47,6 +47,8 @@ classdef ExperimentRunner < handle
                 out = data.out;
                 y = data.y;
                 ct = data.ct;
+                this.Config.CurrentConfigNr = nr;
+                this.Model.System.setConfig(mu,this.Model.DefaultInput);
             end
         end
         
