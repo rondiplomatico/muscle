@@ -70,6 +70,8 @@ classdef ExperimentRunner < handle
                     % Updates the associated model automatically (precomputations)
                     c.CurrentConfigNr = nr;
                     
+                    %m.plotGeometrySetup;
+                    
                     % Run simulation
                     [t,y,ct] = m.simulate(mu);
                     
