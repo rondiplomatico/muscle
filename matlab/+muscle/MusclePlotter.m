@@ -53,7 +53,11 @@ classdef MusclePlotter < handle
                     error('Directory %s not found',p);
                 end
                 if isempty(p)
-                    p = pwd;
+                    if isa(mc,'experiments.AExperimentModelConfig')
+                        p = mc.OutputDir;
+                    else
+                        p = pwd;
+                    end
                 end
                 if isempty(n)
                     n = 'output';
@@ -61,7 +65,7 @@ classdef MusclePlotter < handle
                 if isempty(e)
                     e = '.avi';
                 end
-                avifile = fullfile(pwd,[n e]);
+                avifile = fullfile(p,[n e]);
                 vw = VideoWriter(avifile);
                 vw.FrameRate = 25;
                 vw.open;
@@ -128,23 +132,28 @@ classdef MusclePlotter < handle
     
     methods(Access=protected)
         function plotGeometry(this, h, t, y_dofs, ts, opts)
-            title(h,sprintf('Deformation at t=%g',t));
+            casecap = 'Deformation';
+            if opts.Stretch
+                casecap = 'Lambda-stretches';
+            end
+            title(h,sprintf('%s at t=%g',casecap,t));
 
             pd = this.plotdata;
             sys = this.System;
-
+            nelem = length(opts.Elems);
+            
             u = reshape(y_dofs(1:pd.vstart-1),3,[]);
             v = reshape(y_dofs(pd.vstart:pd.pstart-1),3,[]);
             cla(h);
-
+            
             geo = this.Config.PosFE.Geometry;
             if opts.Skel
                 e = pd.e;
                 plot3(h,u(1,pd.no_bc),u(2,pd.no_bc),u(3,pd.no_bc),'r.','MarkerSize',14);
                 for k=1:size(e,1)
                     plot3(h,u(1,[e(k,1) e(k,2)]),u(2,[e(k,1) e(k,2)]),u(3,[e(k,1) e(k,2)]),'r');
-                end
-            else
+                end 
+            elseif ~opts.Stretch
                 p = patch('Faces',geo.PatchFaces,'Vertices',u',...
                     'Parent',h,'FaceAlpha',.3);
                 if sys.HasTendons
@@ -232,45 +241,55 @@ classdef MusclePlotter < handle
             doLam = opts.Lambdas;
             doMR = opts.MR;
             doTMR = opts.MTRatio;
-            if fibres || ~isempty(opts.Invariants) || doLam || doMR || doTMR
-                for m = 1:geo.NumElements
+            doStr = opts.Stretch;
+            if fibres || ~isempty(opts.Invariants) || doLam || doMR || doTMR || doStr
+                for elemidx = 1:nelem
+                    m = opts.Elems(elemidx);
                     u = y_dofs(1:pd.vstart-1);
                     u = u(sys.idx_u_glob_elems(:,:,m));
                     gps = u*pd.Ngp;
                     
-                    if fibres
-                        anull = u*sys.dNa0(:,:,m);
-                        quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'.','Color','w');
+                    if doStr
+                        scatter3(h,gps(1,:),gps(2,:),gps(3,:),1,pd.stretchcol(:,:,elemidx,ts)','.','SizeData',30);
+                    else
+                        if fibres
+                            anull = u*sys.dNa0(:,:,m);
+                            quiver3(gps(1,:),gps(2,:),gps(3,:),anull(1,:),anull(2,:),anull(3,:),.5,'.','Color','w');
+                        end
+
+                        %% tendon ratio
+                        if ~isempty(pd.gpcol)
+                            scatter3(h,gps(1,:),gps(2,:),gps(3,:),1,pd.gpcol(:,:,m),'.','SizeData',30);
+                        end
+
+                        %% Invariants
+                        if doI1
+                            values = sprintfc('I_1=%3.3g',pd.I1(:,elemidx,ts));
+                            text(gps(1,:),gps(2,:),gps(3,:),values,'Parent',h)
+                        end
+                        %% Lambdas
+                        if doLam
+                            %values = sprintfc('\\lambda=%3.3g',pd.lambdas(:,m,ts));
+                            values = sprintfc('%3.4g',pd.lambdas(:,elemidx,ts));
+                            text(gps(1,:),gps(2,:),gps(3,:),values,'Parent',h)
+                        end
+                        %% Mooney-Rivlin tensors
+                        if doMR
+                            values = cellfun(@(v)sprintf('%g ',diag(v)), pd.MR(:,elemidx,ts),'UniformOutput',false);
+                            text(gps(1,:),gps(2,:),gps(3,:),values,'Parent',h)
+                        end
+
+                        %% Tendon-Muscle ratio
+                        if doTMR
+                            values = sprintfc('%3.4g',sys.MuscleTendonRatioGP(:,m,ts));
+                            %values = sprintfc('%3.4g',diags{:});
+                            text(gps(1,:),gps(2,:),gps(3,:),values,'Parent',h)
+                        end
                     end
-                    
-                    %% tendon ratio
-                    if ~isempty(pd.gpcol)
-                        scatter3(h,gps(1,:),gps(2,:),gps(3,:),1,pd.gpcol(:,:,m),'.','SizeData',30);
-                    end
-                    
-                    %% Invariants
-                    if doI1
-                        values = sprintfc('I_1=%3.3g',pd.I1(:,m,ts));
-                        text(gps(1,:),gps(2,:),gps(3,:),values,'Parent',h)
-                    end
-                    %% Lambdas
-                    if doLam
-                        %values = sprintfc('\\lambda=%3.3g',pd.lambdas(:,m,ts));
-                        values = sprintfc('%3.4g',pd.lambdas(:,m,ts));
-                        text(gps(1,:),gps(2,:),gps(3,:),values,'Parent',h)
-                    end
-                    %% Mooney-Rivlin tensors
-                    if doMR
-                        values = cellfun(@(m)sprintf('%g ',diag(m)), pd.MR(:,m,ts),'UniformOutput',false);
-                        text(gps(1,:),gps(2,:),gps(3,:),values,'Parent',h)
-                    end
-                    
-                    %% Tendon-Muscle ratio
-                    if doTMR
-                        values = sprintfc('%3.4g',sys.MuscleTendonRatioGP(:,m,ts));
-                        %values = sprintfc('%3.4g',diags{:});
-                        text(gps(1,:),gps(2,:),gps(3,:),values,'Parent',h)
-                    end
+                end
+                if doStr
+                    colormap(pd.stretchcmap);
+                    colorbar('YTickLabel',pd.stretchcmaplbl);
                 end
             end
         end
@@ -340,24 +359,30 @@ classdef MusclePlotter < handle
             end
             
             %% Show invariants or lambda stretch values
-            if ~isempty(opts.Invariants) || opts.Lambdas || opts.MR
+            if ~isempty(opts.Invariants) || opts.Lambdas || opts.MR || opts.Stretch
                 nt = length(t);
+                nelem = length(opts.Elems);
                 doI1 = any(opts.Invariants == 1);
                 doLam = opts.Lambdas;
                 doMR = opts.MR;
+                doStr = opts.Stretch;
                 if doI1 || doMR
-                    pd.I1 = zeros(dfem.GaussPointsPerElem,geo.NumElements,nt);
+                    pd.I1 = zeros(dfem.GaussPointsPerElem,nelem,nt);
                 end
-                if doLam
-                    pd.lambdas = zeros(dfem.GaussPointsPerElem,geo.NumElements,nt);
+                if doLam || doStr
+                    pd.lambdas = zeros(dfem.GaussPointsPerElem,nelem,nt);
+                    if doStr
+                        pd.stretchcol = zeros(3,dfem.GaussPointsPerElem,nelem,nt);
+                    end
                 end
                 if doMR
-                    pd.MR = cell(dfem.GaussPointsPerElem,geo.NumElements,nt);
+                    pd.MR = cell(dfem.GaussPointsPerElem,nelem,nt);
                     c10 = sys.MuscleTendonParamc10;
                     c01 = sys.MuscleTendonParamc01;
                 end
                 num_gp = dfem.GaussPointsPerElem;
-                for m = 1:geo.NumElements
+                for elemidx = 1:nelem
+                    m = opts.Elems(elemidx);
                     for gp = 1:num_gp
                         pos = 3*(gp-1)+1:3*gp;
                         dtn = dfem.transgrad(:,pos,m);        
@@ -368,19 +393,40 @@ classdef MusclePlotter < handle
                             F = yts(elemidx_u) * dtn;
                             C = F'*F;
                             if doI1 || doMR
-                                pd.I1(gp,m,ts) = C(1,1)+C(2,2)+C(3,3);
+                                pd.I1(gp,elemidx,ts) = C(1,1)+C(2,2)+C(3,3);
                             end
-                            if doLam
+                            if doLam || doStr
                                 fibres = sys.a0Base(:,:,(m-1)*num_gp + gp);
-                                pd.lambdas(gp,m,ts) = norm(F*fibres(:,1));
+                                pd.lambdas(gp,elemidx,ts) = norm(F*fibres(:,1));
                             end
                             if doMR
-                                pd.MR{gp,m,ts} = sys.MooneyRivlinICConst(gp,m)*eye(3) ...
-                                    + 2*(c10(gp,m) + pd.I1(gp,m,ts)*c01(gp,m))*F ...
+                                pd.MR{gp,elemidx,ts} = sys.MooneyRivlinICConst(gp,m)*eye(3) ...
+                                    + 2*(c10(gp,m) + pd.I1(gp,elemidx,ts)*c01(gp,m))*F ...
                                     - 2*c01(gp,m)*F*C;
                             end
                         end
                     end
+                end
+                if doStr
+                    Mlam = max(pd.lambdas(:));
+                    mlam = min(pd.lambdas(:));
+                    center = (1-mlam)/(Mlam-mlam);
+                    if abs(Mlam-mlam) < 1e-8
+                        % Green for lambda=1 everywhere
+                        pd.stretchcol(2,:,:,:) = 1;
+                    else
+                        colfun = @(x)[(x>center).*((x-center)/(1-center))
+                            (x<center).*x/center + (x>=center).*(1-(x-center)/(1-center));
+                            (x<center).*(1-x/center);];
+                        for ts = 1:nt
+                            for elemidx = 1:nelem
+                                normlam = (pd.lambdas(:,elemidx,ts)-mlam) / (Mlam-mlam);
+                                pd.stretchcol(:,:,elemidx,ts) = colfun(normlam');
+                            end
+                        end
+                    end
+                    pd.stretchcmap = colfun(linspace(0,1,125))';
+                    pd.stretchcmaplbl = sprintfc('%3.3g',linspace(mlam,Mlam,12));
                 end
             end
         end
@@ -399,11 +445,13 @@ classdef MusclePlotter < handle
             i.addParamValue('DF',[]);
             i.addParamValue('NF',[]);
             i.addParamValue('F',[]);
+            i.addParamValue('Elems',1:this.Config.PosFE.Geometry.NumElements);
             i.addParamValue('Invariants',[]);
-            i.addParamValue('Lambdas',false);
+            i.addParamValue('Lambdas',false,@(v)islogical(v));
             i.addParamValue('MR',false);
-            i.addParamValue('MTRatio',false);
+            i.addParamValue('MTRatio',false,@(v)islogical(v));
             i.addParamValue('Pause',.01);
+            i.addParamValue('Stretch',false,@(v)islogical(v));
             
             args = [this.DefaultArgs args];
             i.parse(args{:});
