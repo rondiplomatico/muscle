@@ -34,11 +34,12 @@ classdef ExperimentRunner < handle
         end
         
         function [out, y, ct] = getCachedExperimentConfig(this, nr, mu)
+            m = this.Model;
             if nargin < 3
-                mu = this.Model.DefaultMu;
+                mu = m.DefaultMu;
             end
             % The cache key is param + config nr
-            key = [mu; nr];
+            key = [mu; nr; m.Geo.NumElements; m.Config.PosFE.GaussPointsPerElem];
             out = [];
             y = [];
             ct = [];
@@ -79,7 +80,7 @@ classdef ExperimentRunner < handle
                     
                     if this.cachedata
                         % The cache key is param + config nr
-                        key = [mu; nr];
+                        key = [mu; nr; m.Geo.NumElements; c.PosFE.GaussPointsPerElem];
                         data = struct('y',y,'t',t,'mu',mu,'nr',nr,'ct',ct,'out',out);
                         this.cache.addData(key,data);
                     end
@@ -192,6 +193,7 @@ classdef ExperimentRunner < handle
             if value && isempty(this.cache)
                 dir = fullfile(this.Config.OutputDir,'trajectories',this.Config.getOptionStr(false));
                 this.cache = data.FileDataCollection(dir);
+                this.cache.KeepFiles = true;
             elseif ~isempty(value) && ~value
                 this.cache = [];
             end

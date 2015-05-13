@@ -18,6 +18,8 @@ classdef SubElemInhomogMaterial < muscle.AModelConfig
             m.ODESolver.RelTol = 1e-6;
             m.ODESolver.AbsTol = 1e-3;
             m.DefaultMu(2) = 0;
+            % Rule 3 causes errors w.r.t. the orientation!
+            m.setGaussIntegrationRule(4);
         end
         
         function tmr = getTendonMuscleRatio(this, points)
@@ -26,7 +28,7 @@ classdef SubElemInhomogMaterial < muscle.AModelConfig
             %
             % This method simply returns an all-zero ratio, meaning muscle only. 
             tmr = zeros(1,size(points,2));
-%            tmr(:)=1;
+%             tmr(:)=1;
             switch this.Options.Flip
                 case 3
                     tmr(points(3,:)<.5 & points(1,:)>.5) = 1;
@@ -105,7 +107,7 @@ classdef SubElemInhomogMaterial < muscle.AModelConfig
             for fl = 1:3
                 c = SubElemInhomogMaterial('GeoNr',gn,'Flip',fl);
                 m = c.createModel;
-                m.setGaussIntegrationRule(5);
+                
                 [t,y] = m.simulate;
                 df = m.getResidualForces(t,y);
                 idx = m.getPositionDirichletBCFaceIdx(1,1+(fl-1)*2);

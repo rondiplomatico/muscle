@@ -301,6 +301,10 @@ classdef System < models.BaseDynSystem
                 % Set input function
                 this.Inputs = mc.getInputs;
 
+                %% Tendon stuff
+                % Detect of tendons are present
+                this.initMuscleTendonRatios;
+                
                 % Init fibre directions and precomputable values
                 this.inita0;
                 
@@ -340,10 +344,6 @@ classdef System < models.BaseDynSystem
 
                 %% Tell f we have a new config
                 this.f.configUpdated;
-                
-                %% Tendon stuff
-                % Detect of tendons are present
-                this.initMuscleTendonRatios;
                 
                 %% Initial value
                 this.x0 = dscomponents.ConstInitialValue(this.assembleX0);

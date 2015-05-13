@@ -278,6 +278,7 @@ classdef Model < models.BaseFullModel
             if ~isempty(nf)
                 varargin(end+1:end+2) = {'NF',nf};
             end
+            varargin(end+1:end+2) = {'Velo',true};
             % Plot without default args (time-plotting might want to
             % suppress fibres for speed, but we want them here)
             old = this.Plotter.DefaultArgs;
@@ -398,6 +399,16 @@ classdef Model < models.BaseFullModel
             mc.PosFE.GaussPointRule = value;
             mc.PressFE.GaussPointRule = value;
             this.setConfig(mc);
+            s = this.System;
+            mu = s.mu;
+            if isempty(mu)
+                mu = this.DefaultMu;
+            end
+            in = s.inputidx;
+            if isempty(in)
+                in = this.DefaultInput;
+            end
+            s.prepareSimulation(mu,in);
         end
         
         function varargout = plot(this, varargin)
