@@ -62,6 +62,8 @@ classdef ExperimentRunner < handle
                 mu = m.DefaultMu;
             end
             [out, y, ct] = this.getCachedExperimentConfig(nr, mu);
+            % Uncomment this to re-generate the output
+%             out = this.Config.getOutputOfInterest(m.Times,y);
             if isempty(out)
                 c = this.Config;
                 out = NaN(1,c.NumOutputs);

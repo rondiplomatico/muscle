@@ -31,6 +31,10 @@ classdef MuscleTendonMixPullExperiment < experiments.AExperimentModelConfig
             m.DefaultMu = mu;
         end
         
+        function configureModelFinal(this)
+            this.Model.Plotter.GeoView = [32 40];
+        end
+        
         function u = getInputs(this)
             % Ramp up the external pressure
             u{1} = this.getAlphaRamp(80,1);
@@ -62,11 +66,12 @@ classdef MuscleTendonMixPullExperiment < experiments.AExperimentModelConfig
         function o = getOutputOfInterest(this, ~, y)
             m = this.Model;
             facedof = m.getFaceDofsGlobal(this.Options.GeoNr,2,1);
+            y = m.System.includeDirichletValues(m.Times,y);
             % Get x position of one node at end as output
             o = NaN(1,this.NumOutputs);
             idx = floor(linspace(1,m.T,this.NumOutputs));
             hasdata = idx <= size(y,2);
-            o(hasdata) = y(facedof(1),idx(hasdata));
+            o(hasdata) = mean(y(facedof,idx(hasdata)),1);
         end
     end
     
@@ -101,6 +106,7 @@ classdef MuscleTendonMixPullExperiment < experiments.AExperimentModelConfig
             if nargin < 1
                 geo = 1;
             end
+            
             %% Init
             c = experiments.MuscleTendonMixPullExperiment('GeoNr',geo);
             m = c.createModel;
@@ -118,40 +124,69 @@ classdef MuscleTendonMixPullExperiment < experiments.AExperimentModelConfig
                 allo(:,:,gr) = o;
             end
             %% Save
-            save(fullfile(c.OutputDir,['output_' c.getOptionStr]),'allo','ctimes','rules');
+            save(fullfile(c.OutputDir,['output_' c.getOptionStr(false) '.mat']),'allo','ctimes','rules');
             %% Load
-%             load(fullfile(c.OutputDir,['output_' c.getOptionStr '.mat']));
+            load(fullfile(c.OutputDir,['output_' c.getOptionStr(false) '.mat']));
             
-            %% Setup
-            m.plotGeometrySetup;
             %% per-gauss-rule comparison
-            pm = PlotManager(false,1,2);
+%             pm = PlotManager(false,1,2);
+            pm = PlotManager;
+            pm.ExportDPI = 200;
             pm.LeaveOpen = true;
+            pm.FilePrefix = sprintf('geo_%d',geo);
+            
+            %% Geo setup
+            m.plotGeometrySetup(pm);
+            pm.savePlots(c.ImgDir,'Format','jpg');
+            
+            %% Plot results
             tmr = ((1:c.NumConfigurations)-1)/(c.NumConfigurations-1);
             [TMR,T] = meshgrid(tmr,...
-                    floor(linspace(1,m.T,c.NumOutputs)));  
+                    floor(linspace(1,m.T,c.NumOutputs))); 
+            pt = PrintTable;
+            pt.Caption = sprintf('Average x-Position of right face errors, config %s',c.getOptionStr);
+            pt.HasHeader = true;
+            pt.addRow('Gauss rule','Max absolute','Mean absolute','Max relative','Mean relative');
             for gr = 1:nrules
                 grule = rules(gr);
                 ax = pm.nextPlot(sprintf('gaussrule_%d',grule),...
                     sprintf('Right face position over time and tm-ratio, Gauss %d-point rule',grule),...
                     'tendon-muscle ratio [0,1]','time [ms]');
                 surfc(TMR,T,allo(:,:,gr)','Parent',ax,'FaceColor','interp');
+                view([32 38]);
                 ax = pm.nextPlot(sprintf('gaussrule_%d_err',grule),...
-                    sprintf('Gauss %d-point rule error compared to %d-point rule',grule,rules(end)),...
+                    sprintf('Gauss %d-point rule error relative to %d-point rule',grule,rules(end)),...
                     'tendon-muscle ratio [0,1]','time [ms]');
-%                 err = allo(:,:,gr)-allo(:,:,end)
-                err = abs((allo(:,:,gr)-allo(:,:,end)))./allo(:,:,end);
-                mesh(TMR,T,err','Parent',ax);
+                abserr = abs(allo(:,:,gr)-allo(:,:,end));
+                relerr = abs((allo(:,:,gr)-allo(:,:,end)))./allo(:,:,end);
+                mesh(TMR,T,relerr','Parent',ax);
+                pt.addRow(grule,max(abserr(:)),max(relerr(:)),mean(abserr(:)),mean(relerr(:)),...
+                    {'%d-point','%g','%g','%g','%g'});
             end
+            pt.print;
+            
+            %% Save images
+            pt.Format = 'tex';
+            pt.saveToFile(fullfile(c.OutputDir,['output_' c.getOptionStr(false) '.tex']));
+            pm.SaveFormats = {'jpg','png'};
+            if geo == 2
+                pm.savePlots(c.ImgDir,'Selection',11);
+            else
+                pm.savePlots(c.ImgDir,'Selection',2:2:12,'Format','pdf');
+                pm.savePlots(c.ImgDir,'Selection',1:2:11);
+            end
+            pm.closeAll;
+            
             %% End position plot
-            pm = PlotManager;
-            pm.LeaveOpen = true;
-            ax = pm.nextPlot('endpos','Comparison of end-positions over TMR and gauss rules',...
+            ax = pm.nextPlot('endpos','Comparison of face positions over TMR and gauss rules',...
                 'tendon-muscle ratio [0,1]','gauss integration rule [points]');
             [TMR,GR] = meshgrid(tmr,1:nrules);
             surfc(TMR,GR,squeeze(allo(:,end,:))','Parent',ax,'FaceColor','interp');
             pm.done;
             set(ax,'YTickLabel',sprintfc('%d',rules),'YTick',1:nrules);
+            zlabel('Mean x-position')
+            view([34 34]);
+            pm.savePlots(c.ImgDir);
         end
     end
     
