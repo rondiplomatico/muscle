@@ -187,8 +187,8 @@ classdef MusclePlotter < handle
                 residuals = pd.residuals;
                 have_residuals = pd.have_residuals;
                 udir = u(:,have_residuals);
-                %residuals(pd.residuals_pos) = pd.DF(pd.sortidx,ts)/pd.maxdfval;
-                residuals(pd.residuals_pos) = pd.DF(:,ts)/pd.maxdfval;
+                residuals(pd.residuals_pos) = pd.DF(pd.sortidx,ts)/pd.maxdfval;
+                %residuals(pd.residuals_pos) = pd.DF(:,ts)/pd.maxdfval;
                 quiver3(h,udir(1,:),udir(2,:),udir(3,:),...
                     residuals(1,have_residuals),residuals(2,have_residuals),...
                     residuals(3,have_residuals),1,'k', 'MarkerSize',14);
