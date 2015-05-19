@@ -2,41 +2,56 @@ classdef AFunGen < handle
     %AFUNGEN Summary of this class goes here
     %   Detailed explanation goes here
     
+    properties
+        xLabel = 't [ms]';
+        yLabel = 'value';
+    end
+    
     methods
-        function pm = plot(this, range, varargin)
-            if nargin < 2
-                range = 0:.1:1000;
-            elseif length(range) == 2
-                range = linspace(range(1),range(2),2000);
-            end
-            
+        function pm = plot(this, varargin)
             [f, df] = this.getFunction;
             args = {};
-            
             if ~isempty(df)
                 args = {false, 1, 2};
             end
-            pm = [];
-            if ~isempty(varargin) && all(ishandle(varargin{1}))    
-                ax = varargin{1};
-                varargin(1) = [];
-                hold(ax(1),'on');
-                plot(ax(1),range,f(range),varargin{:});
-                hold(ax(2),'on');
-                plot(ax(2),range,f(range),varargin{:});
+            pm = PlotManager(args{:});
+            pm.UseFileTypeFolders = false;
+            pm.LeaveOpen = true;
+            
+            i = inputParser;
+            i.KeepUnmatched = true;
+            i.addParamValue('PM',pm,@(v)isa(v,'PlotManager'));
+            i.addParamValue('R',0:.1:1000);
+            i.addParamValue('P',{});
+            i.addParamValue('AX',[],@(v)all(ishandle(v)));
+            i.parse(varargin{:});
+            res = i.Results;
+            pm = res.PM;
+            if length(res.R) == 2
+                range = linspace(res.R(1),res.R(2),2000);
             else
-                pm = PlotManager(args{:});
-                pm.UseFileTypeFolders = false;
-                pm.LeaveOpen = true;
+                range = res.R;
+            end
+            
+            if ~isempty(res.AX)
+                hold(res.AX(1),'on');
+                plot(res.AX(1),range,f(range),varargin{:});
+                hold(res.AX(2),'on');
+                plot(res.AX(2),range,f(range),varargin{:});
+            else
                 mc = metaclass(this);
-                ax = pm.nextPlot(mc.Name,sprintf('Plot of %s\n%s',mc.Name,this.getConfigStr),'t [ms]','value');
-                plot(ax,range,f(range),varargin{:});
+                ax = pm.nextPlot(mc.Name,...
+                    sprintf('Plot of %s\n%s',mc.Name,this.getConfigStr),...
+                    this.xLabel,this.yLabel);
+                plot(ax,range,f(range),res.P{:});
                 if ~isempty(df)
-                    ax = pm.nextPlot(mc.Name,sprintf('Plot of %s-derivative\n%s',mc.Name,this.getConfigStr),'t [ms]','value');
-                    plot(ax,range,df(range),varargin{:});
+                    ax = pm.nextPlot([mc.Name '_deriv'],...
+                        sprintf('Plot of %s-derivative\n%s',mc.Name,this.getConfigStr),...
+                    this.xLabel,[this.yLabel '/' this.xLabel]);
+                    plot(ax,range,df(range),res.P{:});
                 end
             end
-            if ~isempty(pm)
+            if nargout > 0
                 pm.done;
             end
         end

@@ -33,17 +33,26 @@ classdef CubicToLinear < tools.AFunGen
             str = sprintf('lam0: %g, M: %g',this.lam0,this.M);
         end
         
-        function plot(this, range, varargin)
-            if nargin < 2
-                range = [1 1.2*this.lam0];
-            end
-            plot@tools.AFunGen(this, range, varargin{:});
-            if (range(2) > this.lam0)
-                f = this.getFunction;
-                ax = get(gcf,'Children');
-                ax = ax(2); % second one is the left one - hope this is reproducible
-                hold(ax,'on');
-                plot(ax,this.lam0,f(this.lam0),'rx','MarkerSize',16);
+        function pm = plot(this, varargin)
+            % @fixme
+            i = inputParser;
+            i.KeepUnmatched = true;
+            i.addParamValue('R',[1 1.2*this.lam0]);
+            i.parse(varargin{:});
+            res = i.Results;
+            pm = plot@tools.AFunGen(this, varargin{:});
+            if (res.R(2) > this.lam0)
+                mc = metaclass(this);
+                for k = 1:length(pm.Figures)
+                    if ishandle(pm.Figures(k)) && strcmpi(get(pm.Figures(k),'Tag'),...
+                            strrep(mc.Name,'.','_'))
+                        f = this.getFunction;
+                        ax = get(pm.Figures(k),'Children');
+                        hold(ax(1),'on');
+                        plot(ax(1),this.lam0,f(this.lam0),'rx','MarkerSize',16);
+                        break;
+                    end
+                end
             end
         end
     end

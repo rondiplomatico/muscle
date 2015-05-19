@@ -18,6 +18,8 @@ classdef MarkertLawOriginal < tools.AFunGen
             end
             this.b = b;
             this.d = d;
+            this.xLabel = '\lambda [-]';
+            this.yLabel = 'Pressure [MPa]';
         end
         
         function [fhandle, dfhandle, fbdhandle, dfbdhandle] = getFunction(this)
