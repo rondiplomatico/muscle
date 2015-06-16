@@ -18,8 +18,6 @@ classdef SubElemInhomogMaterial < muscle.AModelConfig
             m.ODESolver.RelTol = 1e-6;
             m.ODESolver.AbsTol = 1e-3;
             m.DefaultMu(2) = 0;
-            % Rule 3 causes errors w.r.t. the orientation!
-            m.setGaussIntegrationRule(4);
         end
         
         function tmr = getTendonMuscleRatio(this, points)
@@ -56,6 +54,7 @@ classdef SubElemInhomogMaterial < muscle.AModelConfig
                 otherwise
                     [pts, cubes] = geometry.Cube8Node.DemoGrid(xr,[0 1],[0 1]);
             end
+            %pts(1,:) = pts(1,:)-.5;
             geo = geometry.Cube8Node(pts, cubes);
             geo = geo.toCube27Node;
         end
@@ -102,12 +101,13 @@ classdef SubElemInhomogMaterial < muscle.AModelConfig
             if nargin < 1
                 gn = 3;
             end
+            %% 
             v = zeros(3,1);
             o = ones(3,1);
             for fl = 1:3
                 c = SubElemInhomogMaterial('GeoNr',gn,'Flip',fl);
                 m = c.createModel;
-                
+                %m.setGaussIntegrationRule(6);
                 [t,y] = m.simulate;
                 df = m.getResidualForces(t,y);
                 idx = m.getPositionDirichletBCFaceIdx(1,1+(fl-1)*2);

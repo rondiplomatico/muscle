@@ -220,7 +220,11 @@ classdef MuscleTendonMixPullExperiment < experiments.AExperimentModelConfig
             %% Geo setup plots
             pm.NoTitlesOnSave = true;
             conf = [1 5 10];
-            rule = [3 7 20];
+            if geo == 3
+                rule = rules;
+            else
+                rule = [3 7 20];
+            end
             for k = 1:3
                 for r = 1:3
                     m.setGaussIntegrationRule(rule(r));
