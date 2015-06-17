@@ -1,5 +1,10 @@
-function duvw  = evaluateCoreFun(this, uvwdof, t)
-    this.nfevals = this.nfevals+1;
+function dvw = Kg(this, uvw_full, t, fibreforces)
+    % Evaluates the stiffness operator K(u,v,w) and the algebraic
+    % constraint operator g(u)
+    % The evaluate method takes care of the second-to-first order
+    % system conversion
+    %
+    % See also: evaluate
     sys = this.System;
     mc = sys.Model.Config;
     fe_pos = mc.PosFE;
@@ -11,7 +16,6 @@ function duvw  = evaluateCoreFun(this, uvwdof, t)
     unassembled = this.ComputeUnassembled;
 
     num_u_glob = geo.NumNodes*3;
-    num_v_glob = num_u_glob;
 
     % Cache variables instead of accessing them via this. in loops
     Pmax = this.mu(13);
@@ -45,7 +49,7 @@ function duvw  = evaluateCoreFun(this, uvwdof, t)
             if sys.HasMotoPool
                 FibreForces = mc.Pool.getActivation(t);
             elseif sys.HasForceArgument
-                FibreForces = uvwdof(sys.num_uvp_dof+1:end);
+                FibreForces = fibreforces;
             else
                 FibreForces = ones(size(fibretypeweights,2),1)*this.alpha(t);
             end
@@ -54,35 +58,24 @@ function duvw  = evaluateCoreFun(this, uvwdof, t)
             alphaconst = this.alpha(t);
         end
     end
-
-    % Include dirichlet values to state vector
-    uvwcomplete = zeros(2*num_u_glob + pgeo.NumNodes,1);
-    uvwcomplete(sys.idx_uv_dof_glob) = uvwdof(1:sys.num_uvp_dof);
-    uvwcomplete(sys.idx_uv_bc_glob) = sys.val_uv_bc_glob;
-    % Check if velocity bc's should be applied time-dependent
-    if ~isempty(this.velo_bc_fun)
-        uvwcomplete(sys.idx_v_bc_glob) = ...
-            this.velo_bc_fun(t)*uvwcomplete(sys.idx_v_bc_glob);
-    end
-    
+ 
     dofsperelem_u = geo.DofsPerElement;
     dofsperelem_p = pgeo.DofsPerElement;
     num_gp = fe_pos.GaussPointsPerElem;
     num_elements = geo.NumElements;
 
-    % Init result vector duvw
+    % Init result vector dvw
     if unassembled
+        error('TODO fixme since separation of evaluateCoreFun into evaluate and Kg');
         % dofs_pos for u', elems*3*dofperelem for v',
         % elems*dofsperelem_press for p'
-        duvw = zeros(this.num_uvp_dof_unass,1);
-        % Set u' = v
-        duvw(1:num_u_glob) = uvwcomplete(num_u_glob + (1:num_v_glob));
-        unass_offset_dvelo = num_u_glob;
-        unass_offset_dpressure = unass_offset_dvelo + num_elements*3*dofsperelem_u;
+        dvw = zeros(this.num_uvp_dof_unass,1);%#ok
+        
+        unass_offset_dvelo = num_u_glob;%#ok
+        unass_offset_dpressure = unass_offset_dvelo + num_elements*3*dofsperelem_u;%#ok
     else
-        duvw = zeros(size(uvwcomplete));
-        % Set u' = v
-        duvw(1:num_u_glob) = uvwcomplete(num_u_glob + (1:num_v_glob));
+        % Dont have u' in result vector (see evaluate method)
+        dvw = zeros(size(uvw_full,1)-num_u_glob,1);
     end
     
     for m = 1:num_elements
@@ -90,8 +83,8 @@ function duvw  = evaluateCoreFun(this, uvwdof, t)
         elemidx_v = num_u_glob + elemidx_u; % num_u_glob next ones are all v
         elemidx_p = elem_idx_p_glob(:,m);
         
-        u = uvwcomplete(elemidx_u);
-        w = uvwcomplete(elemidx_p);
+        u = uvw_full(elemidx_u);
+        w = uvw_full(elemidx_p);
         
         if havefibretypes 
             ftwelem = fibretypeweights(:,:,m)*FibreForces;
@@ -178,16 +171,15 @@ function duvw  = evaluateCoreFun(this, uvwdof, t)
                 if ~isempty(ldotpos)
                     k = find(ldotpos(1,:) == m & ldotpos(2,:) == gp);
                     if ~isempty(k)
-                        Fdot = uvwcomplete(elemidx_v) * dtn;
+                        Fdot = uvw_full(elemidx_v) * dtn;
                         this.lambda_dot(k) = (F*fibres(:,1))'*(Fdot*fibres(:,1))/lambdaf;
                     end
                 end
             end
             
            %%  Viscosity - currently modeled as extra A linear system
-%             component
 %             if visc > 0
-%                 v = uvwcomplete(elemidx_velo);
+%                 v = uvw_full(elemidx_v);
 %                 P = P + visc * v * dtn;
 %             end
 
@@ -203,30 +195,23 @@ function duvw  = evaluateCoreFun(this, uvwdof, t)
         % Unassembled or assembled?
         if unassembled
             pos = unass_offset_dvelo + (1:3*dofsperelem_u) + (m-1) * 3 * dofsperelem_u;
-            duvw(pos) = -integrand_u(:);
+            dvw(pos) = -integrand_u(:);
             pos = unass_offset_dpressure + (1:dofsperelem_p) + (m-1) * dofsperelem_p;
-            duvw(pos) = integrand_p(:);
+            dvw(pos) = integrand_p(:);
         else
+            % This operator does only give the change of v and the
+            % algebraic side constraints. Hence, the resulting dvw vector
+            % does not contain the change of u in the first num_u_glob
+            % entries.
+            elemidx_v_out = elemidx_v - num_u_glob;
+            elemidx_p_out = elemidx_p - num_u_glob;
             % We have v' + K(u) = 0, so the values of K(u) must be
             % written at the according locations of v', i.e. elemidx_velo
             %
             % Have MINUS here as the equation satisfies Mu'' + K(u,w) =
             % 0, but KerMor implements Mu'' = -K(u,w)
-            duvw(elemidx_v) = duvw(elemidx_v) - integrand_u;
-            duvw(elemidx_p) = duvw(elemidx_p) + integrand_p;
+            dvw(elemidx_v_out) = dvw(elemidx_v_out) - integrand_u;
+            dvw(elemidx_p_out) = dvw(elemidx_p_out) + integrand_p;
         end
     end % end of element loop
-    
-    if unassembled
-        duvw(this.idx_uv_bc_glob_unass) = [];
-    else
-        %% Save & remove values at dirichlet pos/velo nodes
-        this.LastBCResiduals = duvw([sys.idx_u_bc_glob+num_u_glob; sys.idx_v_bc_glob]);
-        duvw(sys.idx_uv_bc_glob) = [];
-        
-        %% If direct mass matrix inversion is used
-        if this.usemassinv
-            duvw(sys.idx_v_dof_glob) = sys.Minv * duvw(sys.idx_v_dof_glob);
-        end
-    end
 end

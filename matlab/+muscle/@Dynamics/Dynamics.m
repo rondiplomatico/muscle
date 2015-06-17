@@ -137,6 +137,10 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             this.crossfibres = sys.HasFibres && sys.UseCrossFibreStiffness;
         end
         
+        function fx = evaluateCoreFun(this, x, t)
+            error('Do not call directly; have custom evaluate method.');
+        end
+        
         function fx = evaluateComponentSet(this, nr, x, t)
             % Computes the full or reduced component functions of the given point set.
             %
