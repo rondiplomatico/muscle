@@ -19,9 +19,10 @@ function duvw  = evaluate(this, uvwdof, t)
     num_u_glob = geo.NumNodes*3;
     num_v_glob = num_u_glob;
     
-%     if ~isempty(this.V)
-%         x = this.V*x;
-%     end
+    % If we evaluate inside a projected (reduced) model, reconstruct 
+    if ~isempty(this.V)
+        uvwdof = this.V*uvwdof;
+    end
 
     %% Include dirichlet values to state vector
     uvwcomplete = zeros(2*num_u_glob + pgeo.NumNodes,1);
@@ -63,8 +64,8 @@ function duvw  = evaluate(this, uvwdof, t)
         end
     end
     
-%     if ~isempty(this.V)
-%         fx = this.W'*fx;
-%     end
+    if ~isempty(this.W)
+        duvw = this.W'*duvw;
+    end
     
 end
