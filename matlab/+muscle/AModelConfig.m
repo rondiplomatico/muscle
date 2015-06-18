@@ -105,8 +105,9 @@ classdef AModelConfig < handle
             % Automatically set the reducable dimensions for u,v
             % separately.
             m = this.Model;
+            m.SpaceReducer(1).Value = m.System.num_uvp_dof;
+            m.SpaceReducer(1).TargetDimensions = 1:m.System.num_u_dof;
             if length(m.SpaceReducer) == 2
-                m.SpaceReducer(1).TargetDimensions = 1:m.System.num_u_dof;
                 m.SpaceReducer(2).TargetDimensions = m.System.num_u_dof + (1:m.System.num_v_dof);
             end
         end

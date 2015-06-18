@@ -208,6 +208,15 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % constructor.
         end
         
+%         function copy = project(this, V, W)
+%             m = this.System.Model;
+%             effsize = m.Data.ProjectionSpaces(1).LastEffectiveSize;
+%             dim = m.Data.ProjectionSpaces(1).Size;
+%             V((dim+1):2*dim,(effsize+1):2*effsize) = V(1:dim,1:effsize);
+%             W = V;
+%             copy = project@dscomponents.ACompEvalCoreFun(this, V, W);
+%         end
+        
         function set.ComputeUnassembled(this, value)
             if value && ~isempty(this.num_uvp_dof_unass)%#ok
                 this.fDim = this.num_uvp_dof_unass;%#ok

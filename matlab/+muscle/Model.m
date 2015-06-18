@@ -8,6 +8,11 @@ classdef Model < models.BaseFullModel
     %
     % @author Daniel Wirtz @date 2012-11-22
     
+    
+    properties(Constant)
+        ProjectionFirst = true;
+    end
+    
     properties
         MuscleDensity = 1.1e-3; % [g/mm³] (1100kg/m³)
         
@@ -65,9 +70,11 @@ classdef Model < models.BaseFullModel
             % If you assign a new SpaceReducer instance, dont forget to set
             % the TargetDimensions property accordingly (is now
             % automatically set within the configureModel base routine)
-            s = spacereduction.PODGreedy;
-            s.Eps = 1e-9;
-            s.MaxSubspaceSize = 500;
+            %s = spacereduction.PODGreedy;
+            %s.Eps = 1e-9;
+            %s.MaxSubspaceSize = 500;
+            s = spacereduction.PODReducer;
+            s.Mode = 'abs';
             this.SpaceReducer = s;
             
             % Call the config-specific model configuration
@@ -409,6 +416,15 @@ classdef Model < models.BaseFullModel
                 in = this.DefaultInput;
             end
             s.prepareSimulation(mu,in);
+        end
+        
+        function off3_computeReducedSpace(this)
+            off3_computeReducedSpace@models.BaseFullModel(this);
+            if this.ProjectionFirst
+                sp = this.Data.ProjectionSpaces(1);
+                td = this.System.num_u_dof + (1:this.System.num_v_dof);
+                this.Data.addProjectionSpace(sp.V,sp.W,td);
+            end
         end
         
         function varargout = plot(this, varargin)
