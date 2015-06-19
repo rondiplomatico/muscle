@@ -42,10 +42,10 @@ classdef Debug < muscle.AModelConfig
             
             switch this.Options.Version
                 case {4,5,6}
-                    this.VelocityBCTimeFun = tools.ConstantUntil(10);
+                    this.VelocityBCTimeFun = tools.ConstantUntil(15);
                     this.Options.FL = 2;
                 case {7,8,9}
-                    this.VelocityBCTimeFun = tools.ConstantUntil(10);
+                    this.VelocityBCTimeFun = tools.ConstantUntil(15);
                 case 14
                     % Use classical FL function with fl(1)=1
                     this.Options.FL = 3;
@@ -56,16 +56,17 @@ classdef Debug < muscle.AModelConfig
             configureModel@muscle.AModelConfig(this, m);
             sys = m.System;
 %             f = sys.f;
-            m.T = 400;
-            m.dt = 1;
-            m.ODESolver.RelTol = 1e-6;
-            m.ODESolver.AbsTol = 1e-6;
+            m.T = 100;
+            m.ODESolver.RelTol = 1e-5;
+            m.ODESolver.AbsTol = 1e-3;
             switch this.Options.Version
             case 1
                 m.DefaultMu(2) = -1;
             case 2
                 m.DefaultMu(1:2) = [1; m.T/2];
             case 3
+                m.T = 400;
+                m.dt = 1;
                 types = [0 .2 .4 .6 .8 1];
                 fe = this.PosFE;
                 geo = fe.Geometry;
@@ -100,20 +101,28 @@ classdef Debug < muscle.AModelConfig
                 m.DefaultMu(13) = .300; % [MPa]
                 % lambda_ofl_calculation
                 m.DefaultMu(14) = 1.4; % [-]
+                m.T = 20;
+                m.dt = .25;
             case {7,8,9}
                 %% Using the Material configuration of Heidlauf
                 m.DefaultMu(5) = 0.00355439810963035e-3; % b1 [MPa]
                 m.DefaultMu(6) = 12.660539325481963; % d1 [-]
                 m.DefaultMu(9) = 6.352e-13; % c10 [MPa]
                 m.DefaultMu(10) = 3.627e-3; % c01 [MPa]
+                m.T = 50;
+                m.dt = .5;
             case 10
-%                 m.ODESolver.RelTol = .001;
-%                 m.ODESolver.AbsTol = .03;
+                m.ODESolver.RelTol = .001;
+                m.ODESolver.AbsTol = .03;
                 m.DefaultMu(1:3) = [0;0;1];
                 m.DefaultInput = 1;
+                m.T = 1;
+                m.dt = .01;
             case 11
                 m.ODESolver.RelTol = .001;
                 m.ODESolver.AbsTol = .05;
+                m.T = 10;
+                m.dt = .05;
             case 12
                 m.DefaultMu(1:2) = [.1; 50];
                 m.System.UseCrossFibreStiffness = true;
@@ -184,7 +193,7 @@ classdef Debug < muscle.AModelConfig
             
             case {4,5,6}
                 velo_dir(1,geo.Elements(1,geo.MasterFaces(2,:))) = true;
-                velo_dir_val(velo_dir) = .05;
+                velo_dir_val(velo_dir) = .01;
             case {7,8,9}
                 velo_dir(1,geo.Elements(1,geo.MasterFaces(2,:))) = true;
                 velo_dir_val(velo_dir) = .04;
