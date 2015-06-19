@@ -50,6 +50,8 @@ classdef System < models.BaseDynSystem
        bool_v_bc_nodes;
        idx_v_bc_glob;
        val_v_bc; % [mm/ms]
+       % Positions of velocity-bc affected DoFs in the u dofs
+       idx_v_bc_u_dof;
               
        bc_neum_forces_nodeidx; % [N]
        bc_neum_forces_val;
@@ -66,6 +68,7 @@ classdef System < models.BaseDynSystem
        num_u_dof;
        idx_v_dof_glob;
        num_v_dof;
+       num_v_bc;
        idx_p_dof_glob;
        num_p_dof;
        
@@ -573,6 +576,7 @@ classdef System < models.BaseDynSystem
             this.bool_v_bc_nodes = velo_dir;
             this.idx_v_bc_glob = int32(num_u_glob + find(velo_dir(:)));
             this.val_v_bc = velo_dir_val(velo_dir);
+            this.num_v_bc = length(this.val_v_bc);
             
             % Compile the global dirichlet values index and value vectors.
             % Here we add zero velocities for each point with fixed position, too.
@@ -593,6 +597,12 @@ classdef System < models.BaseDynSystem
             pos(this.idx_uv_bc_glob) = [];
             this.idx_v_dof_glob = int32(find(pos));
             this.num_v_dof = length(this.idx_v_dof_glob);
+            
+            pos = false(1,total);
+            pos(this.idx_v_bc_glob-num_u_glob) = true;
+            pos(this.idx_u_bc_glob) = [];
+            this.idx_v_bc_u_dof = int32(find(pos));
+            
             
             % no possible dirichlet values for p. so have all
             this.idx_p_dof_glob = geo.NumNodes*6-length(this.idx_uv_bc_glob) + (1:pgeo.NumNodes);

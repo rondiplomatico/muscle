@@ -8,11 +8,6 @@ classdef Model < models.BaseFullModel
     %
     % @author Daniel Wirtz @date 2012-11-22
     
-    
-    properties(Constant)
-        ProjectionFirst = true;
-    end
-    
     properties
         MuscleDensity = 1.1e-3; % [g/mm³] (1100kg/m³)
         
@@ -420,11 +415,28 @@ classdef Model < models.BaseFullModel
         
         function off3_computeReducedSpace(this)
             off3_computeReducedSpace@models.BaseFullModel(this);
-            if this.ProjectionFirst
-                sp = this.Data.ProjectionSpaces(1);
-                td = this.System.num_u_dof + (1:this.System.num_v_dof);
-                this.Data.addProjectionSpace(sp.V,sp.W,td);
+            % The paradigm "project first, then transform the second order
+            % to first order has the effect of having only one projection
+            % space for u, which is also used as ansatz space for v.
+            %
+            % Therefore, we simply re-add the existing projection space for
+            % u as projection space for v.
+            s = this.System;
+            sp = this.Data.ProjectionSpaces(1);
+            if sp.Dimensions ~= s.num_v_dof
+                error(['Somethings wrong! The reduced space size for u must equal the size of'...
+                'v dofs, as velocity BCs are excluded from reduction!']);
             end
+            % Care must be taken with (possible) velocity boundary
+            % conditions; they result in dofs in u but no dofs in v. We
+            % choose not to reduce those velocity boundary condition dofs
+            % (as they are few) and carry them through to the reduced
+            % systems as separate dofs by identity projection.
+            % This means the effective projection space for u is smaller
+            % than the number of u dofs and matches the number of v dofs.
+            % This is why we can simply use the V,W matrices from u for v,
+            % too.
+            this.Data.addProjectionSpace(sp.V,sp.W,(1:s.num_v_dof) + s.num_u_dof);
         end
         
         function varargout = plot(this, varargin)

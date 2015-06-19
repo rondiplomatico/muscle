@@ -39,6 +39,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         lambda_dot;
         
         nfibres;
+        reduced_space_size;
     end
     
     properties(Transient, SetAccess=private)
@@ -208,14 +209,15 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % constructor.
         end
         
-%         function copy = project(this, V, W)
-%             m = this.System.Model;
-%             effsize = m.Data.ProjectionSpaces(1).LastEffectiveSize;
-%             dim = m.Data.ProjectionSpaces(1).Size;
-%             V((dim+1):2*dim,(effsize+1):2*effsize) = V(1:dim,1:effsize);
-%             W = V;
-%             copy = project@dscomponents.ACompEvalCoreFun(this, V, W);
-%         end
+        function copy = project(this, V, W)
+             m = this.System.Model;
+             copy = project@dscomponents.ACompEvalCoreFun(this, V, W);
+             % Usually we'd go ahead and use the size of V; but the 
+             % projection is done before order transformation and hence we
+             % need the size of the projection space of the u (or v)
+             % submatrix.
+             copy.reduced_space_size = m.Data.ProjectionSpaces(1).LastEffectiveSize;
+         end
         
         function set.ComputeUnassembled(this, value)
             if value && ~isempty(this.num_uvp_dof_unass)%#ok

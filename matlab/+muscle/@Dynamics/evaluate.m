@@ -23,17 +23,25 @@ function duvw  = evaluate(this, uvwdof, t)
     
     % If we evaluate inside a projected (reduced) model, reconstruct 
     if isproj
-        % If projection is done before transformation to the first order
-        % system, we can simply forward the coefficients for reduced v to
-        % the coefficients for reduced u!
-        if m.ProjectionFirst
-            effsize = m.Data.ProjectionSpaces(1).LastEffectiveSize;
-            
-            duvw = zeros(size(uvwdof));
-            duvw(1:effsize) = uvwdof((effsize+1):2*effsize);
+        effsize_reduced_u_dofs = this.reduced_space_size;
+
+        % Set z'=w directly
+        duvw = zeros(size(uvwdof));
+        hlp = 2*effsize_reduced_u_dofs;
+        duvw(1:effsize_reduced_u_dofs) = ...
+            uvwdof((effsize_reduced_u_dofs+1):hlp);
+        
+        % Include velocity boundary conditions - they are not-projected
+        % dofs coming just after the actual effsize_reduced_u_dofs.
+        if sys.num_v_bc > 0
+            velo_bc = sys.val_v_bc;
+            if ~isempty(this.velo_bc_fun)
+                velo_bc = this.velo_bc_fun(t)*velo_bc;
+            end
+            duvw(hlp+(1:sys.num_v_bc)) = velo_bc;
         end
         
-        % In any case: reconstruct full uvw dof vector, as the K operator
+        % Then: reconstruct full uvw dof vector, as the K operator
         % might need u,v,w quantities
         uvwdof = this.V*uvwdof;
     end
@@ -50,7 +58,7 @@ function duvw  = evaluate(this, uvwdof, t)
             this.velo_bc_fun(t)*uvwcomplete(sys.idx_v_bc_glob);
     end
     
-    if ~(isproj && m.ProjectionFirst)
+    if ~isproj
         % Init result vector duvw
         if unassembled
             % dofs_pos for u', elems*3*dofperelem for v',
@@ -68,7 +76,22 @@ function duvw  = evaluate(this, uvwdof, t)
     % This is the main FEM-loop
     dvw = this.Kg(uvwcomplete,t);
     
-    if ~(isproj && m.ProjectionFirst)
+    if isproj
+        % Kick out dirichlet values from full state space vector of Kg part
+        bc_idx = sys.idx_u_bc_glob;
+        if ~isempty(sys.idx_v_bc_glob)
+            bc_idx = [bc_idx; sys.idx_v_bc_glob-num_u_glob];
+        end
+        dvw(bc_idx) = [];
+        
+        % Compute the position of the Kg-dof part within the current
+        % reduced space
+        red_pos = (effsize_reduced_u_dofs+1):size(this.W,2);
+        if sys.num_v_bc > 0
+            red_pos(effsize_reduced_u_dofs+(1:sys.num_v_bc)) = [];
+        end
+        duvw(red_pos) = this.W((sys.num_u_dof+1):end,red_pos)'*dvw;
+    else
         duvw((num_u_glob+1):end) = dvw;
         
         %% Remove dirichlet boundary condition values
@@ -85,15 +108,4 @@ function duvw  = evaluate(this, uvwdof, t)
             end
         end
     end
-
-    if isproj
-        if m.ProjectionFirst
-            dvw(sys.idx_u_bc_glob) = [];
-            Wpart = this.W((sys.num_u_dof+1):end,(effsize+1):end);
-            duvw((effsize+1):end) = Wpart'*dvw;
-        else
-            duvw = this.W'*duvw;
-        end
-    end
-    
 end

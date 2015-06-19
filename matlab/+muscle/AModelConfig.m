@@ -105,11 +105,11 @@ classdef AModelConfig < handle
             % Automatically set the reducable dimensions for u,v
             % separately.
             m = this.Model;
-            m.SpaceReducer(1).Value = m.System.num_uvp_dof;
-            m.SpaceReducer(1).TargetDimensions = 1:m.System.num_u_dof;
-            if length(m.SpaceReducer) == 2
-                m.SpaceReducer(2).TargetDimensions = m.System.num_u_dof + (1:m.System.num_v_dof);
-            end
+            s = m.System;
+            targetd = 1:s.num_u_dof;
+            % Dont reduce those dofs subject to velocity BCs!
+            targetd(s.idx_v_bc_u_dof) = [];
+            m.SpaceReducer.TargetDimensions = targetd;
         end
         
         function prepareSimulation(this, mu, inputidx)

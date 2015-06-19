@@ -129,6 +129,13 @@ classdef Debug < muscle.AModelConfig
             end
         end
         
+        function configureModelFinal(this)
+            configureModelFinal@muscle.AModelConfig(this)
+            m = this.Model;
+            % Have the PODReducer always generate the full reduced model
+            m.SpaceReducer.Value = length(m.SpaceReducer.TargetDimensions);
+        end
+        
         function P = getBoundaryPressure(this, elemidx, faceidx)
             % Determines the neumann forces on the boundary.
             %
