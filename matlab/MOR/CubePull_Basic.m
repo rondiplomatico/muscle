@@ -1,3 +1,5 @@
+clear classes;
+
 %% Init
 m = muscle.Model(CubePull);
 %m.EnableTrajectoryCaching = true;
@@ -5,18 +7,25 @@ m = muscle.Model(CubePull);
 %m.ComputeParallel = true;
 %m.Data.useFileTrajectoryData;
 
-forces = linspace(-.3,.5,5);
+forces = linspace(-.1,.5,5);
 m.Sampler = sampling.ManualSampler(forces);
 % This causes the 3rd param to be used as training param
 m.TrainingParams = 3;
 m.TrainingInputs = 1;
 
+d = approx.DEIM(m.System);
+d.MaxOrder = m.System.num_u_dof;
+m.Approx = d;
+
 %% Crunch
 m.offlineGenerations;
-r = m.buildReducedModel(500);
 
+%%
+r = m.buildReducedModel(368);
+
+%%
 mu = m.DefaultMu;
-mu(3) = -.15; %new param!
+mu(3) = .15; %new param!
 [t,y] = m.simulate(mu,1);
 [t,yr] = r.simulate(mu,1);
 norm(y-yr)/norm(y)

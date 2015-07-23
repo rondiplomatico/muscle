@@ -11,30 +11,15 @@ classdef CubePull < muscle.AModelConfig
             configureModel@muscle.AModelConfig(this, m);
             m.T = 150;
             m.dt = .5;
-            m.DefaultMu(1) = .1;
+            m.DefaultMu(1) = .5;
             m.DefaultInput = 1;
-            %os = m.ODESolver;
-            %os.RelTol = .0001;
-            %os.AbsTol = .05;
-            
-            % Set up two reducers for u,v.
-            % The value will be set later when the geometry is completely
-            % computed (configureModelFinal below)
-            s = spacereduction.PODReducer;
-            s.Mode = 'abs';
-            m.SpaceReducer = s;
-            s = spacereduction.PODReducer;
-            s.Mode = 'abs';
-            m.SpaceReducer(2) = s;
         end
         
         function configureModelFinal(this)
             % Set desired reduction to full state space dimension by
             % default
             m = this.Model;
-            dim = m.System.StateSpaceDimension;
-            m.SpaceReducer(1).Value = dim;
-            m.SpaceReducer(2).Value = dim;
+            m.SpaceReducer.Value = m.System.num_u_dof;
             configureModelFinal@muscle.AModelConfig(this);
         end
         
@@ -78,6 +63,15 @@ classdef CubePull < muscle.AModelConfig
         function anull = seta0(~, anull)
            % Direction is xz
            %anull([1 3],:,:) = 1;
+        end
+    end
+    
+    methods(Static)
+        function test_CubePull
+            m = muscle.Model(CubePull);
+            mu = m.getRandomParam;
+            mu(3) = .1;
+            m.simulateAndPlot(true,mu,1);
         end
     end
 end

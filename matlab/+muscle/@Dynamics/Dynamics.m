@@ -151,12 +151,8 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % t: The corresponding times `t` for the state `\vx` @type double
             %
             % See also: PointSet
-            if ~isempty(this.V)
-                fx = this.evaluate(this.V*x,t);
-            else
-                fx = this.evaluate(x,t);
-            end
-            fx = fx(this.PointSets{nr},:);
+            fx = this.evaluate(x,t);
+            fx = this.V(this.PointSets{nr},:)*fx;
         end
         
         function fx = evaluateComponentSetMulti(this, nr, x, t, mu)
