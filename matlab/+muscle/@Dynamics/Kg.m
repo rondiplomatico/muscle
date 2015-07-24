@@ -69,7 +69,7 @@ function dvw = Kg(this, uvw_full, t, fibreforces)
         error('TODO fixme since separation of evaluateCoreFun into evaluate and Kg');
         % dofs_pos for u', elems*3*dofperelem for v',
         % elems*dofsperelem_press for p'
-        dvw = zeros(this.num_uvp_dof_unass,1);%#ok
+        dvw = zeros(this.NumTotalDofs_unass,1);%#ok
         
         unass_offset_dvelo = num_u_glob;%#ok
         unass_offset_dpressure = unass_offset_dvelo + num_elements*3*dofsperelem_u;%#ok

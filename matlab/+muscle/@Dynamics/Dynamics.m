@@ -18,7 +18,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         Sigma;
         % The indices of any dirichlet value in the unassembled vector duvw
         idx_uv_bc_glob_unass;
-        num_uvp_dof_unass;
+        NumTotalDofs_unass;
         idx_vp_dof_unass_elems;
         
         ForceLengthFun;
@@ -45,7 +45,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     properties(Transient, SetAccess=private)
         % Prepared arguments for APExpansion
         %         muprep;
-        
         LastBCResiduals;
         
         nfevals;
@@ -58,6 +57,11 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         % simulations. Used in getSimCacheExtra to uniquely identify a
         % simulation in the cache
         RampTime;
+        
+        % Cached values of the current constraint evaluation and it's
+        % jacobian
+        curGC;
+        curJGC;
     end
     
     properties(Transient, Access=private)
@@ -89,8 +93,8 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
                 this.nfibres = size(mc.FibreTypeWeights,2);
             end
             if ~isempty(mc)
-                this.xDim = this.System.num_uvp_dof;
-                this.fDim = this.System.num_uvp_dof;
+                this.xDim = this.System.NumTotalDofs;
+                this.fDim = this.System.NumTotalDofs;
                 this.JSparsityPattern = this.computeSparsityPattern;
                 
                 %% Sigma assembly matrix
@@ -216,13 +220,16 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
          end
         
         function set.ComputeUnassembled(this, value)
-            if value && ~isempty(this.num_uvp_dof_unass)%#ok
-                this.fDim = this.num_uvp_dof_unass;%#ok
+            if value && ~isempty(this.NumTotalDofs_unass)%#ok
+                this.fDim = this.NumTotalDofs_unass;%#ok
             elseif ~value && ~isempty(this.System)
-                this.fDim = this.System.num_uvp_dof;
+                this.fDim = this.System.NumTotalDofs;
             end
             this.ComputeUnassembled = value;
         end
+        
+        % Declare public
+        [SPK, SPg, SPalpha, SPLamDot] = computeSparsityPattern(this);
     end
     
     methods(Access=protected)
@@ -289,8 +296,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % See also: setPointSet
             
         end
-        
-        [SP, SPalpha, SPLamDot] = computeSparsityPattern(this);
     end
     
     methods(Access=private)
@@ -328,7 +333,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             this.idx_uv_bc_glob_unass = [sys.idx_u_bc_glob' num_u_glob + bc_unass];
             this.Sigma = S;
             
-            this.num_uvp_dof_unass = sys.num_u_dof + size(S,2);
+            this.NumTotalDofs_unass = sys.NumStateDofs + size(S,2);
             
             % Create boolean array that determines which unassembled dofs
             % belong to which element
@@ -359,9 +364,9 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             fxu = f.evaluate(x(:,1),t(1));
             fx_ass = zeros(size(fx,1),1);
             % du part (no assembly)
-            fx_ass(1:s.num_u_dof) = fxu(1:s.num_u_dof);
+            fx_ass(1:s.NumStateDofs) = fxu(1:s.NumStateDofs);
             % dvw part (with assembly)
-            fx_ass(s.num_u_dof + (1:s.num_v_dof+s.num_p_dof)) = s.f.Sigma * fxu(s.num_u_dof+1:end);
+            fx_ass(s.NumStateDofs + (1:s.NumDerivativeDofs+s.NumAlgebraicDofs)) = s.f.Sigma * fxu(s.NumStateDofs+1:end);
             res = Norm.L2(fx - fx_ass) < eps;
             
             % Multi-eval
@@ -371,9 +376,9 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             fxu = f.evaluateMulti(x,t,mu);
             % du part (no assembly)
             fx_ass = zeros(size(fx,1),length(t));
-            fx_ass(1:s.num_u_dof,:) = fxu(1:s.num_u_dof,:);
+            fx_ass(1:s.NumStateDofs,:) = fxu(1:s.NumStateDofs,:);
             % dvw part (with assembly)
-            fx_ass(s.num_u_dof + (1:s.num_v_dof+s.num_p_dof),:) = s.f.Sigma * fxu(s.num_u_dof+1:end,:);
+            fx_ass(s.NumStateDofs + (1:s.NumDerivativeDofs+s.NumAlgebraicDofs),:) = s.f.Sigma * fxu(s.NumStateDofs+1:end,:);
             res = res & sum(Norm.L2(fx - fx_ass)) < eps;
         end
     end

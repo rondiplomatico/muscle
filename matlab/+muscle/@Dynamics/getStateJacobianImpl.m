@@ -1,4 +1,4 @@
-function [J, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
+function [JK, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
     this.nJevals = this.nJevals+1;
 %     J = this.getStateJacobianFD(uvwdof,t);
 %     return;
@@ -50,7 +50,7 @@ function [J, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
 %     if visc > 0
 %         numparts = numparts+3*numXYZDofs_pos;
 %     end
-    totalsize = dofs_pos + num_elements*num_gausspoints*numparts;
+    totalsize = num_elements*num_gausspoints*numparts;
     i = zeros(totalsize,1);
     j = zeros(totalsize,1);
     s = zeros(totalsize,1);
@@ -76,7 +76,7 @@ function [J, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
             if sys.HasMotoPool
                 FibreForces = mc.Pool.getActivation(t);
             elseif hasforceargument
-                FibreForces = uvwdof(sys.num_uvp_dof+1:end) * min(1,t);
+                FibreForces = uvwdof(sys.NumTotalDofs+1:end) * min(1,t);
                 totalsizeS = num_elements*num_gausspoints*nfibres;
                 iS = zeros(totalsizeS,1);
                 jS = zeros(totalsizeS,1);
@@ -91,18 +91,15 @@ function [J, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
             alphaconst = this.alpha(t);
         end
     end
-    %% -I part in u'(t) = -v(t)
-    i(1:dofs_pos) = (1:dofs_pos)';
-    j(1:dofs_pos) = ((1:dofs_pos)+dofs_pos)';
-    s(1:dofs_pos) = 1;
-    cur_off = dofs_pos;
+    
+    cur_off = 0;
     
     globidx_pos = sys.idx_u_glob_elems;
     globidx_press = sys.idx_p_glob_elems;
 
     % Include dirichlet values to state vector
     uvwcomplete = zeros(2*dofs_pos + pgeo.NumNodes,1);
-    uvwcomplete(sys.idx_uv_dof_glob) = uvwdof(1:sys.num_uvp_dof);
+    uvwcomplete(sys.idx_uv_dof_glob) = uvwdof(1:sys.NumTotalDofs);
     uvwcomplete(sys.idx_uv_bc_glob) = sys.val_uv_bc_glob;
     % Check if velocity bc's should be applied time-dependent
     if ~isempty(this.velo_bc_fun)
@@ -111,16 +108,20 @@ function [J, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
     end
     
     for m = 1:num_elements
-        elemidx_u = globidx_pos(:,:,m);
-        elemidx_v = elemidx_u + dofs_pos;
-        elemidx_velo_linear = elemidx_v(:);
-        elemidx_velo_linear3 = [elemidx_velo_linear
-                                elemidx_velo_linear
-                                elemidx_velo_linear];
+        elemidx_u_glob = globidx_pos(:,:,m);
+        elemidx_v_glob = elemidx_u_glob + dofs_pos;
+        % This jacobian is offset at the beginning of the v global states -
+        % it's computed for the changes of the RHS w.r.t the v / derivative
+        % states (second order system).
+        % Hence the elemidx_u_glob instead of elemidx_v_glob
+        elemidx_v_out_linear = elemidx_u_glob(:);
+        elemidx_v_out_linear3 = [elemidx_v_out_linear
+                                elemidx_v_out_linear
+                                elemidx_v_out_linear];
         elemidx_p = globidx_press(:,m);
         elemidx_pressure3 = [elemidx_p
                              elemidx_p
-                             elemidx_p];
+                             elemidx_p]-dofs_pos;
         
         if havefibretypes 
             ftwelem = fibretypeweights(:,:,m)*FibreForces;
@@ -129,7 +130,7 @@ function [J, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
         for gp = 1:num_gausspoints
             pos = 3*(gp-1)+1:3*gp;
             dtn = fe_pos.transgrad(:,pos,m);
-            u = uvwcomplete(elemidx_u);
+            u = uvwcomplete(elemidx_u_glob);
             
             % Deformation gradient
             F = u * dtn;
@@ -202,7 +203,7 @@ function [J, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
                 if haveldotpos
                     k = find(ldotpos(1,:) == m & ldotpos(2,:) == gp);
                     if ~isempty(k)
-                        Fdot = uvwcomplete(elemidx_v) * dtn;
+                        Fdot = uvwcomplete(elemidx_v_glob) * dtn;
                         Fdota0 = Fdot*fibres(:,1);
                         % Also update the current lambda_dot so that
                         % further calls within the getStateJacobian of the
@@ -246,7 +247,7 @@ function [J, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
                             JLamDot(idxv(3)) = JLamDot(idxv(3)) + Fa0'*Ua0;
                         end
                         ildot = [ildot; k*ones(2*numXYZDofs_pos,1)]; %#ok
-                        jldot = [jldot; elemidx_u(:); elemidx_v(:)];%#ok
+                        jldot = [jldot; elemidx_u_glob(:); elemidx_v_glob(:)];%#ok
                         sldot = [sldot; JLamDot];%#ok
                     end
                 end
@@ -272,7 +273,7 @@ function [J, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
                 % instead of Mu'' + K(u,v,w) = 0
                 
                 % Assign i index as whole for x,y,z (speed)
-                i(cur_off + (1:3*numXYZDofs_pos)) = elemidx_velo_linear3;
+                i(cur_off + (1:3*numXYZDofs_pos)) = elemidx_v_out_linear3;
                 
                 % xdim
                 dFtF1 = U1k'*F + F'*U1k;
@@ -293,7 +294,7 @@ function [J, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
                         end
                     end
                 end
-                j(cur_off + relidx_pos) = elemidx_u(1,k);
+                j(cur_off + relidx_pos) = elemidx_u_glob(1,k);
                 snew = -weight * dPx * dtn';
                 s(cur_off + relidx_pos) = snew(:);
                 cur_off = cur_off + numXYZDofs_pos;
@@ -317,7 +318,7 @@ function [J, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
                         end
                     end
                 end
-                j(cur_off + relidx_pos) = elemidx_u(2,k);
+                j(cur_off + relidx_pos) = elemidx_u_glob(2,k);
                 snew = -weight * dPy * dtn';
                 s(cur_off + relidx_pos) = snew(:);
                 cur_off = cur_off + numXYZDofs_pos;
@@ -341,7 +342,7 @@ function [J, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
                         end
                     end
                 end
-                j(cur_off + relidx_pos) = elemidx_u(3,k);
+                j(cur_off + relidx_pos) = elemidx_u_glob(3,k);
                 snew = -weight * dPz * dtn';
                 s(cur_off + relidx_pos) = snew(:);
                 cur_off = cur_off + numXYZDofs_pos;
@@ -375,22 +376,22 @@ function [J, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
                 % Assign i index as whole for x,y,z (speed)
                 i(cur_off + (1:3*dofsperelem_press)) = elemidx_pressure3;
                 % dx
-                j(cur_off + relidx_press) = elemidx_u(1,k);
+                j(cur_off + relidx_press) = elemidx_u_glob(1,k);
                 s(cur_off + relidx_press) = sum(diag(Finv*U1k)) * precomp;
                 cur_off = cur_off + dofsperelem_press;
                 % dy
-                j(cur_off + relidx_press) = elemidx_u(2,k);
+                j(cur_off + relidx_press) = elemidx_u_glob(2,k);
                 s(cur_off + relidx_press) = sum(diag(Finv*U2k)) * precomp;
                 cur_off = cur_off + dofsperelem_press;
                 %dz
-                j(cur_off + relidx_press) = elemidx_u(3,k);
+                j(cur_off + relidx_press) = elemidx_u_glob(3,k);
                 s(cur_off + relidx_press) = sum(diag(Finv*U3k)) * precomp;
                 cur_off = cur_off + dofsperelem_press;
             end
             
             %% Grad_w K(u,w)
             for k = 1:dofsperelem_press
-                i(cur_off + relidx_pos) = elemidx_velo_linear;
+                i(cur_off + relidx_pos) = elemidx_v_out_linear;
                 j(cur_off + relidx_pos) = elemidx_p(k);
                 snew = -weight * fe_press.Ngp(k,gp,m) * Finv' * dtn';
                 s(cur_off + relidx_pos) = snew(:);
@@ -401,7 +402,7 @@ function [J, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
             if hasforceargument
                 for k = 1:nfibres
                     dPsk = alpha_prefactor * fibretypeweights(gp,k,m) * F * a0;
-                    iS(cur_offS + relidx_pos) = elemidx_velo_linear-dofs_pos;
+                    iS(cur_offS + relidx_pos) = elemidx_v_out_linear-dofs_pos;
                     jS(cur_offS + relidx_pos) = columns_sarco_link(k);
                     snew = -weight * dPsk * dtn';
                     sS(cur_offS + relidx_pos) = snew(:);
@@ -410,14 +411,18 @@ function [J, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
             end
         end
     end
-    J = sparse(i,j,s,6*N+M,6*N+M);
+    JK = sparse(i,j,s,3*N+M,6*N+M);
     % Remove values at dirichlet nodes
-    J(:,sys.idx_uv_bc_glob) = [];
-    J(sys.idx_uv_bc_glob,:) = [];
+    JK(:,sys.idx_uv_bc_glob) = [];
+    JK(sys.idx_v_bc_local,:) = [];
+    
+    dd = sys.NumDerivativeDofs;
+    this.curJGC = JK(dd+1:end,:);
+    JK = JK(1:dd,:);
     
     if this.usemassinv
         % Multiply with inverse of Mass matrix!
-        J(sys.idx_v_dof_glob,:) = sys.Minv*J(sys.idx_v_dof_glob,:);
+        JK(sys.idx_v_dof_glob,:) = sys.Minv*JK(sys.idx_v_dof_glob,:);
     end
     
     Jalpha = [];

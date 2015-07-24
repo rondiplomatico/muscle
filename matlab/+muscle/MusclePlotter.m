@@ -179,7 +179,7 @@ classdef MusclePlotter < handle
             plot3(h,u1dir(1,:),u1dir(2,:),u1dir(3,:),'.','MarkerSize',20,'Color',[.7 .7 .7]);
 
             % Velocity
-            uvdir = u(:,pd.bool_v_bc_nodes_applies);
+            uvdir = u(:,pd.bool_expl_v_bc_nodes_applies);
             plot3(h,uvdir(1,:),uvdir(2,:),uvdir(3,:),'g.','MarkerSize',20);
 
             %% Dirichlet Forces
@@ -469,8 +469,8 @@ classdef MusclePlotter < handle
             pd.bc_dir_2pos_applies = hlp == 2;
             pd.bc_dir_1pos_applies = hlp == 1;
             pd.bc_dir_pos_applies = hlp >= 1; 
-            pd.bool_v_bc_nodes_applies = sum(sys.bool_v_bc_nodes,1) >= 1;
-            pd.no_bc = ~pd.bc_dir_pos_applies & ~pd.bool_v_bc_nodes_applies;
+            pd.bool_expl_v_bc_nodes_applies = sum(sys.bool_expl_v_bc_nodes,1) >= 1;
+            pd.no_bc = ~pd.bc_dir_pos_applies & ~pd.bool_expl_v_bc_nodes_applies;
 
             mc = this.Config;
             dfem = mc.PosFE;
@@ -481,10 +481,10 @@ classdef MusclePlotter < handle
             pd.e = geo.Edges;
 
             %% Dirichlet forces
-            pd.have_residuals = pd.bc_dir_pos_applies | pd.bool_v_bc_nodes_applies;
+            pd.have_residuals = pd.bc_dir_pos_applies | pd.bool_expl_v_bc_nodes_applies;
             % By sorting and combining the pos/velo Dir BC, the
             % plotting of mixed BCs on one node is plotted correctly.
-            pd.residuals_pos = sys.bool_u_bc_nodes | sys.bool_v_bc_nodes;
+            pd.residuals_pos = sys.bool_u_bc_nodes | sys.bool_expl_v_bc_nodes;
             [~, pd.sortidx] = sort([sys.idx_u_bc_glob; sys.idx_v_bc_glob-posdofs]);
             % Preallocate the residuals matrix
             pd.residuals = zeros(size(pd.residuals_pos));

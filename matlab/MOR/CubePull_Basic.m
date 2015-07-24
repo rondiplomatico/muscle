@@ -14,7 +14,7 @@ m.TrainingParams = 3;
 m.TrainingInputs = 1;
 
 d = approx.DEIM(m.System);
-d.MaxOrder = m.System.num_u_dof;
+d.MaxOrder = m.System.NumStateDofs;
 m.Approx = d;
 
 %% Crunch

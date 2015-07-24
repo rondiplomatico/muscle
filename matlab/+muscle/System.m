@@ -1,4 +1,4 @@
-classdef System < models.BaseDynSystem
+classdef System < models.BaseSecondOrderSystem
 % MuscleFibreSystem: The global dynamical system used within the MuscleFibreModel
 %
 % The system u'' + K(u) is transformed into the first order system v' +
@@ -36,6 +36,7 @@ classdef System < models.BaseDynSystem
        % Collected from idx_u_bc_glob, idx_v_bc_glob
        idx_uv_bc_glob;
        
+       %% Position dirichlet fields
        % Boundary conditions: 3 times numnodes logical matrix telling
        % which degree of freedom of which (position) node is fixed
        %     n1   n2   n3 ...
@@ -44,19 +45,33 @@ classdef System < models.BaseDynSystem
        % z | 1    0    0       |
        bool_u_bc_nodes;
        idx_u_bc_glob;
+       idx_u_bc_local;
        val_u_bc; % [mm]
        
-       % Same for velocity
-       bool_v_bc_nodes;
+       %% Velocity dirichlet fields
+       % This set comprises the explicitly/directly set velocity boundary
+       % conditions
+       bool_expl_v_bc_nodes;
+       idx_expl_v_bc_glob;
+       idx_expl_v_bc_local;
+       val_expl_v_bc; % [mm/ms]
+       
+       % This set comprises both the explicit velocity conditions and the
+       % implicit zero velocity conditions that apply for each position
+       % dirichlet condition
        idx_v_bc_glob;
+       idx_v_bc_local;
        val_v_bc; % [mm/ms]
+       
        % Positions of velocity-bc affected DoFs in the u dofs
        idx_v_bc_u_dof;
               
+       %% Neumann fields
        bc_neum_forces_nodeidx; % [N]
        bc_neum_forces_val;
        FacesWithForce;
        
+       %% Convenience variables
        % A helper array containing the indices of the actual dofs in the
        % global indexing.
        %
@@ -65,17 +80,12 @@ classdef System < models.BaseDynSystem
        
        % The indices of u,v,p components in the effective dof vector
        idx_u_dof_glob;
-       num_u_dof;
        idx_v_dof_glob;
-       num_v_dof;
        num_v_bc;
        idx_p_dof_glob;
-       num_p_dof;
        
        % Total number of discrete field points including dirichlet values
        num_uvp_glob;
-       % Total number of discrete field points that are degrees of freedom
-       num_uvp_dof;
        
        Minv;
        
@@ -155,7 +165,7 @@ classdef System < models.BaseDynSystem
     methods
         function this = System(model)
             % Call superclass constructor
-            this = this@models.BaseDynSystem(model);
+            this = this@models.BaseSecondOrderSystem(model);
             
             % The muscle viscosity
             % @unit [g / (mm * ms)] = [kP] (kiloPoiseulle)
@@ -277,30 +287,34 @@ classdef System < models.BaseDynSystem
             %
             % (So far the extra efficiency of "no A" for mu(1) == 0 is
             % neglected in any reduced model)
-            this.A = this.fD;
+            this.D = this.fD;
             rsys = buildReducedSystem@models.BaseDynSystem(this, rmodel);
-            this.A = [];
+            this.D = [];
         end
         
         function configUpdated(this)
             mc = this.Model.Config;
             if ~isempty(mc)
                 tq = mc.PosFE;
-                geo_uv = tq.Geometry;
+                geo_pos = tq.Geometry;
                 tl = mc.PressFE;
                 geo_p = tl.Geometry;
-
+                
                 % Find the indices of the pressure nodes in the displacement
                 % nodes geometry (used for plotting)
-                this.idx_p_to_u_nodes = geo_uv.getCommonNodesWith(geo_p);
+                this.idx_p_to_u_nodes = geo_pos.getCommonNodesWith(geo_p);
 
                 % Call subroutine for boundary condition index crunching
+                % This needs to be done before we can compute the effective
+                % Dofs of the system.
                 this.computeDirichletBC;
                 
-                this.updateDofNums(mc);
-
+                %% Get dimensions
+                this.updateDimensions(mc);
+                
                 % Construct B matrix
                 this.B = this.assembleB;
+                
                 % Set input function
                 this.Inputs = mc.getInputs;
 
@@ -315,16 +329,16 @@ classdef System < models.BaseDynSystem
                 this.HasFibreTypes = this.HasFibres && ~isempty(mc.FibreTypeWeights);
                 this.HasForceArgument = this.HasFibreTypes && isa(this,'fullmuscle.System');
 
-                % Construct global indices in uvw from element nodes. Each dof in
+                % Construct global indices in uw from element nodes. Each dof in
                 % an element is used three times for x,y,z displacement. The
                 % "elems" matrix contains the overall DOF numbers of each
                 % element in the order of the nodes (along row) in the master
                 % element.
-                ne = geo_uv.NumElements;
-                globalelementdofs = zeros(3,geo_uv.DofsPerElement,ne,'int32');
+                ne = geo_pos.NumElements;
+                globalelementdofs = zeros(3,geo_pos.DofsPerElement,ne,'int32');
                 for m = 1:ne
                     % First index of element dof in global array
-                    hlp = (geo_uv.Elements(m,:)-1)*3+1;
+                    hlp = (geo_pos.Elements(m,:)-1)*3+1;
                     % Use first, second and third as positions.
                     globalelementdofs(:,:,m) = [hlp; hlp+1; hlp+2];
                 end
@@ -332,15 +346,14 @@ classdef System < models.BaseDynSystem
 
                 % The same for the pressure
                 globalpressuredofs = zeros(geo_p.DofsPerElement,geo_p.NumElements,'int32');
-                off = geo_uv.NumNodes * 6;
+                off = 2 * (geo_pos.NumNodes * 3);
                 for m = 1:geo_p.NumElements
                     globalpressuredofs(:,m) = off + geo_p.Elements(m,:);
                 end
                 this.idx_p_glob_elems = globalpressuredofs;
 
                 %% Compile Mass Matrix
-                this.M = dscomponents.ConstMassMatrix(this.assembleMassMatrix,...
-                    this.AlgebraicConditionDoF);
+                this.M = dscomponents.ConstMassMatrix(this.assembleMassMatrix);
 
                 %% Compile Damping Matrix
                 this.fD = this.assembleDampingMatrix;
@@ -350,6 +363,11 @@ classdef System < models.BaseDynSystem
                 
                 %% Initial value
                 this.x0 = dscomponents.ConstInitialValue(this.assembleX0);
+                
+                %% Algebraic constraints function
+                this.g = muscle.ConstraintsFun(this);
+                
+                this.updateSparsityPattern;
             end
         end
         
@@ -358,9 +376,9 @@ classdef System < models.BaseDynSystem
             %
             % See also: muslce.System.MooneyRivlinICConst
             
-            this.A = [];
+            this.D = [];
             if mu(1) > 0
-                this.A = this.fD;
+                this.D = this.fD;
             end
             % Update muscle/tendon parameters on all gauss points
             % We have mu-dependent mooney-rivlin and markert laws, but they
@@ -373,7 +391,7 @@ classdef System < models.BaseDynSystem
             this.MooneyRivlinICConst = -2*this.MuscleTendonParamc10...
                 -4*this.MuscleTendonParamc01;
             
-            prepareSimulation@models.BaseDynSystem(this, mu, inputidx);
+            prepareSimulation@models.BaseSecondOrderSystem(this, mu, inputidx);
         end
         
         function pm = plotDiff(this, t, uvw1, uvw2, fac, varargin)
@@ -387,18 +405,27 @@ classdef System < models.BaseDynSystem
         
         function uvwall = includeDirichletValues(this, t, uvw)
             %% Re-add the dirichlet nodes
-            uvwall = zeros(this.num_uvp_glob, size(uvw,2));
-            uvwall(this.idx_uv_dof_glob,:) = uvw;
-            uvwall(this.idx_uv_bc_glob,:) = repmat(this.val_uv_bc_glob,1,size(uvw,2));
-            
             sys = this.Model.System;
             mc = this.Model.Config;
-            if ~isempty(mc.VelocityBCTimeFun)
-                f = mc.VelocityBCTimeFun.getFunction;
-                uvwall(sys.idx_v_bc_glob,:) = bsxfun(@times, uvwall(sys.idx_v_bc_glob,:), f(t));
+            % Efficient for single vector
+            if size(uvw,2) == 1
+                uvwall = zeros(this.num_uvp_glob, 1);
+                uvwall(this.idx_uv_dof_glob) = uvw;
+                uvwall(this.idx_uv_bc_glob) = this.val_uv_bc_glob;
+                if ~isempty(mc.VelocityBCTimeFun)
+                    f = mc.VelocityBCTimeFun.getFunction;
+                    uvwall(sys.idx_v_bc_glob) = uvwall(sys.idx_v_bc_glob)*f(t);
+                end
+            else
+                uvwall = zeros(this.num_uvp_glob, size(uvw,2));
+                uvwall(this.idx_uv_dof_glob,:) = uvw;
+                uvwall(this.idx_uv_bc_glob,:) = repmat(this.val_uv_bc_glob,1,size(uvw,2));
+                if ~isempty(mc.VelocityBCTimeFun)
+                    f = mc.VelocityBCTimeFun.getFunction;
+                    uvwall(sys.idx_v_bc_glob,:) = bsxfun(@times, uvwall(sys.idx_v_bc_glob,:), f(t));
+                end
             end
         end
-        
     end
     
     methods
@@ -435,13 +462,26 @@ classdef System < models.BaseDynSystem
     
     methods(Access=protected)
         
-        function updateDofNums(this, mc)
-            tq = mc.PosFE;
-            geo_uv = tq.Geometry;
+        function updateDimensions(this, mc)
             tl = mc.PressFE;
             geo_p = tl.Geometry;
-            this.num_uvp_glob = geo_uv.NumNodes * 6 + geo_p.NumNodes;
-            this.num_uvp_dof = this.num_uvp_glob - length(this.val_uv_bc_glob);
+            this.NumAlgebraicDofs = geo_p.NumNodes;
+            
+            tq = mc.PosFE;
+            geo_uv = tq.Geometry;
+            this.NumStateDofs = geo_uv.NumNodes * 3 - length(this.idx_u_bc_glob);
+            
+            this.num_uvp_glob = geo_uv.NumNodes * 6 + this.NumAlgebraicDofs;
+            % Compile the inverse addressing for inserting dofs into the
+            % full vector
+            idx = int32(1:this.num_uvp_glob);
+            idx(this.idx_uv_bc_glob) = [];
+            this.idx_uv_dof_glob = idx;
+            
+            % FIXME - deriv dirichlet values not included
+            this.NumDerivativeDofs = this.NumStateDofs;
+            
+            updateDimensions@models.BaseSecondOrderSystem(this);
         end
         
         function x0 = assembleX0(this)
@@ -450,28 +490,19 @@ classdef System < models.BaseDynSystem
             tq = mc.PosFE;
             geo = tq.Geometry;
             
-            % All zero, especially the first tq.NumNodes * 3 velocity
-            % entries and pressure
-            x0 = zeros(this.num_uvp_glob,1);
-            
             % Fill in the reference configuration positions as initial
             % conditions
-            for m = 1:geo.NumElements
-                 dofpos = this.idx_u_glob_elems(:,:,m);
-                 x0(dofpos) = geo.Nodes(:,geo.Elements(m,:));
+            x0 = geo.Nodes(:);
+            % Remove those fixed via dirichlet conditions
+            x0(this.idx_u_bc_local) = []; %local=global here as is first set
+            
+            % Append DoFs for algebraic conditions below (if set)
+            if this.NumAlgebraicDofs > 0
+                x0 = [x0; zeros(this.NumAlgebraicDofs,1)];
             end
             
-            % Initial conditions for pressure (s.t. S(X,0) = 0)
-            % This was set to the negative residual of the mooney-rivlin
-            % law, but since we allow inhomogeneous material this is no
-            % longer suitable (using p=0 now)
-            % See System.MooneyRivlinICConst
-
-            % Give the model config a chance to provide x0
+            % Give the model config a chance to mess with x0
             x0 = mc.getX0(x0);
-
-            % Remove dirichlet values
-            x0(this.idx_uv_bc_glob) = [];
         end
         
         function Baff = assembleB(this)
@@ -480,12 +511,9 @@ classdef System < models.BaseDynSystem
             % Only set up forces if present
             Baff = [];
             if ~isempty(this.bc_neum_forces_nodeidx)
-                mc = this.Model.Config;
-                tq = mc.PosFE;
-                geo_uv = tq.Geometry;
-                this.bc_neum_forces_val = B(this.bc_neum_forces_nodeidx + geo_uv.NumNodes * 3);
+                this.bc_neum_forces_val = B(this.bc_neum_forces_nodeidx);
                 % Remove dirichlet DoFs
-                B(this.idx_uv_bc_glob) = [];
+                B(this.idx_v_bc_local) = [];
                 Baff = dscomponents.AffLinInputConv;
                 Baff.TimeDependent = false;
                 Baff.addMatrix('mu(3)',B);
@@ -494,11 +522,9 @@ classdef System < models.BaseDynSystem
         
         function MM = assembleMassMatrix(this)
             %% Compile Mass Matrix
-            
             mc = this.Model.Config;
             fe_pos = mc.PosFE;
             g = fe_pos.Geometry;
-            gp = mc.PressFE.Geometry;
             
             % Augment mass matrix for all 3 displacement directions
             nd = g.NumNodes;
@@ -506,24 +532,16 @@ classdef System < models.BaseDynSystem
             I = [3*(i'-1)+1; 3*(i'-1)+2; 3*(i'-1)+3];
             J = [3*(j'-1)+1; 3*(j'-1)+2; 3*(j'-1)+3];
             S = repmat(1:length(s),3,1);
-            MM = sparse(I(:),J(:),s(S(:)),3*nd,3*nd);
-            % Insert identity for velocity and zeros for pressure
-            MM = blkdiag(speye(size(MM)),...
-                this.Model.MuscleDensity*MM,sparse(gp.NumNodes,gp.NumNodes));
+            MM = this.Model.MuscleDensity*sparse(I(:),J(:),s(S(:)),3*nd,3*nd);
             
             % Strip out the entries of dirichlet nodes
-            MM(this.idx_uv_bc_glob,:) = [];
-            MM(:,this.idx_uv_bc_glob) = [];
+            MM(this.idx_u_bc_glob,:) = [];
+            MM(:,this.idx_u_bc_glob) = [];
             
             % See description of property
             if this.UseDirectMassInversion
-                this.Minv = inv(MM(this.idx_v_dof_glob,this.idx_v_dof_glob));
-                MM = sparse(I(:),J(:),s(S(:)),3*nd,3*nd);
-                % Use identity on left hand side
-                MM = blkdiag(speye(size(MM)),...
-                    speye(size(MM)),sparse(gp.NumNodes,gp.NumNodes));
-                MM(this.idx_uv_bc_glob,:) = [];
-                MM(:,this.idx_uv_bc_glob) = [];
+                this.Minv = inv(MM);
+                MM = 1;
             end
         end
         
@@ -532,7 +550,6 @@ classdef System < models.BaseDynSystem
             mc = this.Model.Config;
             fe_pos = mc.PosFE;
             g = fe_pos.Geometry;
-            gp = mc.PressFE.Geometry;
             
             % Augment mass matrix for all 3 displacement directions
             nd = g.NumNodes;
@@ -541,12 +558,10 @@ classdef System < models.BaseDynSystem
             J = [3*(j'-1)+1; 3*(j'-1)+2; 3*(j'-1)+3];
             S = repmat(1:length(s),3,1);
             D = sparse(I(:),J(:),s(S(:)),3*nd,3*nd);
-            % Insert identity for position and zeros for pressure
-            D = blkdiag(sparse(3*nd,3*nd),D,sparse(gp.NumNodes,gp.NumNodes));
             
             % Strip out the entries of dirichlet nodes
-            D(this.idx_uv_bc_glob,:) = [];
-            D(:,this.idx_uv_bc_glob) = [];
+            D(this.idx_v_bc_local,:) = [];
+            D(:,this.idx_v_bc_local) = [];
             
             Daff = dscomponents.AffLinCoreFun(this);
             Daff.addMatrix('mu(1)',-D);
@@ -561,59 +576,65 @@ classdef System < models.BaseDynSystem
             fe_press = mc.PressFE;
             pgeo = fe_press.Geometry;
             
-            % Position of position entries in global state space vector
+            % Total number of position entries in global vector
             num_u_glob = geo.NumNodes * 3;
             
-            %% Displacement
+            %% Displacement / State Dirichlet
             this.bool_u_bc_nodes = pos_dir;
             % Set values to node positions
             this.val_u_bc = geo.Nodes(pos_dir);
-            this.idx_u_bc_glob = int32(find(pos_dir(:)));
+            this.idx_u_bc_local = int32(find(pos_dir(:)));
+            % Local = global as u is the first set of variables in the
+            % global vector
+            this.idx_u_bc_glob = this.idx_u_bc_local;
             
-            %% Velocity
-            % Add any user-defines values (cannot conflict with position
-            % dirichlet conditions, this is checked in AModelConfig.getBC)
-            this.bool_v_bc_nodes = velo_dir;
-            this.idx_v_bc_glob = int32(num_u_glob + find(velo_dir(:)));
-            this.val_v_bc = velo_dir_val(velo_dir);
-            this.num_v_bc = length(this.val_v_bc);
+            %% Velocity / Derivative Dirichlet
+            % Add any user-defines values
+            this.bool_expl_v_bc_nodes = velo_dir;
+            this.idx_expl_v_bc_local = int32(find(velo_dir(:)));
+            this.val_expl_v_bc = velo_dir_val(velo_dir);
+            this.idx_expl_v_bc_glob = this.idx_expl_v_bc_local + num_u_glob;
             
-            % Compile the global dirichlet values index and value vectors.
+            % Include the zero velocity conditions that apply for each
+            % position dirichlet condition
+            % (cannot conflict with position dirichlet conditions, this is
+            % checked in AModelConfig.getBC)
+            this.idx_v_bc_local = [this.idx_expl_v_bc_local; this.idx_u_bc_local];
             % Here we add zero velocities for each point with fixed position, too.
-            [this.idx_uv_bc_glob, sortidx] = sort([this.idx_u_bc_glob; this.idx_u_bc_glob+num_u_glob; this.idx_v_bc_glob]);
-            alldirvals = [this.val_u_bc; zeros(size(this.val_u_bc)); this.val_v_bc];
-            this.val_uv_bc_glob = alldirvals(sortidx);
+            this.val_v_bc = [this.val_expl_v_bc; zeros(size(this.val_u_bc))];
+            this.num_v_bc = length(this.val_v_bc);
+            this.idx_v_bc_glob = this.idx_v_bc_local + num_u_glob;
+            
+            %% Convenience index sets
+            % Compile the global dirichlet values index and value vectors.
+            this.idx_uv_bc_glob = [this.idx_u_bc_glob; this.idx_v_bc_glob];
+            this.val_uv_bc_glob = [this.val_u_bc; this.val_v_bc];
             
             % Compute dof positions in global state space vector
-            total = geo.NumNodes * 6 + pgeo.NumNodes;
-            pos = false(1,total);
-            pos(1:num_u_glob) = true;
-            pos(this.idx_uv_bc_glob) = [];
-            this.idx_u_dof_glob = int32(find(pos));
-            this.num_u_dof = length(this.idx_u_dof_glob);
+%             
+%             pos = false(1,total);
+%             pos(1:num_u_glob) = true;
+%             pos(this.idx_uv_bc_glob) = [];
+%             this.idx_u_dof_glob = int32(find(pos));
             
-            pos = false(1,total);
-            pos(num_u_glob+1:num_u_glob*2) = true;
-            pos(this.idx_uv_bc_glob) = [];
-            this.idx_v_dof_glob = int32(find(pos));
-            this.num_v_dof = length(this.idx_v_dof_glob);
+%             pos = false(1,total);
+%             pos(num_u_glob+1:num_u_glob*2) = true;
+%             pos(this.idx_uv_bc_glob) = [];
+%             this.idx_v_dof_glob = int32(find(pos));
             
-            pos = false(1,total);
-            pos(this.idx_v_bc_glob-num_u_glob) = true;
-            pos(this.idx_u_bc_glob) = [];
-            this.idx_v_bc_u_dof = int32(find(pos));
-            
+%             pos = false(1,total);
+%             pos(this.idx_v_bc_glob-num_u_glob) = true;
+%             pos(this.idx_u_bc_glob) = [];
+%             this.idx_v_bc_u_dof = int32(find(pos));
             
             % no possible dirichlet values for p. so have all
-            this.idx_p_dof_glob = geo.NumNodes*6-length(this.idx_uv_bc_glob) + (1:pgeo.NumNodes);
-            this.num_p_dof = length(this.idx_p_dof_glob);
+%             this.idx_p_dof_glob = geo.NumNodes*6-length(this.idx_uv_bc_glob) + (1:pgeo.NumNodes);
+%             this.NumAlgebraicDofs = length(this.idx_p_dof_glob);
             % Automatically mark the pressure DoFs as algebraic condition.
             % Important for reduction.
-            this.AlgebraicConditionDoF = this.idx_p_dof_glob;
+%             this.AlgebraicConditionDoF = this.idx_p_dof_glob;
             
-            idx = int32(1:total);
-            idx(this.idx_uv_bc_glob) = [];
-            this.idx_uv_dof_glob = idx;
+            
         end
         
         function [force, nodeidx] = getSpatialExternalForces(this)
@@ -652,7 +673,6 @@ classdef System < models.BaseDynSystem
             end
             % Augment to u,v,w vector
             nodeidx = find(abs(force) > 1e-13);
-            force = [zeros(size(force)); force; zeros(mc.PressFE.Geometry.NumNodes,1)];
             this.FacesWithForce = faceswithforce;
         end
         

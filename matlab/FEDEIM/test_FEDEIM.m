@@ -39,12 +39,12 @@
 % 
 % %% Init 2
 % fxu = reshape(ftd_fx_unass.TrajectoryData,size(fx_u,1),[]);
-% fx = zeros(s.num_uvp_dof,size(fxu,2));
+% fx = zeros(s.NumTotalDofs,size(fxu,2));
 % 
 % % assemble full fx
-% fx(1:s.num_u_dof,:) = fxu(1:s.num_u_dof,:);
+% fx(1:s.NumStateDofs,:) = fxu(1:s.NumStateDofs,:);
 % % dvw part (with assembly)
-% fx(s.num_u_dof + (1:s.num_v_dof+s.num_p_dof),:) = s.f.Sigma * fxu(s.num_u_dof+1:end,:);
+% fx(s.NumStateDofs + (1:s.NumDerivativeDofs+s.NumAlgebraicDofs),:) = s.f.Sigma * fxu(s.NumStateDofs+1:end,:);
 % 
 % save test;
 % 
@@ -53,14 +53,14 @@
 idx_elems = f.idx_vp_dof_unass_elems;
 % % 
 % % % %% Positions u
-% % % dof_u = fx(1:s.num_u_dof,:);
+% % % dof_u = fx(1:s.NumStateDofs,:);
 % % % [U_dofu,S_dofu,V_dofu] = svd(dof_u,'econ');
 % % % pts_u = d.getInterpolationPoints(U_dofu);
 % % % err_u = fd.getInterpolErrors(U_dofu, pts_u, dof_u);
 %  
 % %% Classic DEIM
 % fprintf('Classic DEIM...\n');
-% dof_vp = fx(s.num_u_dof+1:end,:);
+% dof_vp = fx(s.NumStateDofs+1:end,:);
 % [U,S,V] = svd(dof_vp,'econ');
 % num_DEIM = sum(diag(S) > eps(S(1)));
 % pts_DEIM = d.getInterpolationPoints(U(:,1:num_DEIM));
@@ -72,7 +72,7 @@ idx_elems = f.idx_vp_dof_unass_elems;
 % 
 %% UDEIM
 % fprintf('UDEIM...\n');
-% dof_vp_unass = fxu(s.num_u_dof+1:end,:);
+% dof_vp_unass = fxu(s.NumStateDofs+1:end,:);
 % [Uu,Su,Vu] = svd(dof_vp_unass,'econ');
 % num_UDEIM = sum(diag(Su) > eps(Su(1)));
 % pts_UDEIM = d.getInterpolationPoints(Uu(:,1:num_UDEIM));

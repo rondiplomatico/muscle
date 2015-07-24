@@ -106,7 +106,7 @@ classdef AModelConfig < handle
             % separately.
             m = this.Model;
             s = m.System;
-            targetd = 1:s.num_u_dof;
+            targetd = 1:s.NumStateDofs;
             % Dont reduce those dofs subject to velocity BCs!
             targetd(s.idx_v_bc_u_dof) = [];
             m.SpaceReducer.TargetDimensions = targetd;

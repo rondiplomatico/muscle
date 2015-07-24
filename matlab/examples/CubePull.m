@@ -19,7 +19,7 @@ classdef CubePull < muscle.AModelConfig
             % Set desired reduction to full state space dimension by
             % default
             m = this.Model;
-            m.SpaceReducer.Value = m.System.num_u_dof;
+            m.SpaceReducer.Value = m.System.NumStateDofs;
             configureModelFinal@muscle.AModelConfig(this);
         end
         

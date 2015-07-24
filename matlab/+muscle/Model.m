@@ -303,7 +303,7 @@ classdef Model < models.BaseFullModel
             for k=1:length(t)
                 dy = sys.f.evaluate(uvw(:,k),t(k));
                 % Place in global vector
-                dyall(sys.idx_uv_dof_glob,:) = dy(1:sys.num_uvp_dof);
+                dyall(sys.idx_uv_dof_glob,:) = dy(1:sys.NumTotalDofs);
                 % Select nodes that are exposed to neumann conditions (the
                 % index is in global positions and not effective DoFs)
                 residuals_neumann(:,k) = dyall(pos_dofs+sys.bc_neum_forces_nodeidx);
@@ -374,7 +374,7 @@ classdef Model < models.BaseFullModel
             geo = this.Config.PosFE.Geometry;
             idx_face = false(size(this.System.bool_u_bc_nodes));
             idx_face(dim,geo.Elements(elem,geo.MasterFaces(face,:))) = true;
-            fidx = find(this.System.bool_v_bc_nodes & idx_face);
+            fidx = find(this.System.bool_expl_v_bc_nodes & idx_face);
             % Include the offset to the indices for velocity dofs
             fidx = fidx + geo.NumNodes*3;
             [~, idx] = intersect(this.System.idx_v_bc_glob, fidx);
@@ -423,7 +423,7 @@ classdef Model < models.BaseFullModel
             % u as projection space for v.
             s = this.System;
             sp = this.Data.ProjectionSpaces(1);
-            if sp.Dimensions ~= s.num_v_dof
+            if sp.Dimensions ~= s.NumDerivativeDofs
                 error(['Somethings wrong! The reduced space size for u must equal the size of'...
                 'v dofs, as velocity BCs are excluded from reduction!']);
             end
@@ -436,7 +436,7 @@ classdef Model < models.BaseFullModel
             % than the number of u dofs and matches the number of v dofs.
             % This is why we can simply use the V,W matrices from u for v,
             % too.
-            this.Data.addProjectionSpace(sp.V,sp.W,(1:s.num_v_dof) + s.num_u_dof);
+            this.Data.addProjectionSpace(sp.V,sp.W,(1:s.NumDerivativeDofs) + s.NumStateDofs);
         end
         
         function varargout = plot(this, varargin)
