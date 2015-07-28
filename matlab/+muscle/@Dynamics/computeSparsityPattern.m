@@ -117,7 +117,7 @@ function [SPK, SPg, SPalpha, SPLamDot] = computeSparsityPattern(this)
     % Remove values at dirichlet nodes
     SPK = SPK(1:3*N,:);
     SPK(:,sys.idx_uv_bc_glob) = [];
-    SPK(sys.idx_u_bc_glob,:) = [];
+    SPK([sys.idx_u_bc_local; sys.idx_expl_v_bc_local],:) = [];
     SPK = logical(SPK);
 
     SPalpha = [];

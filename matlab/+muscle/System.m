@@ -162,6 +162,11 @@ classdef System < models.BaseSecondOrderSystem
         Plotter;
     end
     
+    properties(Transient, Access=private)
+        % Cached velocity bc time-dependent function
+        velo_bc_fun = [];
+    end
+    
     methods
         function this = System(model)
             % Call superclass constructor
@@ -391,6 +396,12 @@ classdef System < models.BaseSecondOrderSystem
             this.MooneyRivlinICConst = -2*this.MuscleTendonParamc10...
                 -4*this.MuscleTendonParamc01;
             
+            % Get velocity dirichlet conditions time-function
+            mc = this.Model.Config;
+            if ~isempty(mc.VelocityBCTimeFun)
+                this.velo_bc_fun = mc.VelocityBCTimeFun.getFunction;
+            end
+            
             prepareSimulation@models.BaseSecondOrderSystem(this, mu, inputidx);
         end
         
@@ -405,24 +416,20 @@ classdef System < models.BaseSecondOrderSystem
         
         function uvwall = includeDirichletValues(this, t, uvw)
             %% Re-add the dirichlet nodes
-            sys = this.Model.System;
-            mc = this.Model.Config;
             % Efficient for single vector
             if size(uvw,2) == 1
                 uvwall = zeros(this.num_uvp_glob, 1);
                 uvwall(this.idx_uv_dof_glob) = uvw;
                 uvwall(this.idx_uv_bc_glob) = this.val_uv_bc_glob;
-                if ~isempty(mc.VelocityBCTimeFun)
-                    f = mc.VelocityBCTimeFun.getFunction;
-                    uvwall(sys.idx_v_bc_glob) = uvwall(sys.idx_v_bc_glob)*f(t);
+                if ~isempty(this.velo_bc_fun)
+                    uvwall(this.idx_v_bc_glob) = uvwall(this.idx_v_bc_glob)*this.velo_bc_fun(t);
                 end
             else
                 uvwall = zeros(this.num_uvp_glob, size(uvw,2));
                 uvwall(this.idx_uv_dof_glob,:) = uvw;
                 uvwall(this.idx_uv_bc_glob,:) = repmat(this.val_uv_bc_glob,1,size(uvw,2));
-                if ~isempty(mc.VelocityBCTimeFun)
-                    f = mc.VelocityBCTimeFun.getFunction;
-                    uvwall(sys.idx_v_bc_glob,:) = bsxfun(@times, uvwall(sys.idx_v_bc_glob,:), f(t));
+                if ~isempty(this.velo_bc_fun)
+                    uvwall(this.idx_v_bc_glob,:) = bsxfun(@times, uvwall(this.idx_v_bc_glob,:), this.velo_bc_fun(t));
                 end
             end
         end
@@ -478,8 +485,9 @@ classdef System < models.BaseSecondOrderSystem
             idx(this.idx_uv_bc_glob) = [];
             this.idx_uv_dof_glob = idx;
             
-            % FIXME - deriv dirichlet values not included
-            this.NumDerivativeDofs = this.NumStateDofs;
+            % Have same number of xdot dofs than x dofs except the case
+            % that explicit velocity dirichlet conditions are provided
+            this.NumDerivativeDofs = this.NumStateDofs - length(this.idx_expl_v_bc_local);
             
             updateDimensions@models.BaseSecondOrderSystem(this);
         end
@@ -535,8 +543,8 @@ classdef System < models.BaseSecondOrderSystem
             MM = this.Model.MuscleDensity*sparse(I(:),J(:),s(S(:)),3*nd,3*nd);
             
             % Strip out the entries of dirichlet nodes
-            MM(this.idx_u_bc_glob,:) = [];
-            MM(:,this.idx_u_bc_glob) = [];
+            MM(this.idx_v_bc_local,:) = [];
+            MM(:,this.idx_v_bc_local) = [];
             
             % See description of property
             if this.UseDirectMassInversion
@@ -595,6 +603,16 @@ classdef System < models.BaseSecondOrderSystem
             this.val_expl_v_bc = velo_dir_val(velo_dir);
             this.idx_expl_v_bc_glob = this.idx_expl_v_bc_local + num_u_glob;
             
+            % Compute position of explicit derivative dirichlet conditions
+            % inside the state dofs
+            pos = false(num_u_glob,1);
+            % Mark positions of explicit conditions
+            pos(this.idx_expl_v_bc_local) = true;
+            % Remove implicit velocity dirichlet conditions from position
+            % dirichlet conditions
+            pos(this.idx_u_bc_local) = [];
+            this.DerivativeDirichletPosInStateDofs = pos;
+            
             % Include the zero velocity conditions that apply for each
             % position dirichlet condition
             % (cannot conflict with position dirichlet conditions, this is
@@ -635,6 +653,20 @@ classdef System < models.BaseSecondOrderSystem
 %             this.AlgebraicConditionDoF = this.idx_p_dof_glob;
             
             
+        end
+        
+        function val = getDerivativeDirichletValues(this, t)
+            % Computes the derivative dirichlet values dependent on the
+            % current time.
+            %
+            % See also: ODEFun DerivativeDirichletPosInStateDofs
+
+            % Check if velocity bc's should be applied in time-dependent manner
+            if ~isempty(this.velo_bc_fun)
+                val = this.velo_bc_fun(t)*this.val_expl_v_bc;
+            else
+                val = this.val_expl_v_bc;
+            end
         end
         
         function [force, nodeidx] = getSpatialExternalForces(this)

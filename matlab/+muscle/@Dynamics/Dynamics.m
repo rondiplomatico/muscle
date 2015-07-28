@@ -71,9 +71,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         
         % Cached value for cross fibre computations (speed)
         crossfibres = false;
-        
-        % Cached velocity bc time-dependent function
-        velo_bc_fun = [];
     end
     
     methods
@@ -132,10 +129,6 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % Get the law function handles that also take b,d as arguments.
             % Needed due to possibly inhomogeneous material.
             %[~,~,this.MarkertLawFun,this.MarkertLawFunDeriv] = mlfg.getFunction;
-            
-            if ~isempty(mc.VelocityBCTimeFun)
-                this.velo_bc_fun = mc.VelocityBCTimeFun.getFunction;
-            end
             
             % Cache stuff
             this.usemassinv = sys.UseDirectMassInversion;

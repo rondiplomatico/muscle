@@ -16,14 +16,15 @@ classdef IsotonicActivation < experiments.AExperimentModelConfig
     methods
         function this = IsotonicActivation(varargin)
             this = this@experiments.AExperimentModelConfig(varargin{:});
-            %this.addOption('BC',1);
+            this.addOption('BC',1);
             this.init;
             
             % We need computed initial conditions on this one
             this.RequiresComputedInitialConditions = true;
             
             this.NumOutputs = 2;
-            this.NumConfigurations = 1;
+            this.NumConfigurations = length(this.ExperimentalStretchMillimeters);
+%             this.NumConfigurations = 1;
             this.TargetOutputValues = 1;
             
             this.VelocityBCTimeFun = tools.ConstantUntil(this.PositioningTime,.01);

@@ -9,17 +9,17 @@ function dK  = evaluate(this, uvwdof, t)
     this.nfevals = this.nfevals+1;
     
     sys = this.System;
-    m = sys.Model;
-    mc = m.Config;
-    fe_pos = mc.PosFE;
-    geo = fe_pos.Geometry;
-    fe_press = mc.PressFE;
-    pgeo = fe_press.Geometry;
-    unassembled = this.ComputeUnassembled;
+%     m = sys.Model;
+%     mc = m.Config;
+%     fe_pos = mc.PosFE;
+%     geo = fe_pos.Geometry;
+%     fe_press = mc.PressFE;
+%     pgeo = fe_press.Geometry;
+%     unassembled = this.ComputeUnassembled;
 
-    num_u_glob = geo.NumNodes*3;
+%     num_u_glob = geo.NumNodes*3;
 %     num_v_glob = num_u_glob;
-    isproj = ~isempty(this.V);
+%     isproj = ~isempty(this.V);
     
 %     % If we evaluate inside a projected (reduced) model, reconstruct 
 %     if isproj
@@ -54,11 +54,6 @@ function dK  = evaluate(this, uvwdof, t)
 %     uvwcomplete(sys.idx_uv_dof_glob) = uvwdof(1:sys.NumTotalDofs);
 %     % Insert BC
 %     uvwcomplete(sys.idx_uv_bc_glob) = sys.val_uv_bc_glob;
-%     % Check if velocity bc's should be applied in time-dependent manner
-%     if ~isempty(this.velo_bc_fun)
-%         uvwcomplete(sys.idx_v_bc_glob) = ...
-%             this.velo_bc_fun(t)*uvwcomplete(sys.idx_v_bc_glob);
-%     end
     
 %     if ~isproj
 %         % Init result vector duvw
@@ -72,7 +67,8 @@ function dK  = evaluate(this, uvwdof, t)
 %     end
     
     %% Evaluate K(u,v,w) and g(u)
-    % This is the main FEM-loop
+    % This is the main FEM-loop, which evaluates K(u,v,w) and g(u)
+    % simultaneously (efficiency for only one FEM-loop is required)
     dKg = this.Kg(uvwcomplete,t);
     
     % Extract boundary condition residuals for later use

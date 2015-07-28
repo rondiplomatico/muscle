@@ -98,14 +98,7 @@ function [JK, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
     globidx_press = sys.idx_p_glob_elems;
 
     % Include dirichlet values to state vector
-    uvwcomplete = zeros(2*dofs_pos + pgeo.NumNodes,1);
-    uvwcomplete(sys.idx_uv_dof_glob) = uvwdof(1:sys.NumTotalDofs);
-    uvwcomplete(sys.idx_uv_bc_glob) = sys.val_uv_bc_glob;
-    % Check if velocity bc's should be applied time-dependent
-    if ~isempty(this.velo_bc_fun)
-        uvwcomplete(sys.idx_v_bc_glob) = ...
-            this.velo_bc_fun(t)*uvwcomplete(sys.idx_v_bc_glob);
-    end
+    uvwcomplete = sys.includeDirichletValues(t, uvwdof);
     
     for m = 1:num_elements
         elemidx_u_glob = globidx_pos(:,:,m);
