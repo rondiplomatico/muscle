@@ -293,7 +293,7 @@ classdef System < models.BaseSecondOrderSystem
             % (So far the extra efficiency of "no A" for mu(1) == 0 is
             % neglected in any reduced model)
             this.D = this.fD;
-            rsys = buildReducedSystem@models.BaseDynSystem(this, rmodel);
+            rsys = buildReducedSystem@models.BaseSecondOrderSystem(this, rmodel);
             this.D = [];
         end
         

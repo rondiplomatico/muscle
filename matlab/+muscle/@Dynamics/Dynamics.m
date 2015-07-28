@@ -85,13 +85,14 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         end
         
         function configUpdated(this)
-            mc = this.System.Model.Config;
+            sys = this.System;
+            mc = sys.Model.Config;
             if ~isempty(mc.FibreTypeWeights)
                 this.nfibres = size(mc.FibreTypeWeights,2);
             end
             if ~isempty(mc)
-                this.xDim = this.System.NumTotalDofs;
-                this.fDim = this.System.NumTotalDofs;
+                this.xDim = sys.NumTotalDofs;
+                this.fDim = sys.NumDerivativeDofs;
                 this.JSparsityPattern = this.computeSparsityPattern;
                 
                 %% Sigma assembly matrix
