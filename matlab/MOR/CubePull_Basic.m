@@ -7,7 +7,7 @@ m = muscle.Model(CubePull);
 %m.ComputeParallel = true;
 %m.Data.useFileTrajectoryData;
 
-forces = linspace(-.1,.5,5);
+forces = linspace(-.1,.5,2);
 m.Sampler = sampling.ManualSampler(forces);
 % This causes the 3rd param to be used as training param
 m.TrainingParams = 3;
@@ -15,7 +15,7 @@ m.TrainingInputs = 1;
 
 d = approx.DEIM(m.System);
 d.MaxOrder = m.System.NumStateDofs;
-m.Approx = d;
+%m.Approx = d;
 
 %% Crunch
 m.offlineGenerations;

@@ -504,11 +504,6 @@ classdef System < models.BaseSecondOrderSystem
             % Remove those fixed via dirichlet conditions
             x0(this.idx_u_bc_local) = []; %local=global here as is first set
             
-            % Append DoFs for algebraic conditions below (if set)
-            if this.NumAlgebraicDofs > 0
-                x0 = [x0; zeros(this.NumAlgebraicDofs,1)];
-            end
-            
             % Give the model config a chance to mess with x0
             x0 = mc.getX0(x0);
         end

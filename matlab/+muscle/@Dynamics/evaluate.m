@@ -1,4 +1,4 @@
-function dK  = evaluate(this, uvwdof, t)
+function dK = evaluate(this, uvwdof, t)
     % This function represents the entire nonlinear part of the transformed
     % first order system.
     %
@@ -19,11 +19,12 @@ function dK  = evaluate(this, uvwdof, t)
 
 %     num_u_glob = geo.NumNodes*3;
 %     num_v_glob = num_u_glob;
-%     isproj = ~isempty(this.V);
+     isproj = ~isempty(this.V);
     
 %     % If we evaluate inside a projected (reduced) model, reconstruct 
-%     if isproj
-%         effsize_reduced_u_dofs = this.reduced_space_size;
+     if isproj
+         uvwdof = this.System.R*uvwdof;
+     end
 % 
 %         % Set z'=w directly
 %         duvw = zeros(size(uvwdof));
