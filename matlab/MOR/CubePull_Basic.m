@@ -7,7 +7,7 @@ m = muscle.Model(CubePull);
 %m.ComputeParallel = true;
 %m.Data.useFileTrajectoryData;
 
-forces = linspace(-.1,.5,2);
+forces = linspace(-.1,.5,5);
 m.Sampler = sampling.ManualSampler(forces);
 % This causes the 3rd param to be used as training param
 m.TrainingParams = 3;
@@ -20,8 +20,30 @@ d.MaxOrder = m.System.NumStateDofs;
 %% Crunch
 m.offlineGenerations;
 
-%%
-r = m.buildReducedModel(368);
+%% Test algebraic constraint violations for subspace sizes
+mu = m.DefaultMu;
+% x0 = m.System.getX0(mu);
+ad = m.System.NumAlgebraicDofs;
+% m.System.prepareSimulation(mu,rm.DefaultInput);
+res = zeros(1, m.System.NumStateDofs);
+for ridx = 1:10:m.System.NumStateDofs
+%     rx0 = rm.System.R*rm.System.R'*x0;
+%     yp0 = rode(0,x0);
+%     constr_violation = yp0(end-ad+1:end);
+%     res(r) = Norm.L2(constr_violation);
+    r = m.buildReducedModel(ridx);
+    rode = r.System.getODEFun;
+    x0 = r.System.getX0(mu);
+    r.System.prepareSimulation(mu,r.DefaultInput);
+    yp0 = rode(0,x0);
+    constr_violation = yp0(end-ad+1:end);
+    res(ridx) = Norm.L2(constr_violation);
+end
+semilogy(res);
+
+%% build reduced
+% r = m.buildReducedModel(368);
+r = m.buildReducedModel(200);
 
 %%
 mu = m.DefaultMu;
@@ -34,17 +56,3 @@ norm(y-yr)/norm(y)
 pm = PlotManager(false,2,2);
 ma = ModelAnalyzer(r);
 ma.plotReductionOverview(pm);
-
-%% Manual subspace comp
-A = m.Data.TrajectoryData.toMemoryMatrix;
-U = A(1:610,:);
-V = A(611:1220,:);
-[uu,us,uv] = svd(U,'econ');
-[vu,vs,vv] = svd(V,'econ');
-
-%% Plot manual
-ax = pm.nextPlot('singvals_split',...
-    'Singular values of same training data when split into u/v parts','singular value number','value');
-semilogy(ax,1:610,diag(us),'r',1:610,diag(vs),'b')
-pm.done;
-pm.savePlots(pwd,'Format',{'jpg','pdf'});

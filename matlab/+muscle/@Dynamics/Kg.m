@@ -5,7 +5,7 @@ function dvw = Kg(this, uvw_full, t, fibreforces)
     % system conversion
     %
     % See also: evaluate
-    sys = this.System;
+    sys = this.fsys;
     mc = sys.Model.Config;
     fe_pos = mc.PosFE;
     geo = fe_pos.Geometry;

@@ -8,7 +8,6 @@ function dK = evaluate(this, uvwdof, t)
     
     this.nfevals = this.nfevals+1;
     
-    sys = this.System;
 %     m = sys.Model;
 %     mc = m.Config;
 %     fe_pos = mc.PosFE;
@@ -17,35 +16,14 @@ function dK = evaluate(this, uvwdof, t)
 %     pgeo = fe_press.Geometry;
 %     unassembled = this.ComputeUnassembled;
 
-%     num_u_glob = geo.NumNodes*3;
-%     num_v_glob = num_u_glob;
-     isproj = ~isempty(this.V);
-    
-%     % If we evaluate inside a projected (reduced) model, reconstruct 
-     if isproj
-         uvwdof = this.System.R*uvwdof;
-     end
-% 
-%         % Set z'=w directly
-%         duvw = zeros(size(uvwdof));
-%         hlp = 2*effsize_reduced_u_dofs;
-%         duvw(1:effsize_reduced_u_dofs) = ...
-%             uvwdof((effsize_reduced_u_dofs+1):hlp);
-%         
-%         % Include velocity boundary conditions - they are not-projected
-%         % dofs coming just after the actual effsize_reduced_u_dofs.
-%         if sys.num_v_bc > 0
-%             velo_bc = sys.val_v_bc;
-%             if ~isempty(this.velo_bc_fun)
-%                 velo_bc = this.velo_bc_fun(t)*velo_bc;
-%             end
-%             duvw(hlp+(1:sys.num_v_bc)) = velo_bc;
-%         end
-%         
-%         % Then: reconstruct full uvw dof vector, as the K operator
-%         % might need u,v,w quantities
-%         uvwdof = this.V*uvwdof;
-%     end
+    sys = this.fsys;
+    isproj = ~isempty(this.V);
+    %     % If we evaluate inside a projected (reduced) model, reconstruct
+    if isproj
+%         rsys = this.System;
+%         uvwdof = rsys.R*uvwdof;
+        uvwdof = this.V*uvwdof;
+    end
 
     %% Include dirichlet values to state vector
     uvwcomplete = sys.includeDirichletValues(t, uvwdof);
@@ -83,6 +61,10 @@ function dK = evaluate(this, uvwdof, t)
     % along.
     this.curGC = dKg(dd+1:end);
     dK = dKg(1:dd);
+    
+    if isproj
+        dK = this.W'*dK;
+    end
     
 %     if isproj
 %         % Kick out dirichlet values from full state space vector of Kg part

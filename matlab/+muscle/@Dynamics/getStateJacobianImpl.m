@@ -2,7 +2,15 @@ function [JK, Jalpha, JLamDot] = getStateJacobianImpl(this, uvwdof, t)
     this.nJevals = this.nJevals+1;
 %     J = this.getStateJacobianFD(uvwdof,t);
 %     return;
-    sys = this.System;
+    
+    sys = this.fsys;
+%     isproj = ~isempty(this.V);
+%     %     % If we evaluate inside a projected (reduced) model, reconstruct
+%     if isproj
+%         rsys = this.System;
+%         uvwdof = rsys.R*uvwdof;
+%     end
+     
     mc = sys.Model.Config; 
     fe_pos = mc.PosFE;
     geo = fe_pos.Geometry;

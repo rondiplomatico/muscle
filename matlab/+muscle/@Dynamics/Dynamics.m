@@ -64,12 +64,17 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
     end
     
     properties(Transient, Access=private)
-        % Cached quantity from this.System.UseDirectMassInversion for
+        % Cached quantity from this.fsys.UseDirectMassInversion for
         % faster evaluation of dynamics.
         usemassinv;
         
         % Cached value for cross fibre computations (speed)
         crossfibres = false;
+    end
+    
+    properties(Access=private)
+        % Reference to the full system
+        fsys;
     end
     
     methods
@@ -84,7 +89,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
         end
         
         function configUpdated(this)
-            sys = this.System;
+            sys = this.fsys;
             mc = sys.Model.Config;
             if ~isempty(mc.FibreTypeWeights)
                 this.nfibres = size(mc.FibreTypeWeights,2);
@@ -106,7 +111,7 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             this.nfevals = 0;
             this.nJevals = 0;
             
-            sys = this.System;
+            sys = this.fsys;
             mc = sys.Model.Config;
             if ~isempty(mc.Pool)
                 mc.Pool.prepareSimulation(sys.Model.T,mu(4));
@@ -200,6 +205,15 @@ classdef Dynamics < dscomponents.ACompEvalCoreFun
             % Copy local properties
             % No local properties are to be copied here, as so far everything is done in the
             % constructor.
+        end
+        
+        function setSystem(this, sys)
+            setSystem@dscomponents.ACoreFun(this, sys);
+            if isa(sys,'models.ReducedSecondOrderSystem')
+                this.fsys = sys.Model.FullModel.System;
+            else
+                this.fsys = sys;
+            end
         end
         
         function copy = project(this, V, W)

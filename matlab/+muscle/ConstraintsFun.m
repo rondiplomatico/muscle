@@ -11,8 +11,8 @@ classdef ConstraintsFun < dscomponents.ACoreFun
         function update(this)
             [~,JP] = this.System.f.computeSparsityPattern;
             this.JSparsityPattern = JP;
-            this.fDim = 0;%this.System.NumAlgebraicDofs;
-            this.xDim = 0;%this.System.NumTotalDofs;
+            this.fDim = this.System.NumAlgebraicDofs;
+            this.xDim = this.System.NumAlgebraicDofs;
         end
         
         function J = getStateJacobianImpl(this, ~, ~)
@@ -21,7 +21,7 @@ classdef ConstraintsFun < dscomponents.ACoreFun
             if isempty(J)
                 error('Invalid use. This is a efficiency hack, not a standalone function.');
             else
-                this.System.f.curJGC = [];
+%                 f.curJGC = [];
             end
         end
         
@@ -35,13 +35,18 @@ classdef ConstraintsFun < dscomponents.ACoreFun
             if isempty(gc)
                 error('Invalid use. This is a efficiency hack, not a standalone function.');
             else
-                f.curGC = [];
+%                 f.curGC = [];
             end
+        end
+        
+        function projected = project(this, V, W)
+            projected = this.clone;
+            projected = project@dscomponents.ACoreFun(this, V, W, projected);
         end
         
         function copy = clone(this)
             % Create new instance
-            copy = ConstraintsFun(this.System);
+            copy = muscle.ConstraintsFun(this.System);
             copy = clone@dscomponents.ACoreFun(this, copy);
         end
     end

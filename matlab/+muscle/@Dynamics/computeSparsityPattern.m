@@ -1,6 +1,6 @@
 function [SPK, SPg, SPalpha, SPLamDot] = computeSparsityPattern(this)
     % Computes all sorts of patterns simultaneously
-    sys = this.System;
+    sys = this.fsys;
     mc = sys.Model.Config;
     fe_pos = mc.PosFE;
     geo = fe_pos.Geometry;

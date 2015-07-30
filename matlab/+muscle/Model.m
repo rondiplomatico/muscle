@@ -69,6 +69,7 @@ classdef Model < models.BaseFullModel
             %s.Eps = 1e-9;
             %s.MaxSubspaceSize = 500;
             s = spacereduction.PODReducer;
+            s.IncludeInitialSpace = true;
             s.Mode = 'abs';
             this.SpaceReducer = s;
             
@@ -446,6 +447,7 @@ classdef Model < models.BaseFullModel
         function value = get.Geo(this)
             value = this.Config.Geometry;
         end
+        
     end
     
     methods(Static)
