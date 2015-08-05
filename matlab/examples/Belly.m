@@ -13,6 +13,7 @@ classdef Belly < muscle.AModelConfig
             types = [0 .2 .4 .6 .8 1];
             ftw = zeros(this.PosFE.GaussPointsPerElem,length(types),this.PosFE.Geometry.NumElements);
             % Test: Use only slow-twitch muscles
+            %*muscle fibers (Besser fuer Ausdauertraining)
             ftw(:,1,:) = .4;
             ftw(:,2,:) = .05;
             ftw(:,3,:) = .05;
@@ -59,7 +60,7 @@ classdef Belly < muscle.AModelConfig
     end
     
     methods(Static)
-        function geo27 = getBelly(parts, len, varargin)
+        function geo27 = getBelly(gridx, len, varargin)
             i = inputParser;
             i.KeepUnmatched = true;
             i.addParamValue('Radius',1);
@@ -69,18 +70,30 @@ classdef Belly < muscle.AModelConfig
             i.addParamValue('MinZ',[]);
             i.parse(varargin{:});
             opt = i.Results;
+            
             if nargin < 2
                 len = 10;
                 if nargin < 1
-                    parts = 4;
+                    gridx = 4;
                 end
             end
-            if numel(len) == 2 
-                x = linspace(len(1),len(2),parts*2+1);
+            if numel(len) == 2 && numel(gridx)>1
+                %Evtl. "ungültige" Vektoren abfangen
+                x(1)=len(1);
+                x(numel(gridx)+1)=len(2);
+                for(i=2: numel(gridx))
+                    x(i)=gridx(i-1); %Evtl. plus len(1) Rechter Rand?
+                end
+            elseif  numel(len)== 2 && numel(gridx)==1
+                x = linspace(len(1),len(2),gridx*2+1);
+            elseif numel(len)==1 && numel(gridx)==1
+                x = linspace(0,len,gridx*2+1);
             else
-                x = linspace(0,len,parts*2+1);
+                x = gridx;
             end
+            
             if isa(opt.Radius,'function_handle')
+                
                 fx = opt.Radius(x);
                 if size(fx,1) == 1
                     fx = [fx; fx];
@@ -103,7 +116,7 @@ classdef Belly < muscle.AModelConfig
             end
             
             posfun = @(omega,offset)[sin(omega+offset); cos(omega+offset)];
-
+            
             qpart = getQuarterPart(opt.Layers);
             baseelems = zeros(size(qpart,1),size(qpart,2),4);
             baseelems(:,:,1) = qpart;
@@ -115,35 +128,55 @@ classdef Belly < muscle.AModelConfig
             baseelems(:,:,3) = -baseelems(:,9:-1:1,1);
             baseelems(:,:,4) = -baseelems(:,9:-1:1,2);
             
-%             c = sin(pi/4);
-%             c8 = cos(pi/8);
-%             s8 = sin(pi/8);
-%             baseplane(:,:,1) = [0 .5 1  0 .5*c c8 0 s8 c
-%                                 0  0 0 .5 .5*c s8 1 c8 c];
-%             % Mirror first segment
-%             baseplane(:,:,2) = [-1 0; 0 1]*baseplane(:,[3 2 1 6 5 4 9 8 7],1);
-%             % Rotate others by 180°
-%             baseplane(:,:,3) = -baseplane(:,9:-1:1,1);
-%             baseplane(:,:,4) = -baseplane(:,9:-1:1,2);
+            %             c = sin(pi/4); c8 = cos(pi/8); s8 = sin(pi/8);
+            %             baseplane(:,:,1) = [0 .5 1  0 .5*c c8 0 s8 c
+            %                                 0  0 0 .5 .5*c s8 1 c8 c];
+            %             % Mirror first segment baseplane(:,:,2) = [-1 0;
+            %             0 1]*baseplane(:,[3 2 1 6 5 4 9 8 7],1); % Rotate
+            %             others by 180Â° baseplane(:,:,3) =
+            %             -baseplane(:,9:-1:1,1); baseplane(:,:,4) =
+            %             -baseplane(:,9:-1:1,2);
             
-            npp = 27*parts*nelems;
-            nodes = zeros(3,npp*4);
-            for p = 1:parts
-                elempos = (p-1)*2 + (1:3);
-                rx = ones(9,1) * (opt.InnerRadius(1) + fx(1,elempos));
-                ry = ones(9,1) * (opt.InnerRadius(2) + fx(2,elempos));
-                z = ones(9,1) * x(elempos);
-                for k=1:nelems
-                    elem = baseelems((1:2)+2*(k-1),:,:);
-                    for rotpart = 1:4
-                        nodepos = (((p-1) * nelems + (k-1))*4 + (rotpart-1))*27 + (1:27);
-                        nodes(1,nodepos) = bsxfun(@times,repmat(elem(1,:,rotpart),1,3),rx(:)');
-                        nodes(2,nodepos) = bsxfun(@times,repmat(elem(2,:,rotpart),1,3),ry(:)');
-                        nodes(3,nodepos) = z(:);
+            
+            if(numel(gridx)>1) %Vektor als Eingabe:
+                npp = 27*numel(gridx)*nelems;
+                nodes = zeros(3,npp*4);
+                for p = 1:(numel(gridx)/2-1) %Vorher Vektor der Länge 2n-1, jetzt Vektor der Länge n!
+                    elempos = (p-1)*2 + (1:3);
+                    rx = ones(9,1) * (opt.InnerRadius(1) + fx(1,elempos));
+                    ry = ones(9,1) * (opt.InnerRadius(2) + fx(2,elempos));
+                    z = ones(9,1) * x(elempos);
+                    for k=1:nelems
+                        elem = baseelems((1:2)+2*(k-1),:,:);
+                        for rotpart = 1:4
+                            nodepos = (((p-1) * nelems + (k-1))*4 + (rotpart-1))*27 + (1:27);
+                            nodes(1,nodepos) = bsxfun(@times,repmat(elem(1,:,rotpart),1,3),rx(:)');
+                            nodes(2,nodepos) = bsxfun(@times,repmat(elem(2,:,rotpart),1,3),ry(:)');
+                            nodes(3,nodepos) = z(:);
+                        end
+                    end
+                end
+                
+            else
+                
+                npp = 27*gridx*nelems;
+                nodes = zeros(3,npp*4);
+                for p = 1:gridx
+                    elempos = (p-1)*2 + (1:3);
+                    rx = ones(9,1) * (opt.InnerRadius(1) + fx(1,elempos));
+                    ry = ones(9,1) * (opt.InnerRadius(2) + fx(2,elempos));
+                    z = ones(9,1) * x(elempos);
+                    for k=1:nelems
+                        elem = baseelems((1:2)+2*(k-1),:,:);
+                        for rotpart = 1:4
+                            nodepos = (((p-1) * nelems + (k-1))*4 + (rotpart-1))*27 + (1:27);
+                            nodes(1,nodepos) = bsxfun(@times,repmat(elem(1,:,rotpart),1,3),rx(:)');
+                            nodes(2,nodepos) = bsxfun(@times,repmat(elem(2,:,rotpart),1,3),ry(:)');
+                            nodes(3,nodepos) = z(:);
+                        end
                     end
                 end
             end
-
             % Filter nodes to unique ones
             [nodes, ~, elems] = unique(nodes','rows','stable');
             
@@ -155,8 +188,8 @@ classdef Belly < muscle.AModelConfig
             i = i(idx(same)); j = j(idx(same));
             % Kick out double nodes
             nodes(j,:) = [];
-            % Correct element indices after node removal
-            % - use i indices (instead of to-remove-j)
+            % Correct element indices after node removal - use i indices
+            % (instead of to-remove-j)
             for k=1:length(i)
                 elems(elems == j(k)) = i(k);
             end
@@ -182,7 +215,7 @@ classdef Belly < muscle.AModelConfig
                 error('Fixme');
                 hlp_g27 = geometry.Cube27Node;
                 centerline_facenodeidx = hlp_g27.MasterFaces(3,:);
-                for elem = [3:4:4*parts 4:4:4*parts]
+                for elem = [3:4:4*numel(gridx) 4:4:4*numel(gridx)]
                     centerline_nodes = elems(elem,centerline_facenodeidx);
                     toScale = nodes(2,centerline_nodes) < opt.MinZ;
                     factor = opt.MinZ./nodes(2,centerline_nodes(toScale));
@@ -275,21 +308,19 @@ classdef Belly < muscle.AModelConfig
         end
         
         function res = test_BellyGeometryGeneration
-            g = Belly.getBelly(4,35,'InnerRadius',.2,'Gamma',7);
+            g = Belly.getBelly(4,35,'InnerRadius',.2,'Gamma',7); 
             g = Belly.getBelly(4,35,'InnerRadius',[.2 .6],'Gamma',5);
             g = Belly.getBelly(4,35,'InnerRadius',.2,'Gamma',[10 20]);
             g = Belly.getBelly(4,35,'InnerRadius',[.2 .6],'Gamma',[10 20]);
-            g = Belly.getBelly(4,35,'Radius',[4 2],'InnerRadius',.5,'Gamma',[10 20]);
-            g = Belly.getBelly(4,35,'Radius',@(x)[sqrt(abs(x)); 1./(x-34).^2],'InnerRadius',.2);
+            g = Belly.getBelly([0:10]+randn(11,1)',35,'Radius',[4 2],'InnerRadius',.5,'Gamma',[10 20]);
+            g = Belly.getBelly(10,35,'Radius',@(x)[sqrt(abs(x));1./(x-34).^2],'InnerRadius',.2);
+            g = Belly.getBelly([0 1 3.125 3.25 3.26 4 4.5 4.75 5 6 10 35],35,'Radius',@(x)[sqrt(abs(x)); 1./(x-34).^2],'InnerRadius',.2);
             g.plot;
-            g = Belly.getBelly(4,35,'Radius',@(x)sqrt(abs(x)));
+            g = Belly.getBelly([1 3.125 3.25 3.26 4 4.5 4.75 5 6],[0 7],'Radius',@(x)sqrt(abs(x)));
             g.plot;
-%             g = Belly.getBelly(4,35,'Radius',[4 2],'InnerRadius',.5,...
-%                 'Gamma',[10 20],'MinZ',-1.5);
-%             g.plot;
-            g = Belly.getBelly(4,35,'Radius',@(x)sqrt(abs(x)),'Layers',[.4 .7 1]);
-            g.plot;
-            res = 1;
+%            g = Belly.getBelly(4,35,'Radius',[4 2],'InnerRadius',.5, 'Gamma',[10 20],'MinZ',-1.5);
+%            g.plot; 
+%            g = Belly.getBelly(4,35,'Radius',@(x)sqrt(abs(x)),'Layers',[.7 1]); g.plot; res = 1;
         end
         
         function test_BellyModel
@@ -299,4 +330,3 @@ classdef Belly < muscle.AModelConfig
     end
     
 end
-
