@@ -143,9 +143,9 @@ classdef Belly < muscle.AModelConfig
             
             
             if(numel(gridx)>1) %Vektor als Eingabe:
-                npp = 27*numel(gridx)*nelems;
+                npp = 27*floor(numel(gridx)/2)*nelems;
                 nodes = zeros(3,npp*4);
-                for p = 1:(numel(gridx)/2-1) %Vorher Vektor der Länge 2n+1, jetzt Vektor der Länge n!
+                for p = 1:(floor(numel(gridx)/2)) %Vorher Vektor der Länge 2n+1, jetzt Vektor der Länge n!
                     elempos = (p-1)*2 + (1:3);
                     rx = ones(9,1) * (opt.InnerRadius(1) + fx(1,elempos));
                     ry = ones(9,1) * (opt.InnerRadius(2) + fx(2,elempos));
