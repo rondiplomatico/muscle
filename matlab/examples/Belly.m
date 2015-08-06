@@ -78,12 +78,16 @@ classdef Belly < muscle.AModelConfig
                 end
             end
             if numel(len) == 2 && numel(gridx)>1
-                %Evtl. "ungültige" Vektoren abfangen
+                %Evtl. "ungültige" Vektoren abfangen?
                 x(1)=len(1);
                 x(numel(gridx)+1)=len(2);
                 for(i=2: numel(gridx))
-                    x(i)=gridx(i-1); %Evtl. plus len(1) Rechter Rand?
+                    x(i)=gridx(i-1);
                 end
+                
+            elseif numel(len)==1 && numel(gridx)>1
+                x(1:numel(gridx))=gridx;
+                x(numel(gridx)+1)=len;
             elseif  numel(len)== 2 && numel(gridx)==1
                 x = linspace(len(1),len(2),gridx*2+1);
             elseif numel(len)==1 && numel(gridx)==1
@@ -141,7 +145,7 @@ classdef Belly < muscle.AModelConfig
             if(numel(gridx)>1) %Vektor als Eingabe:
                 npp = 27*numel(gridx)*nelems;
                 nodes = zeros(3,npp*4);
-                for p = 1:(numel(gridx)/2-1) %Vorher Vektor der Länge 2n-1, jetzt Vektor der Länge n!
+                for p = 1:(numel(gridx)/2-1) %Vorher Vektor der Länge 2n+1, jetzt Vektor der Länge n!
                     elempos = (p-1)*2 + (1:3);
                     rx = ones(9,1) * (opt.InnerRadius(1) + fx(1,elempos));
                     ry = ones(9,1) * (opt.InnerRadius(2) + fx(2,elempos));
