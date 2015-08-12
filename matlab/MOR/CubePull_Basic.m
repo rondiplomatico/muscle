@@ -1,7 +1,7 @@
 clear classes;
 
 %% Init
-m = muscle.Model(CubePull);
+m = models.muscle.Model(models.muscle.examples.CubePull);
 %m.EnableTrajectoryCaching = true;
 
 %m.ComputeParallel = true;
@@ -32,10 +32,9 @@ for ridx = 1:10:m.System.NumStateDofs
 %     constr_violation = yp0(end-ad+1:end);
 %     res(r) = Norm.L2(constr_violation);
     r = m.buildReducedModel(ridx);
-    rode = r.System.getODEFun;
     x0 = r.System.getX0(mu);
     r.System.prepareSimulation(mu,r.DefaultInput);
-    yp0 = rode(0,x0);
+    yp0 = r.System.ODEFun(0,x0);
     constr_violation = yp0(end-ad+1:end);
     res(ridx) = Norm.L2(constr_violation);
 end
@@ -52,7 +51,23 @@ mu(3) = .15; %new param!
 [t,yr] = r.simulate(mu,1);
 norm(y-yr)/norm(y)
 
+%% DEIM stuff
+%% Crunch
+m.Approx = approx.DEIM(m.System);
+m.off4_genApproximationTrainData;
+m.Approx.MaxOrder = 610;
+m.off5_computeApproximation;
+
+%% check
+r = m.buildReducedModel(200);
+[t,yr] = r.simulate(mu,1);
+
 %% Plot
 pm = PlotManager(false,2,2);
 ma = ModelAnalyzer(r);
 ma.plotReductionOverview(pm);
+
+
+
+
+

@@ -1,4 +1,4 @@
-classdef QuickRelease < experiments.AExperimentModelConfig
+classdef QuickRelease < models.muscle.AExperimentModelConfig
 % Provides a model config and test scripts for a quick release test.
 %
 % The material parameters used are suggested by Thomas Heidlauf, see his
@@ -22,12 +22,12 @@ classdef QuickRelease < experiments.AExperimentModelConfig
 
     methods
         function this = QuickRelease(varargin)
-            this = this@experiments.AExperimentModelConfig(varargin{:});
+            this = this@models.muscle.AExperimentModelConfig(varargin{:});
             this.init;
         end
         
         function configureModel(this, m)
-            configureModel@muscle.AModelConfig(this, m);
+            configureModel@models.muscle.AExperimentModelConfig(this, m);
             os = m.ODESolver;
             switch this.GeoNr
                 case 1
@@ -185,12 +185,11 @@ classdef QuickRelease < experiments.AExperimentModelConfig
         function geo = getGeometry(this)
             switch this.Options.GeoNr
                 case 1
-                    [pts, cubes] = geometry.Cube8Node.DemoGrid(0:20:40,[0 20],[0 20]);
-                    geo = geometry.Cube8Node(pts, cubes);
+                    geo = fem.geometry.RegularHex8Grid(0:20:40,[0 20],[0 20]);
                 case 2
-                    geo = Belly.getBelly(3, 50, 'Radius', 4.5, 'InnerRadius', 1.5, 'Gamma', 15);
+                    geo = fem.geometry.Belly(3, 50, 'Radius', 4.5, 'InnerRadius', 1.5, 'Gamma', 15);
                 case 3
-                    s = load(fullfile(fileparts(which(mfilename)),'..','CMISS','EntireTA.mat'));
+                    s = load(fullfile(fileparts(which(mfilename)),'EntireTA.mat'));
                     geo = s.geo27;
             end
         end

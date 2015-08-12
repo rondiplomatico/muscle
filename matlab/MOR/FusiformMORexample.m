@@ -131,7 +131,7 @@ classdef FusiformMORexample < muscle.AModelConfig
         function geo = getGeometry(this)
             % geometry for model configuration
             np = 12;
-            geo = Belly.getBelly(np,50,'Radius',3,'InnerRadius',.5,'Gamma',15);
+            geo = fem.geometry.Belly(np,50,'Radius',3,'InnerRadius',.5,'Gamma',15);
             this.NumParts = np;            
         end
         

@@ -1,4 +1,4 @@
-classdef MuscleTendonMixPullExperiment < experiments.AExperimentModelConfig
+classdef MuscleTendonMixPullExperiment < models.muscle.AExperimentModelConfig
     % A simple experiment that pulls at one side with constant force but
     % varying muscle-tendon ratio at the fixed side.
     
@@ -8,7 +8,7 @@ classdef MuscleTendonMixPullExperiment < experiments.AExperimentModelConfig
     
     methods
         function this = MuscleTendonMixPullExperiment(varargin)
-            this = this@experiments.AExperimentModelConfig(varargin{:});
+            this = this@models.muscle.AExperimentModelConfig(varargin{:});
             this.init;
             
             this.NumConfigurations = 10;
@@ -16,7 +16,7 @@ classdef MuscleTendonMixPullExperiment < experiments.AExperimentModelConfig
         end
         
         function configureModel(this, m)
-            configureModel@muscle.AModelConfig(this, m);
+            configureModel@models.muscle.AExperimentModelConfig(this, m);
             m.T = 99;
             m.dt = 1;
             m.DefaultInput = 1;
@@ -91,16 +91,15 @@ classdef MuscleTendonMixPullExperiment < experiments.AExperimentModelConfig
             switch this.Options.GeoNr
                 case 1
                     % A single cube
-                    [pts, cubes] = geometry.Cube8Node.DemoGrid([0 10],[0 10],[0 10]);
+                    geo = fem.geometry.RegularHex8Grid([0 10],[0 10],[0 10]);
                 case 2
                     % two cubes split at 3
-                    [pts, cubes] = geometry.Cube8Node.DemoGrid([0 3 10],[0 10],[0 10]);
+                    geo = fem.geometry.RegularHex8Grid([0 3 10],[0 10],[0 10]);
                 case 3
                     % sixteen cubes
-                    [pts, cubes] = geometry.Cube8Node.DemoGrid(...
+                    geo = fem.geometry.RegularHex8Grid(...
                         [0 1.5 3 6.5 10],0:3.33333:10,0:3.33333:10);
             end
-            geo = geometry.Cube8Node(pts, cubes);
             geo = geo.toCube27Node;    
         end
         
