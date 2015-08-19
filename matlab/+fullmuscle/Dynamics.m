@@ -149,7 +149,7 @@ classdef Dynamics < muscle.Dynamics;
             dy = zeros(this.fDim,1);
             
             %% Mechanics
-            uvp_pos = 1:sys.num_uvp_dof;
+            uvp_pos = 1:sys.NumTotalDofs;
             % Use uvp as argument and also pass in s (=sarco forces)
             force = max(0,y(sys.sarco_output_idx)-sys.sarco_mech_signal_offset);
 %             force = y(sys.sarco_output_idx);
@@ -216,7 +216,7 @@ classdef Dynamics < muscle.Dynamics;
             sys = this.System;
             
             %% Mechanics
-            uvp_pos = 1:sys.num_uvp_dof;
+            uvp_pos = 1:sys.NumTotalDofs;
             force = max(0,y(sys.sarco_output_idx)-sys.sarco_mech_signal_offset);
 %             force = y(sys.sarco_output_idx);
 %             force = zeros(length(sys.sarco_output_idx),1);
@@ -250,7 +250,7 @@ classdef Dynamics < muscle.Dynamics;
             % The JS matrix is generated during the computation of the
             % mechanics jacobian, as the element/gauss loop is computed
             % there anyways. its not 100% clean OOP, but works for now.
-            J(sys.num_u_dof + (1:sys.num_v_dof), sys.off_sarco+(1:sys.num_sarco_dof)) = Jalpha;
+            J(sys.NumStateDofs + (1:sys.NumDerivativeDofs), sys.off_sarco+(1:sys.num_sarco_dof)) = Jalpha;
             
             %% Spindle stuff
             if sys.HasSpindle
@@ -282,7 +282,7 @@ classdef Dynamics < muscle.Dynamics;
                     J = blkdiag(J,Jspin);
                     
                     %% Mechanics to spindle coupling
-                    J(spindle_pos,1:sys.num_u_dof+sys.num_v_dof) = Jspin_dLdot'*JLamDot(k,:);
+                    J(spindle_pos,1:sys.NumStateDofs+sys.NumDerivativeDofs) = Jspin_dLdot'*JLamDot(k,:);
                     
                     %% Spindle to Motoneuron coupling
                     daffk_dy = this.SpindleAffarentWeights*sp.getAfferentsJacobian(y(spindle_pos));
@@ -329,7 +329,7 @@ classdef Dynamics < muscle.Dynamics;
             sys.prepareSimulation(mu, sys.Model.DefaultInput);
             this.evaluate(y,t);
             ldotbase = this.lambda_dot;
-            uv = sys.num_u_dof+sys.num_v_dof;
+            uv = sys.NumStateDofs+sys.NumDerivativeDofs;
             LAM = repmat(ldotbase',1,uv);
             dlam = zeros(this.nfibres,uv);
             for k = 1:uv
@@ -418,7 +418,7 @@ classdef Dynamics < muscle.Dynamics;
             end
                     
             % Sarco -> Mechanics
-            SP(sys.num_u_dof + (1:sys.num_v_dof), sys.off_sarco+(1:sys.num_sarco_dof)) = SPalpha;
+            SP(sys.NumStateDofs + (1:sys.NumDerivativeDofs), sys.off_sarco+(1:sys.num_sarco_dof)) = SPalpha;
             
             if sys.HasSpindle
                 % Spindle -> Motoneuron link
@@ -439,7 +439,7 @@ classdef Dynamics < muscle.Dynamics;
                 Jspin_Aff = double(sys.Spindle.JAfferentSparsityPattern);
                 for k=1:this.nfibres
                     spindle_pos = sys.off_spindle + 9*(k-1) + (1:9);
-                    SP(spindle_pos,1:sys.num_u_dof+sys.num_v_dof) = ...
+                    SP(spindle_pos,1:sys.NumStateDofs+sys.NumDerivativeDofs) = ...
                         logical(Jspin_Ldot*double(SPLamDot(k,:)));
                     % Create connecting link to self only when no frequency
                     % detector is used!

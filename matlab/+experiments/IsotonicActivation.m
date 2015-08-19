@@ -1,4 +1,4 @@
-classdef IsotonicActivation < experiments.AExperimentModelConfig
+classdef IsotonicActivation < models.muscle.AExperimentModelConfig
     % Implements the isometric contraction experiment
     
     properties(Constant)
@@ -15,22 +15,23 @@ classdef IsotonicActivation < experiments.AExperimentModelConfig
     
     methods
         function this = IsotonicActivation(varargin)
-            this = this@experiments.AExperimentModelConfig(varargin{:});
-            %this.addOption('BC',1);
+            this = this@models.muscle.AExperimentModelConfig(varargin{:});
+            this.addOption('BC',1);
             this.init;
             
             % We need computed initial conditions on this one
             this.RequiresComputedInitialConditions = true;
             
             this.NumOutputs = 2;
-            this.NumConfigurations = 1;
+            this.NumConfigurations = length(this.ExperimentalStretchMillimeters);
+%             this.NumConfigurations = 1;
             this.TargetOutputValues = 1;
             
-            this.VelocityBCTimeFun = tools.ConstantUntil(this.PositioningTime,.01);
+            this.VelocityBCTimeFun = general.functions.ConstantUntil(this.PositioningTime,.01);
         end
         
         function configureModel(this, m)
-            configureModel@muscle.AModelConfig(this, m);
+            configureModel@models.muscle.AExperimentModelConfig(this, m);
             os = m.ODESolver;
             os.RelTol = 1e-4;
             os.AbsTol = .001;
@@ -86,13 +87,12 @@ classdef IsotonicActivation < experiments.AExperimentModelConfig
         
         function geo = getGeometry(this)
             if this.Options.GeoNr == 1
-                [pts, cubes] = geometry.Cube27Node.DemoGrid(linspace(0,25,4),[0 7],[0 4]);
-                geo = geometry.Cube27Node(pts,cubes);
+                geo = fem.geometry.RegularHex27Grid(linspace(0,25,4),[0 7],[0 4]);
             end
         end
         
         function displ_dir = setPositionDirichletBC(this, displ_dir)
-            geo = this.PosFE.Geometry;
+            geo = this.FEM.Geometry;
             o = this.Options;
             switch o.GeoNr
                 case 1
@@ -113,7 +113,7 @@ classdef IsotonicActivation < experiments.AExperimentModelConfig
         end
         
         function [velo_dir, velo_dir_val] = setVelocityDirichletBC(this, velo_dir, velo_dir_val)
-            geo = this.PosFE.Geometry;
+            geo = this.FEM.Geometry;
             
             % Get difference in total width using the total stretch per configuration
             velo = this.ExperimentalStretchMillimeters(this.CurrentConfigNr)/this.PositioningTime;
@@ -212,7 +212,7 @@ classdef IsotonicActivation < experiments.AExperimentModelConfig
             
             % Set label
             % compute percent
-            w = c.PosFE.Geometry.Width;
+            w = c.FEM.Geometry.Width;
             sp_perc = (((w+sp)./w)-1)*100;
             lab = sprintf('%dmm (%g%%)|',reshape([sp; sp_perc],1,[]));
             set(ax,'XTick',sp,'XTickLabel', lab(1:end-1));

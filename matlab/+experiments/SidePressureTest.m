@@ -1,4 +1,4 @@
-classdef SidePressureTest < experiments.AExperimentModelConfig
+classdef SidePressureTest < models.muscle.AExperimentModelConfig
 % Tests to investigate the difference between quasi-static and dynamic
 % simulations.
 %
@@ -25,14 +25,14 @@ classdef SidePressureTest < experiments.AExperimentModelConfig
 
     methods
         function this = SidePressureTest(varargin)
-            this = this@experiments.AExperimentModelConfig(varargin{:});
+            this = this@models.muscle.AExperimentModelConfig(varargin{:});
             this.init;
             this.NeumannCoordinateSystem = 'global';
             this.ActivationRampMax = .5;
         end
         
         function configureModel(this, m)
-            configureModel@muscle.AModelConfig(this, m);
+            configureModel@models.muscle.AExperimentModelConfig(this, m);
             m.T = this.ActivationTime+this.RelaxTime+this.LoadRampTime+10;
             m.dt = m.T/200;
             m.DefaultInput = 1;
@@ -149,10 +149,9 @@ classdef SidePressureTest < experiments.AExperimentModelConfig
         function geo = this.getGeometry(this)
             switch this.Options.GeoNr
                 case 1
-                    [pts, cubes] = geometry.Cube8Node.DemoGrid(0:20:60,[0 20],[0 20]);
-                    geo = geometry.Cube8Node(pts, cubes);
+                    geo = fem.geometry.RegularHex8Grid(0:20:60,[0 20],[0 20]);
                 case 2
-                    geo = Belly.getBelly(5, 50, 'Radius', 3.5, 'InnerRadius', 2.5, 'Gamma', 15);
+                    geo = fem.geometry.Belly(5, 50, 'Radius', 3.5, 'InnerRadius', 2.5, 'Gamma', 15);
                 case 3
                     s = load(fullfile(fileparts(which(mfilename)),'..','CMISS','EntireTA.mat'));
                     geo = s.geo27;

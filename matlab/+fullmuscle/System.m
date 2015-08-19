@@ -124,20 +124,20 @@ classdef System < muscle.System;
         end
         
         function uvwall = includeDirichletValues(this, t, uvw)
-            uvwall_mech = includeDirichletValues@muscle.System(this, t, uvw(1:this.num_uvp_dof,:));
-            uvwall = [uvwall_mech; uvw(this.num_uvp_dof+1:end,:)];
+            uvwall_mech = includeDirichletValues@muscle.System(this, t, uvw(1:this.NumTotalDofs,:));
+            uvwall = [uvwall_mech; uvw(this.NumTotalDofs+1:end,:)];
         end
         
     end
     
     methods(Access=protected)
         
-        function updateDofNums(this, mc)
-            updateDofNums@muscle.System(this, mc);
+        function updateDimensions(this, mc)
+            updateDimensions@muscle.System(this, mc);
             
             this.num_motoneuron_dof = 6*this.nfibres;
             % Motoneurons are beginning after mechanics
-            this.off_moto = this.num_uvp_dof; 
+            this.off_moto = this.NumTotalDofs; 
 
             % Sarcomeres are beginning after motoneurons
             this.num_sarco_dof = 56*this.nfibres;
@@ -161,7 +161,7 @@ classdef System < muscle.System;
         function x0 = assembleX0(this)
             x0 = zeros(this.num_all_dof,1);
             % Get muscle x0
-            x0(1:this.num_uvp_dof) = assembleX0@muscle.System(this);
+            x0(1:this.NumTotalDofs) = assembleX0@muscle.System(this);
             
             % Load dynamic/affine x0 coefficients for moto/sarco system
             % from file
@@ -200,7 +200,7 @@ classdef System < muscle.System;
             Baff_neumann = assembleB@muscle.System(this);
             if ~isempty(Baff_neumann)
                 B = sparse(this.num_all_dof,this.nfibres+2);
-                B(1:this.num_uvp_dof,1) = Baff_neumann.getMatrix(1);
+                B(1:this.NumTotalDofs,1) = Baff_neumann.getMatrix(1);
                 Baff.addMatrix(Baff_neumann.funStr{1},B);
             end
             

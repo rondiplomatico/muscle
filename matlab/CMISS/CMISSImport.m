@@ -32,7 +32,7 @@ classdef CMISSImport < handle
             elems27(12,:) = [133,143,134,160,162,176,135,144,136,210,211,228,212,213,229,244,245,253,111,145,115,163,164,177,112,146,116];
             
             [nodes27, elems27] = ci.merge(nodes, nodeidx, elems27);
-            geo27 = geometry.Cube27Node(nodes27, elems27);
+            geo27 = fem.geometry.Cube27Node(nodes27, elems27);
             geo27.swapYZ;
             
             geo8 = geo27.toCube8Node;
@@ -50,9 +50,9 @@ classdef CMISSImport < handle
             [nodes8, elems8] = this.merge(nodes, nodeidx, elems8);
             [nodes20, elems20] = this.merge(nodes, nodeidx, elems20);
             [nodes27, elems27] = this.merge(nodes, nodeidx, elems27);
-            geo8 = geometry.Cube8Node(nodes8, elems8);
-            geo20 = geometry.Cube20Node(nodes20, elems20);
-            geo27 = geometry.Cube27Node(nodes27, elems27);
+            geo8 = fem.geometry.Cube8Node(nodes8, elems8);
+            geo20 = fem.geometry.Cube20Node(nodes20, elems20);
+            geo27 = fem.geometry.Cube27Node(nodes27, elems27);
             save(fullfile(CMISSImport.Dir,name),'geo8','geo20','geo27');
         end
         
