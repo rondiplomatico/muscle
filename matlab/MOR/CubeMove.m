@@ -69,7 +69,7 @@ classdef CubeMove < models.muscle.AMuscleConfig
             else
                 velo_dir(2,geo.Elements(1,geo.MasterFaces(3,:))) = true;
             end
-            velo_dir_val(velo_dir) = -.05;
+            velo_dir_val(velo_dir) = -.03;
         end
         
         function anull = seta0(~, anull)

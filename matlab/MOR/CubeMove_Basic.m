@@ -16,7 +16,7 @@ m.dt = numsamples*m.T/(m.System.NumDerivativeDofs*1.5);
 %m.ComputeParallel = true;
 %m.Data.useFileTrajectoryData;
 
-m.Sampler = sampling.ManualSampler(linspace(.1,10,numsamples));
+m.Sampler = sampling.ManualSampler(linspace(.1,2,numsamples));
 % This causes the 1st param to be used as training param
 m.TrainingParams = 1;
 
@@ -28,8 +28,7 @@ d.MaxOrder = m.System.NumDerivativeDofs;
 m.offlineGenerations;
 
 %% build reduced
-% r = m.buildReducedModel(368);
-r = m.buildReducedModel(200);
+r = m.buildReducedModel(350);
 
 %%
 mu = m.DefaultMu;
@@ -46,7 +45,8 @@ m.Approx.MaxOrder = m.System.NumDerivativeDofs;
 m.off5_computeApproximation;
 
 %% check
-r = m.buildReducedModel(200);
+r = m.buildReducedModel(350);
+r.System.f.Order = 
 [t,yr] = r.simulate(mu,1);
 
 %% Plot
