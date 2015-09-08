@@ -65,7 +65,7 @@ classdef System < muscle.System;
             % Second row is external mean current input
 %             this.Inputs{2,1} = @(t)1;
             
-            this.Motoneuron = fullmuscle.Motoneuron;
+            this.Motoneuron = models.motoneuron.Motoneuron;
             this.Sarcomere = fullmuscle.Sarcomere;
             
             % Compile information for plotting

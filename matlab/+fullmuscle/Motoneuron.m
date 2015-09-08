@@ -18,6 +18,7 @@ classdef Motoneuron < KerMorObject
         TypeNoise;
         BaseNoise;
         FibreTypeNoiseFactors;
+        JSparsityPattern;
     end
     
     properties(Access=private)
@@ -27,9 +28,13 @@ classdef Motoneuron < KerMorObject
     
     methods
         
-%         function this = Motoneuron
-%             this.NoiseGen = models.motoneuron.NoiseGenerator;
-%         end
+         function this = Motoneuron
+             this = this@KerMorObject;
+             % Initializes the Sparsity pattern of the Jacobian
+             i = [1,1,2,2,2,2,2,2,3,3,4,4,5,5,6,6];
+             j = [1,2,1,2,3,4,5,6,2,3,2,4,2,5,2,6];
+             this.JSparsityPattern = logical(sparse(i,j,true,6,6));
+         end
         
         function dy = dydt(this, y, ~)
             c = this.Constants;
@@ -127,6 +132,15 @@ classdef Motoneuron < KerMorObject
             % fibretype-dependent factor.
             % These factors are made accessible where needed
             this.FibreTypeNoiseFactors = 1./(pi*this.coolExp(77.5e-4, 0.0113, fibretypes).^2);
+        end
+        
+        function copy = clone(this)
+            copy = models.motoneuron.Motoneuron;
+            copy.Constants = this.Constants;
+            copy.TypeNoise = this.TypeNoise;
+            copy.BaseNoise = this.BaseNoise;
+            copy.FibreTypeNoiseFactors = this.FibreTypeNoiseFactors;
+            copy.nt = this.nt;
         end
     end
     
